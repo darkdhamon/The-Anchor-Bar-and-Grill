@@ -157,6 +157,11 @@
 
 - This section mirrors the current Codex application defaults so the repository retains a portable copy of them.
 
+## GitHub Comment Signature
+
+- GitHub issue comments and pull request comments written by Codex must end with a signature line: `- Codex`
+- This signature is required because Codex and the user currently share the same GitHub account and comments need a clear way to distinguish Codex-authored messages from user-authored messages
+
 ## Commit Message Format
 
 ```text
