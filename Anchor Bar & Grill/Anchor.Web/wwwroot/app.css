@@ -1194,9 +1194,32 @@ p {
         width: min(100vw - 1rem, 1180px);
     }
 
+    .site-header__grid {
+        gap: 0.75rem;
+        padding: 0.75rem 0;
+    }
+
     .brand-lockup {
-        grid-template-columns: 1fr;
-        justify-items: start;
+        grid-template-columns: 4.5rem minmax(0, 1fr);
+        gap: 0.85rem;
+        align-items: center;
+    }
+
+    .brand-lockup__logo-shell {
+        width: 4.5rem;
+    }
+
+    .brand-lockup__eyebrow {
+        font-size: 0.72rem;
+        letter-spacing: 0.1em;
+    }
+
+    .brand-lockup__title {
+        font-size: clamp(2rem, 9vw, 2.7rem);
+    }
+
+    .brand-lockup__tagline {
+        display: none;
     }
 
     .site-header__actions {
@@ -1220,6 +1243,17 @@ p {
 
     .site-header__nav-stack {
         width: 100%;
+    }
+
+    .preview-nav {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 0.2rem;
+        scrollbar-width: thin;
+    }
+
+    .preview-nav__label {
+        display: none;
     }
 
     .site-navigation__link,
