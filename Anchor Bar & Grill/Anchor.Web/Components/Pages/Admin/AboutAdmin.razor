@@ -1,0 +1,71 @@
+@page "/admin/about"
+
+<PageTitle>About Admin</PageTitle>
+
+<section class="admin-page">
+    <div class="page-hero page-hero--section">
+        <p class="page-hero__eyebrow">Admin Mockup</p>
+        <h1>About admin</h1>
+        <p class="page-hero__lead">
+            The About page needs an editor that helps staff keep the story, tone, and guest promises current without turning content updates into guesswork.
+        </p>
+    </div>
+
+    <div class="admin-grid">
+        <aside class="admin-help">
+            <h2>How this page should work</h2>
+            <ul>
+                <li>Break the About page into manageable sections instead of one giant text field.</li>
+                <li>Offer room for the restaurant story, guest experience notes, and optional highlight cards.</li>
+                <li>Preview how the copy will read before it is published.</li>
+            </ul>
+        </aside>
+
+        <div class="admin-stack">
+            <section class="admin-card">
+                <div class="admin-card__header">
+                    <h2>About page editor</h2>
+                    <span class="admin-card__badge">Content Blocks</span>
+                </div>
+
+                <div class="editor-form__grid">
+                    <label>
+                        Section title
+                        <input type="text" value="Come as you are" />
+                    </label>
+                    <label>
+                        Highlight label
+                        <input type="text" value="Guest Experience" />
+                    </label>
+                    <label class="editor-form__message">
+                        Section content
+                        <textarea rows="5">The tone should feel warm, direct, and welcoming for first-time visitors.</textarea>
+                    </label>
+                </div>
+            </section>
+
+            <section class="admin-card">
+                <div class="admin-card__header">
+                    <h2>Current about sections</h2>
+                    <span class="admin-card__badge">Page Structure</span>
+                </div>
+
+                <div class="admin-list">
+                    @foreach (var item in MockupContent.ExperiencePillars)
+                    {
+                        <article class="admin-list__item">
+                            <div>
+                                <h3>@item.Title</h3>
+                                <p>@item.Description</p>
+                            </div>
+                            <div class="admin-list__actions">
+                                <button type="button">Edit</button>
+                                <button type="button" class="admin-list__danger">Delete</button>
+                            </div>
+                        </article>
+                    }
+                </div>
+            </section>
+        </div>
+    </div>
+</section>

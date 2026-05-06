@@ -1,0 +1,109 @@
+@page "/menu"
+
+<PageTitle>Menu</PageTitle>
+
+<section class="page-hero page-hero--section">
+    <p class="page-hero__eyebrow">Guest Menu Preview</p>
+    <h1>Menu mockup</h1>
+    <p class="page-hero__lead">
+        The website menu should borrow the color, framing, and typography direction of the printed menu while becoming cleaner and easier to scan on phones and desktops.
+    </p>
+</section>
+
+<section class="section-shell">
+    <div class="section-heading">
+        <p class="section-heading__eyebrow">Weekly Specials</p>
+        <h2>Recurring specials should live right on the menu.</h2>
+    </div>
+
+    <div class="recurring-specials-grid">
+        @foreach (var special in MockupContent.RecurringSpecials)
+        {
+            <article class="feature-card recurring-special @(special.IsToday(today) ? "recurring-special--today" : string.Empty)">
+                <div class="recurring-special__header">
+                    <div>
+                        <p class="feature-card__eyebrow">@special.DayLabel</p>
+                        <h3>@special.Title</h3>
+                    </div>
+
+                    @if (special.IsToday(today))
+                    {
+                        <span class="status-pill status-pill--today">Today</span>
+                    }
+                </div>
+
+                <p class="event-card__meta">@special.TimeLabel</p>
+                <p>@special.Description</p>
+
+                <div class="recurring-special__footer">
+                    <span class="recurring-special__price">@special.PriceNote</span>
+                    <span class="recurring-special__placement">@special.PlacementSummary</span>
+                </div>
+            </article>
+        }
+    </div>
+</section>
+
+<section class="section-shell">
+    <div class="menu-grid">
+        @foreach (var menuSection in MockupContent.MenuSections)
+        {
+            <article class="menu-section @menuSection.AccentClass">
+                <header class="menu-section__header">
+                    <h2>@menuSection.Title</h2>
+                    <p>@menuSection.Note</p>
+                </header>
+
+                <div class="menu-section__items">
+                    @foreach (var item in menuSection.Items)
+                    {
+                        <article class="menu-item @(item.Image is not null ? "menu-item--with-image" : "menu-item--text-only")">
+                            @if (item.Image is not null)
+                            {
+                                <div class="menu-item__visual">
+                                    <img class="menu-item__image" src="@item.Image.Source" alt="@item.Image.AltText" />
+                                </div>
+                            }
+
+                            <div class="menu-item__content">
+                                <div class="menu-item__title-row">
+                                    <h3>@item.Name</h3>
+                                    <span>@item.Price</span>
+                                </div>
+
+                                @if (item.GetStatusLabels(today).Count > 0)
+                                {
+                                    <div class="menu-item__badges">
+                                        @foreach (var label in item.GetStatusLabels(today))
+                                        {
+                                            <span class="status-pill @(GetBadgeClass(label))">@label</span>
+                                        }
+                                    </div>
+                                }
+
+                                <p>@item.Description</p>
+
+                                @if (item.GetOfferDateSummary(today) is { } offerSummary)
+                                {
+                                    <p class="menu-item__offer-range">@offerSummary</p>
+                                }
+                            </div>
+                        </article>
+                    }
+                </div>
+            </article>
+        }
+    </div>
+</section>
+
+@code {
+    private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+
+    private static string GetBadgeClass(string label) =>
+        label switch
+        {
+            "Coming Soon" => "status-pill--coming-soon",
+            "Seasonal" => "status-pill--seasonal",
+            _ => "status-pill--limited"
+        };
+}

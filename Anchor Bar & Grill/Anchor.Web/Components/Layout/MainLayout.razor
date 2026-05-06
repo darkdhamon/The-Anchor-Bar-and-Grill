@@ -1,23 +1,157 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IJSRuntime JSRuntime
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<div class="site-shell @(isDarkTheme ? "theme-dark" : "theme-light")">
+    <header class="site-header">
+        <div class="site-header__grid shell-container">
+            <a class="brand-lockup" href="/">
+                <span class="brand-lockup__logo-shell" aria-hidden="true">
+                    <img class="brand-lockup__logo" src="images/AnchorLogo.png" alt="The Anchor Bar and Grill logo" />
+                </span>
+                <div class="brand-lockup__text">
+                    <span class="brand-lockup__eyebrow">Madison Lake, Minnesota</span>
+                    <span class="brand-lockup__title">The Anchor Bar &amp; Grill</span>
+                    <span class="brand-lockup__tagline">A menu-inspired website mockup for guests and future admins.</span>
+                </div>
+            </a>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            <div class="site-header__actions">
+                <div class="theme-toggle">
+                    <span class="theme-toggle__label">Theme</span>
+                    <label class="switch">
+                        <input type="checkbox" checked="@isDarkTheme" @onchange="OnThemeChanged" aria-label="Toggle light and dark theme" />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <button class="menu-toggle" type="button" @onclick="ToggleMenu" aria-expanded="@isMenuOpen" aria-controls="site-header-nav" aria-label="Toggle site menu">
+                    <span class="menu-toggle__icon" aria-hidden="true">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </span>
+                </button>
+            </div>
+
+            <div id="site-header-nav" class="site-header__nav-stack @(isMenuOpen ? "is-open" : string.Empty)">
+                <nav id="site-navigation" class="site-navigation @(isMenuOpen ? "is-open" : string.Empty)" aria-label="Primary">
+                    @foreach (var link in SiteMap.PublicLinks)
+                    {
+                        <NavLink class="site-navigation__link" href="@link.Href" Match="@(link.Href == "/" ? NavLinkMatch.All : NavLinkMatch.Prefix)" @onclick="CloseMenu">
+                            @link.Label
+                        </NavLink>
+                    }
+                </nav>
+
+                <div class="preview-nav @(isMenuOpen ? "is-open" : string.Empty)" aria-label="Admin mockup links">
+                    <span class="preview-nav__label">Admin Mockups</span>
+                    @foreach (var link in SiteMap.AdminLinks)
+                    {
+                        <NavLink class="preview-nav__link" href="@link.Href" Match="NavLinkMatch.Prefix" @onclick="CloseMenu">
+                            @link.Label
+                        </NavLink>
+                    }
+                    <a class="preview-nav__link preview-nav__link--account" href="Account/Login" data-enhance-nav="false">Account</a>
+                </div>
+            </div>
         </div>
+    </header>
 
-        <article class="content px-4">
+    <main class="site-main">
+        <article class="site-content">
             @Body
         </article>
     </main>
+
+    <footer class="site-footer">
+        <div class="shell-container site-footer__grid">
+            <div>
+                <p class="site-footer__eyebrow">Visit</p>
+                <p class="site-footer__text">@MockupContent.Contact.StreetAddress</p>
+                <p class="site-footer__text">@MockupContent.Contact.CityState</p>
+            </div>
+
+            <div>
+                <p class="site-footer__eyebrow">Call</p>
+                <p class="site-footer__text">@MockupContent.Contact.PhoneNumber</p>
+                <p class="site-footer__meta">Mockup contact details should stay easy to spot from every page.</p>
+            </div>
+
+            <div>
+                <p class="site-footer__eyebrow">Browse</p>
+                <div class="site-footer__links">
+                    @foreach (var link in SiteMap.PublicLinks)
+                    {
+                        <NavLink class="site-footer__link" href="@link.Href" Match="@(link.Href == "/" ? NavLinkMatch.All : NavLinkMatch.Prefix)">
+                            @link.Label
+                        </NavLink>
+                    }
+                </div>
+            </div>
+        </div>
+    </footer>
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
+    <span class="dismiss">x</span>
 </div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? RequestHttpContext { get; set; }
+
+    private bool isDarkTheme;
+    private bool isMenuOpen;
+    private bool hasInitializedThemePreference;
+
+    protected override void OnParametersSet()
+    {
+        if (hasInitializedThemePreference)
+        {
+            return;
+        }
+
+        var themeCookie = RequestHttpContext?.Request.Cookies["anchor-theme"]
+            ?? HttpContextAccessor.HttpContext?.Request.Cookies["anchor-theme"];
+
+        if (!string.IsNullOrWhiteSpace(themeCookie))
+        {
+            isDarkTheme = string.Equals(themeCookie, "dark", StringComparison.OrdinalIgnoreCase);
+        }
+
+        hasInitializedThemePreference = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("anchorTheme.initialize");
+        }
+    }
+
+    private async Task OnThemeChanged(ChangeEventArgs args)
+    {
+        isDarkTheme = args.Value switch
+        {
+            bool isDark => isDark,
+            string value when bool.TryParse(value, out var parsed) => parsed,
+            _ => false
+        };
+
+        await JSRuntime.InvokeVoidAsync("anchorTheme.setTheme", isDarkTheme);
+    }
+
+    private void ToggleMenu()
+    {
+        isMenuOpen = !isMenuOpen;
+    }
+
+    private void CloseMenu()
+    {
+        isMenuOpen = false;
+    }
+}

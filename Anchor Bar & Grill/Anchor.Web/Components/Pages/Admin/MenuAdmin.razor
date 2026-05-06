@@ -1,0 +1,249 @@
+@page "/admin/menu"
+
+<PageTitle>Menu Admin</PageTitle>
+
+<section class="admin-page">
+    <div class="page-hero page-hero--section">
+        <p class="page-hero__eyebrow">Admin Mockup</p>
+        <h1>Menu admin</h1>
+        <p class="page-hero__lead">
+            Menu management needs a clean workflow for adding new items, updating descriptions, and removing entries without making the page feel overwhelming.
+        </p>
+    </div>
+
+    <div class="admin-grid">
+        <aside class="admin-help">
+            <h2>How this page should work</h2>
+            <ul>
+                <li>Let admins choose an existing section or type a new one from the same combo box, then create or edit items inside it.</li>
+                <li>Keep guest-facing descriptions short and readable.</li>
+                <li>Allow menu images when available, but never require them for an item to be published.</li>
+                <li>Manage recurring weekly specials separately from seasonal offer dates so day-of-week traditions stay easy to maintain.</li>
+                <li>Make pricing updates and item removal clear enough to prevent accidental mistakes.</li>
+            </ul>
+        </aside>
+
+        <div class="admin-stack">
+            <section class="admin-card">
+                <div class="admin-card__header">
+                    <h2>Item editor</h2>
+                    <span class="admin-card__badge">Menu Form</span>
+                </div>
+
+                <div class="editor-form__grid">
+                    <label>
+                        Section
+                        <input type="text" list="menu-section-options" value="Appetizers" />
+                        <small>Choose an existing section or type a new section name to create it.</small>
+                    </label>
+                    <datalist id="menu-section-options">
+                        @foreach (var sectionName in sectionOptions)
+                        {
+                            <option value="@sectionName"></option>
+                        }
+                    </datalist>
+                    <label>
+                        Menu item
+                        <input type="text" value="Cheese Curds" />
+                    </label>
+                    <label>
+                        Price
+                        <input type="text" value="$9" />
+                    </label>
+                    <label>
+                        Menu image (optional)
+                        <input type="text" value="images/menu/appetizers.svg" />
+                    </label>
+                    <label>
+                        Offer start date
+                        <input type="date" value="@offerStartExample" />
+                    </label>
+                    <label>
+                        Offer end date (optional)
+                        <input type="date" value="@offerEndExample" />
+                    </label>
+                    <label class="editor-form__toggle">
+                        <span>Seasonal item?</span>
+                        <div class="editor-form__toggle-row">
+                            <input type="checkbox" checked />
+                            <small>If this is unchecked and an end date exists, the item is treated as a limited time special.</small>
+                        </div>
+                    </label>
+                    <label class="editor-form__message">
+                        Description
+                        <textarea rows="4">Crisp white cheddar curds with your choice of dipping sauce.</textarea>
+                    </label>
+                </div>
+
+                <p class="admin-field-note">Leave the image field blank when an item does not have a photo yet. The public menu mockup should still render the item cleanly.</p>
+                <p class="admin-field-note">A menu item without an end date is not treated as seasonal or limited time, but it can still be marked as coming soon when its start date is less than a month away.</p>
+            </section>
+
+            <section class="admin-card">
+                <div class="admin-card__header">
+                    <h2>Recurring specials</h2>
+                    <span class="admin-card__badge">Weekly Schedule</span>
+                </div>
+
+                <div class="editor-form__grid">
+                    <label>
+                        Day of week
+                        <select>
+                            @foreach (var specialDay in recurringSpecialDayOptions)
+                            {
+                                if (specialDay == DayOfWeek.Monday)
+                                {
+                                    <option selected>@specialDay</option>
+                                }
+                                else
+                                {
+                                    <option>@specialDay</option>
+                                }
+                            }
+                        </select>
+                    </label>
+                    <label>
+                        Special title
+                        <input type="text" value="Monday Night Burgers" />
+                    </label>
+                    <label>
+                        Menu placement
+                        <input type="text" list="menu-section-options" value="Weekly specials block" />
+                        <small>Keep it in the weekly specials area or point guests toward the section it belongs with.</small>
+                    </label>
+                    <label>
+                        Featured menu item (optional)
+                        <input type="text" list="menu-item-options" value="Classic Hamburger" />
+                    </label>
+                    <datalist id="menu-item-options">
+                        @foreach (var itemName in menuItemOptions)
+                        {
+                            <option value="@itemName"></option>
+                        }
+                    </datalist>
+                    <label>
+                        Time note
+                        <input type="text" value="After 5:00 PM" />
+                    </label>
+                    <label>
+                        Price or callout
+                        <input type="text" value="$11 basket special" />
+                    </label>
+                    <label class="editor-form__message">
+                        Guest-facing description
+                        <textarea rows="4">A dependable burger-night draw with fries and easy weeknight pricing.</textarea>
+                    </label>
+                </div>
+
+                <p class="admin-field-note">Recurring specials belong to the weekly menu rhythm. Do not use seasonal offer dates unless the special itself is temporarily unavailable.</p>
+                <p class="admin-field-note">If a day has no special, leave it off the public schedule instead of showing a placeholder.</p>
+            </section>
+
+            <section class="admin-card">
+                <div class="admin-card__header">
+                    <h2>Section preview</h2>
+                    <span class="admin-card__badge">Live Order</span>
+                </div>
+
+                <div class="admin-list">
+                    @foreach (var item in MockupContent.MenuSections.First().Items)
+                    {
+                        <article class="admin-list__item admin-list__item--media">
+                            @if (item.Image is not null)
+                            {
+                                <img class="admin-menu-thumb" src="@item.Image.Source" alt="@item.Image.AltText" />
+                            }
+                            else
+                            {
+                                <div class="admin-menu-thumb admin-menu-thumb--empty">Optional image</div>
+                            }
+
+                            <div>
+                                <h3>@item.Name</h3>
+                                @if (item.GetStatusLabels(today).Count > 0)
+                                {
+                                    <div class="menu-item__badges menu-item__badges--admin">
+                                        @foreach (var label in item.GetStatusLabels(today))
+                                        {
+                                            <span class="status-pill @(GetBadgeClass(label))">@label</span>
+                                        }
+                                    </div>
+                                }
+                                <p>@item.Description</p>
+
+                                @if (item.GetOfferDateSummary(today) is { } offerSummary)
+                                {
+                                    <p class="menu-item__offer-range">@offerSummary</p>
+                                }
+                            </div>
+                            <div class="admin-list__actions">
+                                <span class="admin-price">@item.Price</span>
+                                <button type="button">Edit</button>
+                                <button type="button" class="admin-list__danger">Delete</button>
+                            </div>
+                        </article>
+                    }
+                </div>
+            </section>
+
+            <section class="admin-card">
+                <div class="admin-card__header">
+                    <h2>Recurring specials preview</h2>
+                    <span class="admin-card__badge">Edit + Delete</span>
+                </div>
+
+                <div class="admin-list">
+                    @foreach (var special in MockupContent.RecurringSpecials)
+                    {
+                        <article class="admin-list__item">
+                            <div>
+                                <h3>@special.Title</h3>
+                                <div class="menu-item__badges menu-item__badges--admin">
+                                    <span class="status-pill status-pill--schedule">@special.DayLabel</span>
+
+                                    @if (special.IsToday(today))
+                                    {
+                                        <span class="status-pill status-pill--today">Today</span>
+                                    }
+                                </div>
+                                <p>@special.Description</p>
+                                <p class="menu-item__offer-range">@special.TimeLabel · @special.PlacementSummary</p>
+                            </div>
+                            <div class="admin-list__actions">
+                                <span class="admin-price">@special.PriceNote</span>
+                                <button type="button">Edit</button>
+                                <button type="button" class="admin-list__danger">Delete</button>
+                            </div>
+                        </article>
+                    }
+                </div>
+            </section>
+        </div>
+    </div>
+</section>
+
+@code {
+    private static readonly IReadOnlyList<string> sectionOptions = MockupContent.MenuSections.Select(section => section.Title).ToArray();
+    private static readonly IReadOnlyList<string> menuItemOptions = MockupContent.MenuSections.SelectMany(section => section.Items).Select(item => item.Name).Distinct().Order().ToArray();
+    private static readonly IReadOnlyList<DayOfWeek> recurringSpecialDayOptions =
+    [
+        DayOfWeek.Monday,
+        DayOfWeek.Tuesday,
+        DayOfWeek.Wednesday,
+        DayOfWeek.Thursday,
+        DayOfWeek.Friday,
+        DayOfWeek.Saturday,
+        DayOfWeek.Sunday
+    ];
+    private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+    private readonly string offerStartExample = DateOnly.FromDateTime(DateTime.Today).AddDays(14).ToString("yyyy-MM-dd");
+    private readonly string offerEndExample = DateOnly.FromDateTime(DateTime.Today).AddDays(56).ToString("yyyy-MM-dd");
+
+    private static string GetBadgeClass(string label) =>
+        label switch
+        {
+            "Coming Soon" => "status-pill--coming-soon",
+            "Seasonal" => "status-pill--seasonal",
+            _ => "status-pill--limited"
+        };
+}

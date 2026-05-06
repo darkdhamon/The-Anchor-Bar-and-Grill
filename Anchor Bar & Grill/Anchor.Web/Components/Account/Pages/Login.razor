@@ -13,42 +13,61 @@
 
 <PageTitle>Log in</PageTitle>
 
-<h1>Log in</h1>
-<div class="row">
-    <div class="col-lg-6">
-        <section>
-            <StatusMessage Message="@errorMessage" />
-            <EditForm EditContext="editContext" method="post" OnSubmit="LoginUser" FormName="login">
-                <DataAnnotationsValidator />
+<section class="account-page">
+    <div class="page-hero page-hero--section account-page__hero">
+        <p class="page-hero__eyebrow">Account Access</p>
+        <h1>Log in</h1>
+        <p class="page-hero__lead">
+            Sign in to manage site content and keep the guest-facing information for The Anchor Bar &amp; Grill up to date.
+        </p>
+    </div>
+
+    <div class="account-grid">
+        <section class="admin-card account-panel">
+            <div class="admin-card__header">
                 <h2>Use a local account to log in.</h2>
-                <hr />
-                <ValidationSummary class="text-danger" role="alert" />
-                <div class="form-floating mb-3">
-                    <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username webauthn" aria-required="true" placeholder="name@example.com" />
-                    <label for="Input.Email" class="form-label">Email</label>
-                    <ValidationMessage For="() => Input.Email" class="text-danger" />
-                </div>
-                <div class="form-floating mb-3">
-                    <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
-                    <label for="Input.Password" class="form-label">Password</label>
-                    <ValidationMessage For="() => Input.Password" class="text-danger" />
-                </div>
-                <div class="checkbox mb-3">
-                    <label class="form-label">
-                        <InputCheckbox @bind-Value="Input.RememberMe" class="darker-border-checkbox form-check-input" />
-                        Remember me
+                <span class="admin-card__badge">Secure Access</span>
+            </div>
+
+            <StatusMessage Message="@errorMessage" />
+
+            <EditForm EditContext="editContext" method="post" OnSubmit="LoginUser" FormName="login" class="editor-form account-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="validation-message account-form__validation" role="alert" />
+
+                <div class="editor-form__grid">
+                    <label>
+                        Email
+                        <InputText @bind-Value="Input.Email" id="Input.Email" class="account-form__input" autocomplete="username webauthn" aria-required="true" placeholder="name@example.com" />
+                        <ValidationMessage For="() => Input.Email" class="validation-message" />
+                    </label>
+                    <label>
+                        Password
+                        <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="account-form__input" autocomplete="current-password" aria-required="true" placeholder="Password" />
+                        <ValidationMessage For="() => Input.Password" class="validation-message" />
+                    </label>
+                    <label class="editor-form__toggle">
+                        <span>Remember me</span>
+                        <div class="editor-form__toggle-row">
+                            <InputCheckbox @bind-Value="Input.RememberMe" class="account-form__check" />
+                            <small>Keep the session active on this device for faster admin access later.</small>
+                        </div>
                     </label>
                 </div>
-                <div>
-                    <button type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
+
+                <div class="account-form__actions">
+                    <button type="submit" class="hero-actions__link hero-actions__link--primary account-form__submit">Log in</button>
                 </div>
-                <hr />
-                <div class="d-flex flex-column">
-                    <span class="text-secondary mx-auto mt-2">OR</span>
-                    <PasskeySubmit Operation="PasskeyOperation.Request" Name="Input.Passkey" EmailName="Input.Email" class="btn btn-link mx-auto">Log in with a passkey</PasskeySubmit>
+
+                <div class="account-form__divider">
+                    <span>Or</span>
                 </div>
-                <hr />
-                <div>
+
+                <div class="account-form__actions">
+                    <PasskeySubmit Operation="PasskeyOperation.Request" Name="Input.Passkey" EmailName="Input.Email" class="hero-actions__link hero-actions__link--secondary account-form__passkey">Log in with a passkey</PasskeySubmit>
+                </div>
+
+                <div class="account-links">
                     <p>
                         <a href="Account/ForgotPassword">Forgot your password?</a>
                     </p>
@@ -61,15 +80,19 @@
                 </div>
             </EditForm>
         </section>
-    </div>
-    <div class="col-lg-4 col-lg-offset-2">
-        <section>
-            <h3>Use another service to log in.</h3>
-            <hr />
-            <ExternalLoginPicker />
+
+        <section class="admin-card account-panel">
+            <div class="admin-card__header">
+                <h2>Use another service to log in.</h2>
+                <span class="admin-card__badge">External Providers</span>
+            </div>
+
+            <div class="account-panel__body">
+                <ExternalLoginPicker />
+            </div>
         </section>
     </div>
-</div>
+</section>
 
 @code {
     private string? errorMessage;

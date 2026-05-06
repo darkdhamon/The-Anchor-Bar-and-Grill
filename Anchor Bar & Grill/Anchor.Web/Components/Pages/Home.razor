@@ -1,7 +1,165 @@
-﻿@page "/"
+@page "/"
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<section class="hero-grid">
+    <div class="page-hero page-hero--home">
+        <p class="page-hero__eyebrow">Guest Welcome</p>
+        <h1>Welcome aboard The Anchor.</h1>
+        <p class="page-hero__lead">
+            This homepage mockup is intentionally separate from the menu so first-time guests can understand what The Anchor Bar &amp; Grill
+            offers before they dive into food, events, or contact details.
+        </p>
 
-Welcome to your new app.
+        <div class="hero-actions">
+            @foreach (var action in MockupContent.HomeActions)
+            {
+                <a class="hero-actions__link @(action.IsPrimary ? "hero-actions__link--primary" : "hero-actions__link--secondary")" href="@action.Href">
+                    @action.Label
+                </a>
+            }
+        </div>
+
+        <div class="hero-callouts">
+            @foreach (var callout in MockupContent.HomeCallouts)
+            {
+                <article class="hero-callout">
+                    <h2>@callout.Title</h2>
+                    <p>@callout.Description</p>
+                </article>
+            }
+        </div>
+    </div>
+
+    <aside class="hero-visual" aria-label="Homepage building image placeholder">
+        <div class="hero-visual__frame">
+            <span class="hero-visual__badge">Exterior Photo Placement</span>
+            <strong>The building image can anchor the guest first impression here.</strong>
+            <p>Use the final restaurant exterior photo once it is available in the project.</p>
+        </div>
+
+        <ul class="hero-visual__notes">
+            @foreach (var note in MockupContent.BuildingPhotoNotes)
+            {
+                <li>@note</li>
+            }
+        </ul>
+    </aside>
+</section>
+
+<section class="section-shell">
+    <div class="section-heading">
+        <p class="section-heading__eyebrow">What The Homepage Should Do</p>
+        <h2>Give guests a fast, friendly way into the rest of the site.</h2>
+    </div>
+
+    <div class="feature-grid">
+        @foreach (var highlight in MockupContent.HomeHighlights)
+        {
+            <article class="feature-card">
+                <p class="feature-card__eyebrow">@highlight.Eyebrow</p>
+                <h3>@highlight.Title</h3>
+                <p>@highlight.Description</p>
+            </article>
+        }
+    </div>
+</section>
+
+<section class="section-shell">
+    <div class="section-heading">
+        <p class="section-heading__eyebrow">Weekly Specials</p>
+        <h2>Put recurring day-of-week favorites in front of guests right away.</h2>
+    </div>
+
+    <div class="recurring-specials-grid">
+        @foreach (var special in MockupContent.RecurringSpecials)
+        {
+            <article class="feature-card recurring-special @(special.IsToday(today) ? "recurring-special--today" : string.Empty)">
+                <div class="recurring-special__header">
+                    <div>
+                        <p class="feature-card__eyebrow">@special.DayLabel</p>
+                        <h3>@special.Title</h3>
+                    </div>
+
+                    @if (special.IsToday(today))
+                    {
+                        <span class="status-pill status-pill--today">Today</span>
+                    }
+                </div>
+
+                <p class="event-card__meta">@special.TimeLabel</p>
+                <p>@special.Description</p>
+
+                <div class="recurring-special__footer">
+                    <span class="recurring-special__price">@special.PriceNote</span>
+                    <span class="recurring-special__placement">@special.PlacementSummary</span>
+                </div>
+            </article>
+        }
+    </div>
+</section>
+
+<section class="split-section">
+    <article class="split-card split-card--events">
+        <div class="section-heading">
+            <p class="section-heading__eyebrow">Next 30 Days</p>
+            <h2>Show upcoming events on the homepage while they are still close enough to plan around.</h2>
+        </div>
+
+        <div class="event-preview-list">
+            @foreach (var item in homeUpcomingEvents)
+            {
+                <article class="event-preview @(item.Image is not null ? "event-preview--with-image" : "event-preview--text-only")">
+                    @if (item.Image is not null)
+                    {
+                        <div class="event-preview__visual">
+                            <img class="event-preview__image" src="@item.Image.Source" alt="@item.Image.AltText" />
+                        </div>
+                    }
+
+                    <div class="event-preview__content">
+                        <div class="event-preview__top">
+                            <div class="event-preview__badges">
+                                <span class="event-preview__badge">@item.PromoBadge</span>
+                                <span class="status-pill @(item.IsRecurring ? "status-pill--recurring" : "status-pill--one-time")">@item.ScheduleTypeLabel</span>
+                            </div>
+                            <p class="event-preview__date">@item.DateLabel</p>
+                        </div>
+
+                        <h3>@item.Title</h3>
+                        <p class="event-preview__meta">@item.DateTimeLabel</p>
+                        <p class="event-preview__schedule">@item.ScheduleDetail</p>
+                        <p>@item.Description</p>
+                    </div>
+                </article>
+            }
+        </div>
+    </article>
+
+    <article class="split-card split-card--visit">
+        <div class="section-heading">
+            <p class="section-heading__eyebrow">Visit Snapshot</p>
+            <h2>Keep the essentials close at hand.</h2>
+        </div>
+
+        <dl class="contact-stack">
+            <div>
+                <dt>Address</dt>
+                <dd>@MockupContent.Contact.StreetAddress<br />@MockupContent.Contact.CityState</dd>
+            </div>
+            <div>
+                <dt>Phone</dt>
+                <dd>@MockupContent.Contact.PhoneNumber</dd>
+            </div>
+            <div>
+                <dt>Next pages to visit</dt>
+                <dd>Menu, events, about, and contact should all be one click away from here.</dd>
+            </div>
+        </dl>
+    </article>
+</section>
+
+@code {
+    private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+    private IReadOnlyList<UpcomingEventOccurrence> homeUpcomingEvents => MockupContent.GetUpcomingEvents(today, 30);
+}
