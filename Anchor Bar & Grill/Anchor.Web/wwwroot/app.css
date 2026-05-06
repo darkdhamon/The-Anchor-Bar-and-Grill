@@ -1207,6 +1207,11 @@ p {
 
     .brand-lockup__logo-shell {
         width: 4.5rem;
+        box-shadow: none;
+    }
+
+    .brand-lockup__logo {
+        transform: scale(1.38);
     }
 
     .brand-lockup__eyebrow {
@@ -1237,23 +1242,34 @@ p {
         flex-direction: column;
     }
 
+    .site-header__nav-stack {
+        display: none;
+        width: 100%;
+        gap: 0.65rem;
+    }
+
+    .site-header__nav-stack.is-open {
+        display: grid;
+    }
+
     .site-navigation.is-open {
         display: flex;
     }
 
-    .site-header__nav-stack {
+    .preview-nav {
+        display: none;
         width: 100%;
+        flex-wrap: wrap;
+        gap: 0.5rem;
     }
 
-    .preview-nav {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        padding-bottom: 0.2rem;
-        scrollbar-width: thin;
+    .preview-nav.is-open {
+        display: flex;
     }
 
     .preview-nav__label {
-        display: none;
+        display: block;
+        width: 100%;
     }
 
     .site-navigation__link,

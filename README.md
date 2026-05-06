@@ -35,6 +35,7 @@ This repository currently contains the first code-native website mockup for The 
 - The development configuration now includes a LocalDB connection string so the mockup can run locally without additional secret setup
 - The current homepage uses a styled building-photo placeholder until a real exterior image is added to the project
 - The event mockup data now demonstrates weekly, every-other-week, and nth-weekday monthly recurrence patterns so the UI direction can be reviewed before backend scheduling is built
+- On mobile, the shared header now keeps public and admin mockup links inside the expandable menu instead of leaving admin controls always visible
 - Account pages continue to use the server-routed Identity flow, so auth navigation should bypass interactive routing when needed
 - Starter scaffold pages such as `Counter`, `Weather`, and other unused sample content have been removed from the public experience
 

@@ -15,12 +15,17 @@ public sealed class LayoutAndPageRenderTests : BunitContext
             .Add(layout => layout.Body, (RenderFragment)(builder => builder.AddMarkupContent(0, "<section>Preview body</section>"))));
 
         Assert.Contains("theme-light", cut.Markup);
+        Assert.DoesNotContain("site-header__nav-stack is-open", cut.Markup, StringComparison.Ordinal);
 
         cut.Find(".theme-toggle").Click();
 
         Assert.Contains("theme-dark", cut.Markup);
         Assert.Contains("Preview body", cut.Markup);
         Assert.Equal("false", cut.Find(".preview-nav__link--account").GetAttribute("data-enhance-nav"));
+
+        cut.Find(".menu-toggle").Click();
+
+        Assert.Contains("site-header__nav-stack is-open", cut.Markup, StringComparison.Ordinal);
     }
 
     [Fact]

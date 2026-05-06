@@ -20,12 +20,12 @@
                     <strong>@(isDarkTheme ? "Dark" : "Light")</strong>
                 </button>
 
-                <button class="menu-toggle" type="button" @onclick="ToggleMenu" aria-expanded="@isMenuOpen" aria-controls="site-navigation">
+                <button class="menu-toggle" type="button" @onclick="ToggleMenu" aria-expanded="@isMenuOpen" aria-controls="site-header-nav">
                     Menu
                 </button>
             </div>
 
-            <div class="site-header__nav-stack">
+            <div id="site-header-nav" class="site-header__nav-stack @(isMenuOpen ? "is-open" : string.Empty)">
                 <nav id="site-navigation" class="site-navigation @(isMenuOpen ? "is-open" : string.Empty)" aria-label="Primary">
                     @foreach (var link in SiteMap.PublicLinks)
                     {
@@ -35,7 +35,7 @@
                     }
                 </nav>
 
-                <div class="preview-nav" aria-label="Admin mockup links">
+                <div class="preview-nav @(isMenuOpen ? "is-open" : string.Empty)" aria-label="Admin mockup links">
                     <span class="preview-nav__label">Admin Mockups</span>
                     @foreach (var link in SiteMap.AdminLinks)
                     {
