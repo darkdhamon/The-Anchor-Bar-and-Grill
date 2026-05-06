@@ -102,18 +102,35 @@
 <section class="split-section">
     <article class="split-card split-card--events">
         <div class="section-heading">
-            <p class="section-heading__eyebrow">Upcoming Energy</p>
-            <h2>Feature events without making them harder to find than the menu.</h2>
+            <p class="section-heading__eyebrow">Next 30 Days</p>
+            <h2>Show upcoming events on the homepage while they are still close enough to plan around.</h2>
         </div>
 
         <div class="event-preview-list">
-            @foreach (var item in MockupContent.FeaturedEvents.Take(3))
+            @foreach (var item in homeUpcomingEvents)
             {
-                <article class="event-preview">
-                    <span class="event-preview__badge">@item.Badge</span>
-                    <h3>@item.Title</h3>
-                    <p class="event-preview__meta">@item.DayLabel · @item.TimeLabel</p>
-                    <p>@item.Description</p>
+                <article class="event-preview @(item.Image is not null ? "event-preview--with-image" : "event-preview--text-only")">
+                    @if (item.Image is not null)
+                    {
+                        <div class="event-preview__visual">
+                            <img class="event-preview__image" src="@item.Image.Source" alt="@item.Image.AltText" />
+                        </div>
+                    }
+
+                    <div class="event-preview__content">
+                        <div class="event-preview__top">
+                            <div class="event-preview__badges">
+                                <span class="event-preview__badge">@item.PromoBadge</span>
+                                <span class="status-pill @(item.IsRecurring ? "status-pill--recurring" : "status-pill--one-time")">@item.ScheduleTypeLabel</span>
+                            </div>
+                            <p class="event-preview__date">@item.DateLabel</p>
+                        </div>
+
+                        <h3>@item.Title</h3>
+                        <p class="event-preview__meta">@item.DateTimeLabel</p>
+                        <p class="event-preview__schedule">@item.ScheduleDetail</p>
+                        <p>@item.Description</p>
+                    </div>
                 </article>
             }
         </div>
@@ -144,4 +161,5 @@
 
 @code {
     private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+    private IReadOnlyList<UpcomingEventOccurrence> homeUpcomingEvents => MockupContent.GetUpcomingEvents(today, 30);
 }

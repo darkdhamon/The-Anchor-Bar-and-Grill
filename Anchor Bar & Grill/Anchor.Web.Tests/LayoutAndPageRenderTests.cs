@@ -33,6 +33,8 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Browse the Menu", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Monday Night Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Sunday Pork Chop Dinner", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Thursday Trivia", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Summer Kickoff Patio Party", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -53,13 +55,16 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     }
 
     [Fact]
-    public void EventsPage_RendersFeaturedCalendarContent()
+    public void EventsPage_RendersUpcomingCalendarContent()
     {
         var cut = Render<Events>();
 
         Assert.Contains("Events mockup", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Thursday Trivia", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Use this page to explain the weekly rhythm.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Summer Kickoff Patio Party", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Community Bingo Fundraiser", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.NotEmpty(cut.FindAll(".event-card__image"));
+        Assert.Contains("Show every currently scheduled event in one public-facing list.", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -89,6 +94,11 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 
         Assert.Contains("Events admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("How this page should work", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Event image (optional)", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Recurring event?", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Choose an existing badge or type a new one to create it on the fly", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(cut.FindAll("input[type='date']"));
+        Assert.Single(cut.FindAll("input[type='time']"));
         Assert.Contains("Delete", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 

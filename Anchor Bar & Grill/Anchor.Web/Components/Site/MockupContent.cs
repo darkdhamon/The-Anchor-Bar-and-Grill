@@ -1,8 +1,11 @@
+using System.Globalization;
+
 namespace Anchor.Web.Components.Site;
 
 public static class MockupContent
 {
     private static readonly DateOnly OfferReferenceDate = DateOnly.FromDateTime(DateTime.Today);
+    private static readonly DateOnly EventReferenceDate = DateOnly.FromDateTime(DateTime.Today);
 
     public static ContactDetails Contact { get; } = new(
         "301 Main Street",
@@ -117,13 +120,58 @@ public static class MockupContent
         new(DayOfWeek.Sunday, "Sunday Pork Chop Dinner", "A hearty end-of-week dinner special that should read as a repeatable tradition.", "$17 dinner plate", "After 3:00 PM", "Weekly specials block")
     ];
 
-    public static IReadOnlyList<ScheduledEvent> FeaturedEvents { get; } =
+    public static IReadOnlyList<EventDefinition> EventDefinitions { get; } =
     [
-        new("Thursday Trivia", "Every Thursday", "7:00 PM", "Team-based trivia with rotating categories and a featured appetizer special.", "Weekly Favorite"),
-        new("Friday Live Music", "Fridays", "8:30 PM", "A rotating lineup of regional acts with a brighter evening atmosphere.", "Live Music"),
-        new("Saturday Patio Social", "Saturdays", "4:00 PM", "A relaxed pre-dinner hangout with drinks, snacks, and a family-friendly tone.", "Seasonal"),
-        new("Sunday Watch Party", "Sundays", "Game Time", "Large-screen viewing, baskets, burgers, and a crowd-friendly setup.", "Game Day")
+        new(
+            "Thursday Trivia",
+            "Team-based trivia with rotating categories and an appetizer special.",
+            "Weekly Favorite",
+            new(19, 0),
+            new("images/events/trivia-night.svg", "Mockup event image for Thursday trivia"),
+            EventReferenceDate.AddDays(-14),
+            true,
+            DayOfWeek.Thursday,
+            NextOccurrenceOnOrAfter(EventReferenceDate.AddDays(20), DayOfWeek.Thursday)),
+        new(
+            "Friday Live Music",
+            "A rotating lineup of regional acts with a brighter evening atmosphere.",
+            "Live Music",
+            new(20, 30),
+            new("images/events/live-music.svg", "Mockup event image for Friday live music"),
+            EventReferenceDate.AddDays(-7),
+            true,
+            DayOfWeek.Friday,
+            NextOccurrenceOnOrAfter(EventReferenceDate.AddDays(20), DayOfWeek.Friday)),
+        new(
+            "Summer Kickoff Patio Party",
+            "Kick off patio season with shared plates, a feature drink menu, and extended evening energy.",
+            "Seasonal",
+            new(18, 0),
+            new("images/events/patio-party.svg", "Mockup event image for a patio party"),
+            EventReferenceDate.AddDays(12)),
+        new(
+            "Community Bingo Fundraiser",
+            "A family-friendly fundraiser event with raffle prizes and simple dinner specials.",
+            "Community Night",
+            new(11, 0),
+            EventDate: EventReferenceDate.AddDays(25)),
+        new(
+            "Sunday Watch Party",
+            "Large-screen viewing, baskets, burgers, and a crowd-friendly setup.",
+            "Game Day",
+            new(12, 30),
+            EventDate: EventReferenceDate.AddDays(-7),
+            IsRecurring: true,
+            RepeatsOn: DayOfWeek.Sunday,
+            RepeatsUntil: NextOccurrenceOnOrAfter(EventReferenceDate.AddDays(13), DayOfWeek.Sunday))
     ];
+
+    public static IReadOnlyList<string> EventBadgeOptions { get; } =
+        EventDefinitions
+            .Select(item => item.PromoBadge)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(item => item, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
     public static IReadOnlyList<WeeklyRhythm> WeeklyRhythms { get; } =
     [
@@ -169,12 +217,70 @@ public static class MockupContent
         "Once a real building photo is available, the homepage hero should swap the placeholder for the final image treatment without changing the surrounding layout."
     ];
 
+    public static IReadOnlyList<UpcomingEventOccurrence> GetUpcomingEvents(DateOnly fromDate) =>
+        GetUpcomingEvents(fromDate, GetEventPreviewEndDate(fromDate));
+
+    public static IReadOnlyList<UpcomingEventOccurrence> GetUpcomingEvents(DateOnly fromDate, int daysAhead) =>
+        GetUpcomingEvents(fromDate, fromDate.AddDays(daysAhead));
+
     private static OfferWindow OfferStartingIn(int startOffsetDays, int? durationDays = null)
     {
         var startsOn = OfferReferenceDate.AddDays(startOffsetDays);
         DateOnly? endsOn = durationDays is null ? null : startsOn.AddDays(durationDays.Value);
 
         return new(startsOn, endsOn);
+    }
+
+    private static IReadOnlyList<UpcomingEventOccurrence> GetUpcomingEvents(DateOnly fromDate, DateOnly throughDate)
+    {
+        List<UpcomingEventOccurrence> upcomingEvents = [];
+
+        foreach (var item in EventDefinitions)
+        {
+            if (item.IsRecurring && item.RepeatsOn is { } repeatsOn)
+            {
+                var firstPossibleDate = item.EventDate is { } eventDate && eventDate > fromDate
+                    ? eventDate
+                    : fromDate;
+                var occurrenceDate = NextOccurrenceOnOrAfter(firstPossibleDate, repeatsOn);
+                var finalDate = item.RepeatsUntil ?? throughDate;
+
+                while (occurrenceDate <= throughDate && occurrenceDate <= finalDate)
+                {
+                    upcomingEvents.Add(new(item, occurrenceDate));
+                    occurrenceDate = occurrenceDate.AddDays(7);
+                }
+
+                continue;
+            }
+
+            if (item.EventDate is { } oneTimeDate && oneTimeDate >= fromDate && oneTimeDate <= throughDate)
+            {
+                upcomingEvents.Add(new(item, oneTimeDate));
+            }
+        }
+
+        return upcomingEvents
+            .OrderBy(item => item.SortAt)
+            .ToArray();
+    }
+
+    private static DateOnly GetEventPreviewEndDate(DateOnly fromDate)
+    {
+        var lastScheduledDate = EventDefinitions
+            .Select(item => item.IsRecurring ? item.RepeatsUntil : item.EventDate)
+            .Where(item => item is not null)
+            .Select(item => item!.Value)
+            .DefaultIfEmpty(fromDate)
+            .Max();
+
+        return lastScheduledDate < fromDate ? fromDate : lastScheduledDate;
+    }
+
+    private static DateOnly NextOccurrenceOnOrAfter(DateOnly fromDate, DayOfWeek dayOfWeek)
+    {
+        var offset = ((int)dayOfWeek - (int)fromDate.DayOfWeek + 7) % 7;
+        return fromDate.AddDays(offset);
     }
 }
 
@@ -275,11 +381,115 @@ public sealed record RecurringSpecial(
 
     public string PlacementSummary =>
         RelatedMenuItem is { Length: > 0 }
-            ? $"{MenuPlacement} · Featured item: {RelatedMenuItem}"
+            ? $"{MenuPlacement} - Featured item: {RelatedMenuItem}"
             : MenuPlacement;
 }
 
-public sealed record ScheduledEvent(string Title, string DayLabel, string TimeLabel, string Description, string Badge);
+public sealed record EventDefinition(
+    string Title,
+    string Description,
+    string PromoBadge,
+    TimeOnly StartsAt,
+    EventImage? Image = null,
+    DateOnly? EventDate = null,
+    bool IsRecurring = false,
+    DayOfWeek? RepeatsOn = null,
+    DateOnly? RepeatsUntil = null)
+{
+    public string TimeLabel => StartsAt.ToString("h:mm tt", CultureInfo.InvariantCulture);
+
+    public string DateInputValue => (EventDate ?? DateOnly.FromDateTime(DateTime.Today)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    public string TimeInputValue => StartsAt.ToString("HH:mm", CultureInfo.InvariantCulture);
+
+    public DateOnly? GetNextOccurrence(DateOnly fromDate)
+    {
+        if (IsRecurring && RepeatsOn is { } repeatsOn)
+        {
+            var firstPossibleDate = EventDate is { } eventDate && eventDate > fromDate
+                ? eventDate
+                : fromDate;
+            var nextDate = NextOccurrenceOnOrAfter(firstPossibleDate, repeatsOn);
+
+            return RepeatsUntil is null || nextDate <= RepeatsUntil ? nextDate : null;
+        }
+
+        return EventDate is { } oneTimeDate && oneTimeDate >= fromDate ? oneTimeDate : null;
+    }
+
+    public string GetScheduleSummary(DateOnly fromDate)
+    {
+        if (IsRecurring && RepeatsOn is { } repeatsOn)
+        {
+            var repeatLabel = $"Recurring every {GetDayLabel(repeatsOn)} at {TimeLabel}";
+
+            return GetNextOccurrence(fromDate) is { } nextDate
+                ? $"{repeatLabel} - next on {nextDate:MMM d, yyyy}"
+                : repeatLabel;
+        }
+
+        return EventDate is { } oneTimeDate
+            ? $"One-time event on {oneTimeDate:MMM d, yyyy} at {TimeLabel}"
+            : $"One-time event at {TimeLabel}";
+    }
+
+    private static DateOnly NextOccurrenceOnOrAfter(DateOnly fromDate, DayOfWeek dayOfWeek)
+    {
+        var offset = ((int)dayOfWeek - (int)fromDate.DayOfWeek + 7) % 7;
+        return fromDate.AddDays(offset);
+    }
+
+    private static string GetDayLabel(DayOfWeek dayOfWeek) => dayOfWeek switch
+    {
+        DayOfWeek.Monday => "Monday",
+        DayOfWeek.Tuesday => "Tuesday",
+        DayOfWeek.Wednesday => "Wednesday",
+        DayOfWeek.Thursday => "Thursday",
+        DayOfWeek.Friday => "Friday",
+        DayOfWeek.Saturday => "Saturday",
+        DayOfWeek.Sunday => "Sunday",
+        _ => dayOfWeek.ToString()
+    };
+}
+
+public sealed record EventImage(string Source, string AltText);
+
+public sealed record UpcomingEventOccurrence(EventDefinition SourceEvent, DateOnly OccursOn)
+{
+    public string Title => SourceEvent.Title;
+
+    public string Description => SourceEvent.Description;
+
+    public string PromoBadge => SourceEvent.PromoBadge;
+
+    public EventImage? Image => SourceEvent.Image;
+
+    public bool IsRecurring => SourceEvent.IsRecurring;
+
+    public string ScheduleTypeLabel => IsRecurring ? "Recurring" : "One Time";
+
+    public string DateLabel => $"{OccursOn:ddd, MMM d, yyyy}";
+
+    public string DateTimeLabel => $"{OccursOn:ddd, MMM d, yyyy} at {SourceEvent.TimeLabel}";
+
+    public string ScheduleDetail => IsRecurring && SourceEvent.RepeatsOn is { } repeatsOn
+        ? $"Repeats every {GetDayLabel(repeatsOn)}"
+        : "Scheduled one time";
+
+    public DateTime SortAt => OccursOn.ToDateTime(SourceEvent.StartsAt);
+
+    private static string GetDayLabel(DayOfWeek dayOfWeek) => dayOfWeek switch
+    {
+        DayOfWeek.Monday => "Monday",
+        DayOfWeek.Tuesday => "Tuesday",
+        DayOfWeek.Wednesday => "Wednesday",
+        DayOfWeek.Thursday => "Thursday",
+        DayOfWeek.Friday => "Friday",
+        DayOfWeek.Saturday => "Saturday",
+        DayOfWeek.Sunday => "Sunday",
+        _ => dayOfWeek.ToString()
+    };
+}
 
 public sealed record WeeklyRhythm(string Label, string Description);
 

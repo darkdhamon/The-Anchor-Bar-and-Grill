@@ -6,6 +6,7 @@ This repository currently contains the first code-native website mockup for The 
 
 - Guest-facing homepage with a welcome-first layout that is separate from the menu
 - Homepage preview of recurring weekly specials so guests can see day-of-week favorites before opening the full menu
+- Homepage list of upcoming events in the next month so guests can plan without leaving the landing page
 - Menu mockup page inspired by the existing printed menu
 - Weekly recurring specials on the menu mockup for day-of-week traditions like burger nights and dinner specials
 - Optional menu-item image support in the menu mockup and menu admin mockup
@@ -13,10 +14,11 @@ This repository currently contains the first code-native website mockup for The 
 - Native date-picker inputs in the menu admin mockup for offer start and end dates
 - Menu admin recurring-specials editor mockup for defining weekly specials separately from one-off offer windows
 - Menu admin section assignment mockup that lets staff choose an existing section or type a new one from the same combo-box field
-- Events mockup page for recurring nights and featured programming
+- Events mockup page that lists all upcoming events, including recurring schedules and optional event images
 - About mockup page for the restaurant story and guest experience
 - Contact mockup page for location, phone, hours, and guest inquiry layout
 - Admin mockup pages for managing events, menu items, about content, and contact details
+- Events admin mockup with date/time inputs, recurring-event controls, optional images, descriptions, and combo-select promo badges
 - Shared light and dark themes using the menu-inspired nautical palette
 
 ## Design Direction

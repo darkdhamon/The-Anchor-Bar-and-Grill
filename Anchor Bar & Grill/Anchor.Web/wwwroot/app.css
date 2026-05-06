@@ -646,6 +646,18 @@ p {
     color: var(--accent-readable);
 }
 
+.status-pill--recurring {
+    background: rgba(89, 175, 226, 0.16);
+    border-color: rgba(89, 175, 226, 0.3);
+    color: var(--accent-readable);
+}
+
+.status-pill--one-time {
+    background: rgba(213, 202, 85, 0.18);
+    border-color: rgba(213, 202, 85, 0.3);
+    color: var(--anchor-gold);
+}
+
 .status-pill--limited {
     background: rgba(210, 88, 152, 0.16);
     border-color: rgba(210, 88, 152, 0.34);
@@ -685,9 +697,74 @@ p {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.event-card,
+.event-preview {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.event-card--with-image,
+.event-preview--with-image {
+    grid-template-columns: minmax(116px, 150px) minmax(0, 1fr);
+    align-items: start;
+}
+
+.event-card__visual,
+.event-preview__visual {
+    width: 100%;
+}
+
+.event-card__image,
+.event-preview__image,
+.admin-event-thumb {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 1rem;
+    border: 1px solid var(--outline);
+    background: var(--surface-muted);
+    box-shadow: 0 10px 24px rgba(31, 36, 58, 0.16);
+}
+
+.event-card__content,
+.event-preview__content {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.event-card__top,
+.event-preview__top {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.event-card__badges,
+.event-preview__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.event-card__date,
+.event-preview__date {
+    font-family: "Bebas Neue", "Impact", sans-serif;
+    font-size: 1.5rem;
+    color: var(--accent-readable);
+    text-align: right;
+}
+
 .event-card__meta,
 .event-preview__meta {
     color: var(--accent-readable);
+    font-family: "Patrick Hand", "Segoe UI", cursive;
+}
+
+.event-card__schedule,
+.event-preview__schedule {
+    color: var(--text-secondary);
     font-family: "Patrick Hand", "Segoe UI", cursive;
 }
 
@@ -819,7 +896,15 @@ p {
     color-scheme: light;
 }
 
+.mock-form input[type="time"] {
+    color-scheme: light;
+}
+
 .site-shell.theme-dark .mock-form input[type="date"] {
+    color-scheme: dark;
+}
+
+.site-shell.theme-dark .mock-form input[type="time"] {
     color-scheme: dark;
 }
 
@@ -890,6 +975,19 @@ p {
     display: grid;
     place-items: center;
     padding: 0.6rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.admin-event-thumb {
+    width: 96px;
+}
+
+.admin-event-thumb--empty {
+    display: grid;
+    place-items: center;
+    padding: 0.75rem;
     color: var(--text-secondary);
     font-size: 0.9rem;
     text-align: center;
@@ -1057,7 +1155,9 @@ p {
     .site-footer__grid,
     .hours-row,
     .recurring-special__header,
-    .recurring-special__footer {
+    .recurring-special__footer,
+    .event-card__top,
+    .event-preview__top {
         flex-direction: column;
     }
 
@@ -1066,7 +1166,9 @@ p {
     }
 
     .menu-item--with-image,
-    .admin-list__item--media {
+    .admin-list__item--media,
+    .event-card--with-image,
+    .event-preview--with-image {
         grid-template-columns: 1fr;
     }
 
