@@ -292,9 +292,24 @@ p {
     background-color: #223243;
 }
 
-.switch input:focus-visible + .slider {
-    outline: 2px solid rgba(247, 247, 244, 0.72);
-    outline-offset: 3px;
+:where(
+    a,
+    button,
+    [tabindex]:not(input):not(select):not(textarea),
+    input[type="checkbox"],
+    input[type="radio"]
+):focus,
+:where(
+    a,
+    button,
+    [tabindex]:not(input):not(select):not(textarea),
+    input[type="checkbox"],
+    input[type="radio"]
+):focus-visible,
+:where(h1, h2, h3, h4, h5, h6):focus,
+:where(h1, h2, h3, h4, h5, h6):focus-visible {
+    outline: none;
+    box-shadow: none;
 }
 
 .menu-toggle {
