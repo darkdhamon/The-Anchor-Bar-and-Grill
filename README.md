@@ -17,6 +17,7 @@ This repository currently contains the first code-native website mockup for The 
 - Uses the printed menu as the primary visual reference for colors, tone, and structure
 - Reuses the existing Anchor logo inside the shared site shell
 - Applies a warm paper-like light theme, a navy-forward dark theme, and bold blue framing elements
+- Wires the shared header theme toggle so reviewers can switch the live mockup between light and dark themes
 - Matches the menu typography direction with `Bebas Neue`, `Patrick Hand`, and `Barlow Condensed`
 
 ## Development Notes
