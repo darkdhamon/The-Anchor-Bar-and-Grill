@@ -29,7 +29,7 @@
                     <span class="admin-card__badge">Draft Form</span>
                 </div>
 
-                <div class="mock-form__grid">
+                <div class="editor-form__grid">
                     <label>
                         Event title
                         <input type="text" value="@exampleEvent.Title" />
@@ -129,14 +129,14 @@
                         <input type="date" value="@exampleRecurringEndDate" />
                         <small>Leave this blank for an open-ended schedule, or use it to stop a seasonal recurring event automatically.</small>
                     </label>
-                    <label class="mock-form__toggle">
+                    <label class="editor-form__toggle">
                         <span>Recurring event?</span>
-                        <div class="mock-form__toggle-row">
+                        <div class="editor-form__toggle-row">
                             <input type="checkbox" checked />
                             <small>When this is checked, the public schedule will generate repeating event dates automatically from the pattern and cadence shown here.</small>
                         </div>
                     </label>
-                    <label class="mock-form__message">
+                    <label class="editor-form__message">
                         Guest-facing description
                         <textarea rows="4">@exampleEvent.Description</textarea>
                     </label>

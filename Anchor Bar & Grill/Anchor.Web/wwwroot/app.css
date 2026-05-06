@@ -440,7 +440,7 @@ html.anchor-theme-dark .site-shell {
 .story-item,
 .event-card,
 .event-preview,
-.mock-form,
+.editor-form,
 .page-hero--not-found {
     border: 1px solid var(--outline);
     border-radius: var(--anchor-border-radius);
@@ -567,7 +567,7 @@ html.anchor-theme-dark .site-shell {
 .event-card h3,
 .event-preview h3,
 .contact-channel h3,
-.mock-form h3,
+.editor-form h3,
 .admin-card__header h2,
 .admin-help h2,
 .admin-list__item h3,
@@ -1038,13 +1038,13 @@ html.anchor-theme-dark .site-shell {
     border-bottom: 0;
 }
 
-.mock-form {
+.editor-form {
     margin-top: 1.25rem;
     padding: 1rem;
     background: var(--surface-muted);
 }
 
-.mock-form__grid {
+.editor-form__grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
@@ -1052,33 +1052,33 @@ html.anchor-theme-dark .site-shell {
     align-items: start;
 }
 
-.mock-form__grid label {
+.editor-form__grid label {
     display: grid;
     gap: 0.45rem;
     align-content: start;
     color: var(--text-secondary);
 }
 
-.mock-form__grid label small {
+.editor-form__grid label small {
     color: var(--text-secondary);
     line-height: 1.4;
 }
 
-.mock-form__message {
+.editor-form__message {
     grid-column: 1 / -1;
 }
 
-.mock-form__toggle {
+.editor-form__toggle {
     grid-column: 1 / -1;
 }
 
-.mock-form__toggle-row {
+.editor-form__toggle-row {
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
 }
 
-.mock-form__toggle-row input[type="checkbox"] {
+.editor-form__toggle-row input[type="checkbox"] {
     width: 1.1rem;
     height: 1.1rem;
     margin: 0.2rem 0 0;
@@ -1086,12 +1086,12 @@ html.anchor-theme-dark .site-shell {
     accent-color: var(--anchor-blue-300);
 }
 
-.mock-form__toggle-row small {
+.editor-form__toggle-row small {
     color: var(--text-secondary);
     line-height: 1.4;
 }
 
-:is(.mock-form, .mock-form__grid) :where(input:not([type="checkbox"]):not([type="radio"]), textarea, select) {
+:is(.editor-form, .editor-form__grid) :where(input:not([type="checkbox"]):not([type="radio"]), textarea, select) {
     display: block;
     box-sizing: border-box;
     width: 100%;
@@ -1110,32 +1110,32 @@ html.anchor-theme-dark .site-shell {
         color 0.18s ease;
 }
 
-:is(.mock-form, .mock-form__grid) :where(textarea) {
+:is(.editor-form, .editor-form__grid) :where(textarea) {
     min-height: 8rem;
     resize: vertical;
 }
 
-:is(.mock-form, .mock-form__grid) :where(select) {
+:is(.editor-form, .editor-form__grid) :where(select) {
     padding-right: 2.75rem;
 }
 
-:is(.mock-form, .mock-form__grid) :where(input::placeholder, textarea::placeholder) {
+:is(.editor-form, .editor-form__grid) :where(input::placeholder, textarea::placeholder) {
     color: var(--text-secondary);
     opacity: 0.9;
 }
 
-:is(.mock-form, .mock-form__grid) :where(input:not([type="checkbox"]):not([type="radio"]), textarea, select):focus,
-:is(.mock-form, .mock-form__grid) :where(input:not([type="checkbox"]):not([type="radio"]), textarea, select):focus-visible {
+:is(.editor-form, .editor-form__grid) :where(input:not([type="checkbox"]):not([type="radio"]), textarea, select):focus,
+:is(.editor-form, .editor-form__grid) :where(input:not([type="checkbox"]):not([type="radio"]), textarea, select):focus-visible {
     outline: none;
     border-color: rgba(89, 175, 226, 0.55);
     box-shadow: 0 0 0 0.2rem rgba(89, 175, 226, 0.16);
 }
 
-:is(.mock-form, .mock-form__grid) :where(input[type="date"], input[type="time"], select) {
+:is(.editor-form, .editor-form__grid) :where(input[type="date"], input[type="time"], select) {
     color-scheme: light;
 }
 
-:is(.site-shell.theme-dark .mock-form, .site-shell.theme-dark .mock-form__grid, html.anchor-theme-dark .site-shell .mock-form, html.anchor-theme-dark .site-shell .mock-form__grid)
+:is(.site-shell.theme-dark .editor-form, .site-shell.theme-dark .editor-form__grid, html.anchor-theme-dark .site-shell .editor-form, html.anchor-theme-dark .site-shell .editor-form__grid)
     :where(input[type="date"], input[type="time"], select) {
     color-scheme: dark;
 }
@@ -1333,7 +1333,7 @@ html.anchor-theme-dark .site-shell {
     }
 
     .hero-callouts,
-    .mock-form__grid {
+    .editor-form__grid {
         grid-template-columns: 1fr;
     }
 
