@@ -46,16 +46,16 @@
 
 <section class="section-shell">
     <div class="menu-grid">
-        @foreach (var section in MockupContent.MenuSections)
+        @foreach (var menuSection in MockupContent.MenuSections)
         {
-            <article class="menu-section @section.AccentClass">
+            <article class="menu-section @menuSection.AccentClass">
                 <header class="menu-section__header">
-                    <h2>@section.Title</h2>
-                    <p>@section.Note</p>
+                    <h2>@menuSection.Title</h2>
+                    <p>@menuSection.Note</p>
                 </header>
 
                 <div class="menu-section__items">
-                    @foreach (var item in section.Items)
+                    @foreach (var item in menuSection.Items)
                     {
                         <article class="menu-item @(item.Image is not null ? "menu-item--with-image" : "menu-item--text-only")">
                             @if (item.Image is not null)
