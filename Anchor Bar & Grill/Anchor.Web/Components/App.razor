@@ -10,26 +10,57 @@
     <script>
         (() => {
             const themeKey = "anchor-theme";
+            const lightTheme = "light";
+            const darkTheme = "dark";
             const root = document.documentElement;
-            const cookieMatch = document.cookie.match(/(?:^|; )anchor-theme=([^;]+)/);
-            const cookieTheme = cookieMatch ? decodeURIComponent(cookieMatch[1]) : null;
 
-            let storedTheme = null;
-
-            try {
-                storedTheme = window.localStorage.getItem(themeKey);
-            } catch {
-                storedTheme = null;
+            function getCookieTheme() {
+                const cookieMatch = document.cookie.match(/(?:^|; )anchor-theme=([^;]+)/);
+                return cookieMatch ? decodeURIComponent(cookieMatch[1]) : null;
             }
 
-            const theme = storedTheme === "dark" || storedTheme === "light"
-                ? storedTheme
-                : cookieTheme === "dark" || cookieTheme === "light"
-                    ? cookieTheme
-                    : "light";
+            function getSavedTheme() {
+                let storedTheme = null;
+
+                try {
+                    storedTheme = window.localStorage.getItem(themeKey);
+                } catch {
+                    storedTheme = null;
+                }
+
+                if (storedTheme === lightTheme || storedTheme === darkTheme) {
+                    return storedTheme;
+                }
+
+                const cookieTheme = getCookieTheme();
+                return cookieTheme === lightTheme || cookieTheme === darkTheme ? cookieTheme : null;
+            }
+
+            function getSystemTheme() {
+                if (!window.matchMedia) {
+                    return null;
+                }
+
+                if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+                    return darkTheme;
+                }
+
+                if (window.matchMedia("(prefers-color-scheme: light)").matches) {
+                    return lightTheme;
+                }
+
+                return null;
+            }
+
+            function getTimeOfDayTheme() {
+                const currentHour = new Date().getHours();
+                return currentHour >= 18 || currentHour < 6 ? darkTheme : lightTheme;
+            }
+
+            const theme = getSavedTheme() ?? getSystemTheme() ?? getTimeOfDayTheme();
 
             root.classList.remove("anchor-theme-light", "anchor-theme-dark");
-            root.classList.add(theme === "dark" ? "anchor-theme-dark" : "anchor-theme-light");
+            root.classList.add(theme === darkTheme ? "anchor-theme-dark" : "anchor-theme-light");
         })();
     </script>
     <ResourcePreloader />

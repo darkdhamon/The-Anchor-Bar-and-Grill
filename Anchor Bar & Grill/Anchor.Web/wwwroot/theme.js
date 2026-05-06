@@ -22,6 +22,31 @@
     return cookieTheme === darkTheme ? darkTheme : cookieTheme === lightTheme ? lightTheme : null;
   }
 
+  function getSystemTheme() {
+    if (!window.matchMedia) {
+      return null;
+    }
+
+    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      return darkTheme;
+    }
+
+    if (window.matchMedia("(prefers-color-scheme: light)").matches) {
+      return lightTheme;
+    }
+
+    return null;
+  }
+
+  function getTimeOfDayTheme() {
+    const currentHour = new Date().getHours();
+    return currentHour >= 18 || currentHour < 6 ? darkTheme : lightTheme;
+  }
+
+  function resolveTheme() {
+    return getStoredTheme() ?? getSystemTheme() ?? getTimeOfDayTheme();
+  }
+
   function getThemeShell() {
     return document.querySelector(".site-shell");
   }
@@ -71,7 +96,7 @@
   }
 
   function initialize() {
-    applyTheme(getStoredTheme() ?? lightTheme);
+    applyTheme(resolveTheme());
 
     document.querySelectorAll(".switch input[type='checkbox']").forEach((input) => {
       input.removeEventListener("change", handleThemeToggle);

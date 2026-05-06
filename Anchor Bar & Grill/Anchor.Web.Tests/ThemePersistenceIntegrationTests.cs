@@ -36,7 +36,7 @@ public sealed class ThemePersistenceIntegrationTests : IClassFixture<WebApplicat
     }
 
     [Fact]
-    public async Task AccountLogin_IncludesThemeBootstrapForSavedThemeBeforeInteractiveScripts()
+    public async Task AccountLogin_IncludesThemeBootstrapForSavedThemeSystemThemeAndTimeFallback()
     {
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
@@ -47,6 +47,8 @@ public sealed class ThemePersistenceIntegrationTests : IClassFixture<WebApplicat
 
         Assert.Contains("anchor-theme-dark", markup, StringComparison.Ordinal);
         Assert.Contains("window.localStorage.getItem(themeKey)", markup, StringComparison.Ordinal);
+        Assert.Contains("prefers-color-scheme: dark", markup, StringComparison.Ordinal);
+        Assert.Contains("new Date().getHours()", markup, StringComparison.Ordinal);
         Assert.Contains("theme.js", markup, StringComparison.Ordinal);
     }
 }
