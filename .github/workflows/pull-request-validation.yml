@@ -1,0 +1,31 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+  push:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+jobs:
+  unit-tests:
+    runs-on: windows-2025
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore solution
+        run: dotnet restore "./Anchor Bar & Grill/Anchor Bar & Grill.slnx"
+
+      - name: Run unit tests
+        run: dotnet test "./Anchor Bar & Grill/Anchor Bar & Grill.slnx" --configuration Release --no-restore
