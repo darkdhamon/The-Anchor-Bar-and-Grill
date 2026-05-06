@@ -75,6 +75,7 @@ p {
     --text-primary: var(--anchor-ink);
     --text-secondary: rgba(34, 31, 37, 0.74);
     --outline: rgba(34, 31, 37, 0.08);
+    --accent-readable: var(--anchor-blue-700);
 }
 
 .theme-dark {
@@ -89,6 +90,7 @@ p {
     --text-primary: rgba(247, 247, 244, 0.96);
     --text-secondary: rgba(247, 247, 244, 0.7);
     --outline: rgba(247, 247, 244, 0.08);
+    --accent-readable: #8fdcff;
 }
 
 .theme-light,
@@ -476,7 +478,7 @@ p {
 .section-heading__eyebrow,
 .page-hero__eyebrow,
 .site-footer__eyebrow {
-    color: var(--anchor-blue-700);
+    color: var(--accent-readable);
 }
 
 .feature-card--tight {
@@ -576,7 +578,7 @@ p {
 .admin-price {
     font-family: "Bebas Neue", "Impact", sans-serif;
     font-size: 1.5rem;
-    color: var(--anchor-blue-700);
+    color: var(--accent-readable);
 }
 
 .accent-gold .menu-section__header h2,
@@ -600,14 +602,14 @@ p {
 
 .event-card__meta,
 .event-preview__meta {
-    color: var(--anchor-blue-700);
+    color: var(--accent-readable);
     font-family: "Patrick Hand", "Segoe UI", cursive;
 }
 
 .contact-channel__value {
     font-family: "Bebas Neue", "Impact", sans-serif;
     font-size: 1.65rem;
-    color: var(--anchor-blue-700);
+    color: var(--accent-readable);
 }
 
 .hours-row {
