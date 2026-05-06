@@ -8,6 +8,7 @@ This repository currently contains the first code-native website mockup for The 
 - Menu mockup page inspired by the existing printed menu
 - Optional menu-item image support in the menu mockup and menu admin mockup
 - Optional offer start/end dates for menu items, including mockup states for seasonal, limited time, and coming soon items
+- Menu admin section assignment mockup that lets staff choose an existing section or type a new one from the same combo-box field
 - Events mockup page for recurring nights and featured programming
 - About mockup page for the restaurant story and guest experience
 - Contact mockup page for location, phone, hours, and guest inquiry layout

@@ -714,6 +714,11 @@ p {
     color: var(--text-secondary);
 }
 
+.mock-form__grid label small {
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
 .mock-form__message {
     grid-column: 1 / -1;
 }

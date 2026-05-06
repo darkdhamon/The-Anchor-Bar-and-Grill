@@ -97,6 +97,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Section preview", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Menu image (optional)", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Optional image", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Choose an existing section or type a new section name to create it", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Offer start date", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Seasonal item?", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("without an end date is not treated as seasonal or limited time", cut.Markup, StringComparison.OrdinalIgnoreCase);

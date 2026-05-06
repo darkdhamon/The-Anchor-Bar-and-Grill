@@ -15,7 +15,7 @@
         <aside class="admin-help">
             <h2>How this page should work</h2>
             <ul>
-                <li>Let admins pick a section, then create or edit items inside it.</li>
+                <li>Let admins choose an existing section or type a new one from the same combo box, then create or edit items inside it.</li>
                 <li>Keep guest-facing descriptions short and readable.</li>
                 <li>Allow menu images when available, but never require them for an item to be published.</li>
                 <li>Make pricing updates and item removal clear enough to prevent accidental mistakes.</li>
@@ -32,8 +32,15 @@
                 <div class="mock-form__grid">
                     <label>
                         Section
-                        <input type="text" value="Appetizers" />
+                        <input type="text" list="menu-section-options" value="Appetizers" />
+                        <small>Choose an existing section or type a new section name to create it.</small>
                     </label>
+                    <datalist id="menu-section-options">
+                        @foreach (var sectionName in sectionOptions)
+                        {
+                            <option value="@sectionName"></option>
+                        }
+                    </datalist>
                     <label>
                         Menu item
                         <input type="text" value="Cheese Curds" />
@@ -122,6 +129,7 @@
 </section>
 
 @code {
+    private static readonly IReadOnlyList<string> sectionOptions = MockupContent.MenuSections.Select(section => section.Title).ToArray();
     private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
     private readonly string offerStartExample = DateOnly.FromDateTime(DateTime.Today).AddDays(14).ToString("yyyy-MM-dd");
     private readonly string offerEndExample = DateOnly.FromDateTime(DateTime.Today).AddDays(56).ToString("yyyy-MM-dd");
