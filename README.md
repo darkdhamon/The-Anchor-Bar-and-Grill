@@ -37,6 +37,7 @@ This repository currently contains the first code-native website mockup for The 
 - The current homepage uses a styled building-photo placeholder until a real exterior image is added to the project
 - The event mockup data now demonstrates weekly, every-other-week, and nth-weekday monthly recurrence patterns so the UI direction can be reviewed before backend scheduling is built
 - On mobile, the shared header now keeps public and admin mockup links inside the expandable menu and uses an icon-style site-menu control so it does not compete with the food Menu link
+- Admin editor controls now share the same themed styling and normalized field sizing across light and dark modes instead of falling back to browser-default inputs
 - Non-editor elements such as navigation targets and post-navigation page headings suppress the default browser focus outline, while editor fields keep their normal editing focus behavior
 - Account pages continue to use the server-routed Identity flow, so auth navigation should bypass interactive routing when needed
 - Starter scaffold pages such as `Counter`, `Weather`, and other unused sample content have been removed from the public experience

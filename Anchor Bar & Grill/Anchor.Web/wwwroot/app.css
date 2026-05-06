@@ -1049,11 +1049,13 @@ html.anchor-theme-dark .site-shell {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
     margin: 1rem 0;
+    align-items: start;
 }
 
 .mock-form__grid label {
     display: grid;
     gap: 0.45rem;
+    align-content: start;
     color: var(--text-secondary);
 }
 
@@ -1072,13 +1074,16 @@ html.anchor-theme-dark .site-shell {
 
 .mock-form__toggle-row {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.75rem;
 }
 
 .mock-form__toggle-row input[type="checkbox"] {
     width: 1.1rem;
     height: 1.1rem;
+    margin: 0.2rem 0 0;
+    flex-shrink: 0;
+    accent-color: var(--anchor-blue-300);
 }
 
 .mock-form__toggle-row small {
@@ -1086,32 +1091,52 @@ html.anchor-theme-dark .site-shell {
     line-height: 1.4;
 }
 
-.mock-form input,
-.mock-form textarea,
-.mock-form select {
+:is(.mock-form, .mock-form__grid) :where(input:not([type="checkbox"]):not([type="radio"]), textarea, select) {
+    display: block;
+    box-sizing: border-box;
     width: 100%;
+    min-height: 3rem;
+    margin: 0;
     padding: 0.85rem 1rem;
+    line-height: 1.35;
     color: var(--text-primary);
     background: var(--surface-strong);
     border: 1px solid var(--outline);
     border-radius: 1rem;
+    transition:
+        border-color 0.18s ease,
+        box-shadow 0.18s ease,
+        background-color 0.18s ease,
+        color 0.18s ease;
 }
 
-.mock-form input[type="date"] {
+:is(.mock-form, .mock-form__grid) :where(textarea) {
+    min-height: 8rem;
+    resize: vertical;
+}
+
+:is(.mock-form, .mock-form__grid) :where(select) {
+    padding-right: 2.75rem;
+}
+
+:is(.mock-form, .mock-form__grid) :where(input::placeholder, textarea::placeholder) {
+    color: var(--text-secondary);
+    opacity: 0.9;
+}
+
+:is(.mock-form, .mock-form__grid) :where(input:not([type="checkbox"]):not([type="radio"]), textarea, select):focus,
+:is(.mock-form, .mock-form__grid) :where(input:not([type="checkbox"]):not([type="radio"]), textarea, select):focus-visible {
+    outline: none;
+    border-color: rgba(89, 175, 226, 0.55);
+    box-shadow: 0 0 0 0.2rem rgba(89, 175, 226, 0.16);
+}
+
+:is(.mock-form, .mock-form__grid) :where(input[type="date"], input[type="time"], select) {
     color-scheme: light;
 }
 
-.mock-form input[type="time"] {
-    color-scheme: light;
-}
-
-.site-shell.theme-dark .mock-form input[type="date"],
-html.anchor-theme-dark .site-shell .mock-form input[type="date"] {
-    color-scheme: dark;
-}
-
-.site-shell.theme-dark .mock-form input[type="time"],
-html.anchor-theme-dark .site-shell .mock-form input[type="time"] {
+:is(.site-shell.theme-dark .mock-form, .site-shell.theme-dark .mock-form__grid, html.anchor-theme-dark .site-shell .mock-form, html.anchor-theme-dark .site-shell .mock-form__grid)
+    :where(input[type="date"], input[type="time"], select) {
     color-scheme: dark;
 }
 
