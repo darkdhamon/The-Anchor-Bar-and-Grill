@@ -7,6 +7,31 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
+    <script>
+        (() => {
+            const themeKey = "anchor-theme";
+            const root = document.documentElement;
+            const cookieMatch = document.cookie.match(/(?:^|; )anchor-theme=([^;]+)/);
+            const cookieTheme = cookieMatch ? decodeURIComponent(cookieMatch[1]) : null;
+
+            let storedTheme = null;
+
+            try {
+                storedTheme = window.localStorage.getItem(themeKey);
+            } catch {
+                storedTheme = null;
+            }
+
+            const theme = storedTheme === "dark" || storedTheme === "light"
+                ? storedTheme
+                : cookieTheme === "dark" || cookieTheme === "light"
+                    ? cookieTheme
+                    : "light";
+
+            root.classList.remove("anchor-theme-light", "anchor-theme-dark");
+            root.classList.add(theme === "dark" ? "anchor-theme-dark" : "anchor-theme-light");
+        })();
+    </script>
     <ResourcePreloader />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -22,6 +47,7 @@
 <body>
     <Routes @rendermode="PageRenderMode" />
     <ReconnectModal />
+    <script src="@Assets["theme.js"]"></script>
     <script src="@Assets["_framework/blazor.web.js"]"></script>
     <script src="@Assets["Components/Account/Shared/PasskeySubmit.razor.js"]" type="module"></script>
 </body>

@@ -2,12 +2,21 @@ using Anchor.Web.Components.Layout;
 using Anchor.Web.Components.Pages;
 using Anchor.Web.Components.Pages.Admin;
 using Bunit;
+using Bunit.JSInterop;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Anchor.Web.Tests;
 
 public sealed class LayoutAndPageRenderTests : BunitContext
 {
+    public LayoutAndPageRenderTests()
+    {
+        JSInterop.Mode = JSRuntimeMode.Loose;
+        Services.AddSingleton<IHttpContextAccessor>(new HttpContextAccessor());
+    }
+
     [Fact]
     public void MainLayout_TogglesBetweenLightAndDarkThemes()
     {
@@ -26,6 +35,20 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         cut.Find(".menu-toggle").Click();
 
         Assert.Contains("site-header__nav-stack is-open", cut.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MainLayout_UsesPersistedThemeCookieForInitialRender()
+    {
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Headers.Cookie = "anchor-theme=dark";
+        Services.GetRequiredService<IHttpContextAccessor>().HttpContext = httpContext;
+
+        var cut = Render<MainLayout>(parameters => parameters
+            .Add(layout => layout.Body, (RenderFragment)(builder => builder.AddMarkupContent(0, "<section>Preview body</section>"))));
+
+        Assert.Contains("theme-dark", cut.Markup);
+        Assert.Contains("checked", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

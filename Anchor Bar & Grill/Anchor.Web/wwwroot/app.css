@@ -66,7 +66,8 @@ p {
     transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.theme-light {
+.theme-light,
+html.anchor-theme-light .site-shell {
     --page-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.65), rgba(238, 234, 231, 0.94));
     --surface: rgba(255, 255, 255, 0.88);
     --surface-strong: rgba(255, 255, 255, 0.96);
@@ -79,7 +80,8 @@ p {
     --accent-readable: var(--anchor-blue-700);
 }
 
-.theme-dark {
+.theme-dark,
+html.anchor-theme-dark .site-shell {
     --page-bg:
         radial-gradient(circle at top right, rgba(89, 175, 226, 0.18), transparent 24%),
         linear-gradient(180deg, rgba(40, 44, 68, 0.96), rgba(31, 36, 58, 1));
@@ -95,7 +97,9 @@ p {
 }
 
 .theme-light,
-.theme-dark {
+.theme-dark,
+html.anchor-theme-light .site-shell,
+html.anchor-theme-dark .site-shell {
     background: var(--page-bg);
     color: var(--text-primary);
 }
@@ -1101,11 +1105,13 @@ p {
     color-scheme: light;
 }
 
-.site-shell.theme-dark .mock-form input[type="date"] {
+.site-shell.theme-dark .mock-form input[type="date"],
+html.anchor-theme-dark .site-shell .mock-form input[type="date"] {
     color-scheme: dark;
 }
 
-.site-shell.theme-dark .mock-form input[type="time"] {
+.site-shell.theme-dark .mock-form input[type="time"],
+html.anchor-theme-dark .site-shell .mock-form input[type="time"] {
     color-scheme: dark;
 }
 

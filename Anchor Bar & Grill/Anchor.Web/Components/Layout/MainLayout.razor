@@ -1,4 +1,6 @@
 @inherits LayoutComponentBase
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IJSRuntime JSRuntime
 
 <div class="site-shell @(isDarkTheme ? "theme-dark" : "theme-light")">
     <header class="site-header">
@@ -18,7 +20,7 @@
                 <div class="theme-toggle">
                     <span class="theme-toggle__label">Theme</span>
                     <label class="switch">
-                        <input type="checkbox" @bind="isDarkTheme" aria-label="Toggle light and dark theme" />
+                        <input type="checkbox" checked="@isDarkTheme" @onchange="OnThemeChanged" aria-label="Toggle light and dark theme" />
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -98,8 +100,50 @@
 </div>
 
 @code {
+    [CascadingParameter]
+    private HttpContext? RequestHttpContext { get; set; }
+
     private bool isDarkTheme;
     private bool isMenuOpen;
+    private bool hasInitializedThemePreference;
+
+    protected override void OnParametersSet()
+    {
+        if (hasInitializedThemePreference)
+        {
+            return;
+        }
+
+        var themeCookie = RequestHttpContext?.Request.Cookies["anchor-theme"]
+            ?? HttpContextAccessor.HttpContext?.Request.Cookies["anchor-theme"];
+
+        if (!string.IsNullOrWhiteSpace(themeCookie))
+        {
+            isDarkTheme = string.Equals(themeCookie, "dark", StringComparison.OrdinalIgnoreCase);
+        }
+
+        hasInitializedThemePreference = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("anchorTheme.initialize");
+        }
+    }
+
+    private async Task OnThemeChanged(ChangeEventArgs args)
+    {
+        isDarkTheme = args.Value switch
+        {
+            bool isDark => isDark,
+            string value when bool.TryParse(value, out var parsed) => parsed,
+            _ => false
+        };
+
+        await JSRuntime.InvokeVoidAsync("anchorTheme.setTheme", isDarkTheme);
+    }
 
     private void ToggleMenu()
     {
