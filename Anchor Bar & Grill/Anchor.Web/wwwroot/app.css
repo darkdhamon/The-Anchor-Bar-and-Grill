@@ -135,6 +135,8 @@ p {
     gap: 1.15rem;
     text-decoration: none;
     min-width: 0;
+}
+
 .brand-lockup__logo-shell {
     width: clamp(7.75rem, 12vw, 10rem);
     aspect-ratio: 1;
