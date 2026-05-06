@@ -1,0 +1,67 @@
+@page "/contact"
+
+<PageTitle>Contact</PageTitle>
+
+<section class="page-hero page-hero--section">
+    <p class="page-hero__eyebrow">Contact Us</p>
+    <h1>Contact mockup</h1>
+    <p class="page-hero__lead">
+        Contact information should be quick to trust and quick to use. This mockup also leaves room for hours, directions, and a simple guest inquiry path.
+    </p>
+</section>
+
+<section class="split-section">
+    <article class="split-card">
+        <div class="section-heading">
+            <p class="section-heading__eyebrow">Guest Information</p>
+            <h2>Keep the essentials visible above the fold.</h2>
+        </div>
+
+        <div class="contact-channel-list">
+            @foreach (var channel in MockupContent.ContactChannels)
+            {
+                <article class="contact-channel">
+                    <h3>@channel.Title</h3>
+                    <p class="contact-channel__value">@channel.Value</p>
+                    <p>@channel.Description</p>
+                </article>
+            }
+        </div>
+    </article>
+
+    <article class="split-card">
+        <div class="section-heading">
+            <p class="section-heading__eyebrow">Hours Preview</p>
+            <h2>Use sample hours for layout planning until confirmed hours are supplied.</h2>
+        </div>
+
+        <div class="hours-list">
+            @foreach (var item in MockupContent.PreviewHours)
+            {
+                <div class="hours-row">
+                    <span>@item.Label</span>
+                    <strong>@item.Hours</strong>
+                </div>
+            }
+        </div>
+
+        <div class="mock-form">
+            <h3>Guest inquiry mockup</h3>
+            <div class="mock-form__grid">
+                <label>
+                    Name
+                    <input type="text" placeholder="Guest name" />
+                </label>
+                <label>
+                    Email or phone
+                    <input type="text" placeholder="Best contact method" />
+                </label>
+                <label class="mock-form__message">
+                    Question
+                    <textarea rows="4" placeholder="Ask about an event, menu item, or visit."></textarea>
+                </label>
+            </div>
+            <button type="button" class="hero-actions__link hero-actions__link--primary">Send Mockup Inquiry</button>
+        </div>
+    </article>
+</section>

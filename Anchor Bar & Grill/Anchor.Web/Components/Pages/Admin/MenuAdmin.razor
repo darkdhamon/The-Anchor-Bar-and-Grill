@@ -1,0 +1,76 @@
+@page "/admin/menu"
+
+<PageTitle>Menu Admin</PageTitle>
+
+<section class="admin-page">
+    <div class="page-hero page-hero--section">
+        <p class="page-hero__eyebrow">Admin Mockup</p>
+        <h1>Menu admin</h1>
+        <p class="page-hero__lead">
+            Menu management needs a clean workflow for adding new items, updating descriptions, and removing entries without making the page feel overwhelming.
+        </p>
+    </div>
+
+    <div class="admin-grid">
+        <aside class="admin-help">
+            <h2>How this page should work</h2>
+            <ul>
+                <li>Let admins pick a section, then create or edit items inside it.</li>
+                <li>Keep guest-facing descriptions short and readable.</li>
+                <li>Make pricing updates and item removal clear enough to prevent accidental mistakes.</li>
+            </ul>
+        </aside>
+
+        <div class="admin-stack">
+            <section class="admin-card">
+                <div class="admin-card__header">
+                    <h2>Item editor</h2>
+                    <span class="admin-card__badge">Menu Form</span>
+                </div>
+
+                <div class="mock-form__grid">
+                    <label>
+                        Section
+                        <input type="text" value="Appetizers" />
+                    </label>
+                    <label>
+                        Menu item
+                        <input type="text" value="Cheese Curds" />
+                    </label>
+                    <label>
+                        Price
+                        <input type="text" value="$9" />
+                    </label>
+                    <label class="mock-form__message">
+                        Description
+                        <textarea rows="4">Crisp white cheddar curds with your choice of dipping sauce.</textarea>
+                    </label>
+                </div>
+            </section>
+
+            <section class="admin-card">
+                <div class="admin-card__header">
+                    <h2>Section preview</h2>
+                    <span class="admin-card__badge">Live Order</span>
+                </div>
+
+                <div class="admin-list">
+                    @foreach (var item in MockupContent.MenuSections.First().Items)
+                    {
+                        <article class="admin-list__item">
+                            <div>
+                                <h3>@item.Name</h3>
+                                <p>@item.Description</p>
+                            </div>
+                            <div class="admin-list__actions">
+                                <span class="admin-price">@item.Price</span>
+                                <button type="button">Edit</button>
+                                <button type="button" class="admin-list__danger">Delete</button>
+                            </div>
+                        </article>
+                    }
+                </div>
+            </section>
+        </div>
+    </div>
+</section>

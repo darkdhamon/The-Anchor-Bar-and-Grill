@@ -1,0 +1,49 @@
+@page "/events"
+
+<PageTitle>Events</PageTitle>
+
+<section class="page-hero page-hero--section">
+    <p class="page-hero__eyebrow">Events</p>
+    <h1>Events mockup</h1>
+    <p class="page-hero__lead">
+        Events should feel like part of the Anchor identity, not a buried side page. The mockup leans into recurring energy, special nights, and simple guest planning.
+    </p>
+</section>
+
+<section class="split-section">
+    <article class="split-card split-card--events">
+        <div class="section-heading">
+            <p class="section-heading__eyebrow">Featured Calendar</p>
+            <h2>Highlight the nights guests are most likely to plan around.</h2>
+        </div>
+
+        <div class="event-card-grid">
+            @foreach (var item in MockupContent.FeaturedEvents)
+            {
+                <article class="event-card">
+                    <span class="event-card__badge">@item.Badge</span>
+                    <h3>@item.Title</h3>
+                    <p class="event-card__meta">@item.DayLabel · @item.TimeLabel</p>
+                    <p>@item.Description</p>
+                </article>
+            }
+        </div>
+    </article>
+
+    <article class="split-card split-card--visit">
+        <div class="section-heading">
+            <p class="section-heading__eyebrow">Planning Notes</p>
+            <h2>Use this page to explain the weekly rhythm.</h2>
+        </div>
+
+        <div class="rhythm-list">
+            @foreach (var item in MockupContent.WeeklyRhythms)
+            {
+                <article class="rhythm-item">
+                    <h3>@item.Label</h3>
+                    <p>@item.Description</p>
+                </article>
+            }
+        </div>
+    </article>
+</section>

@@ -1,0 +1,38 @@
+@page "/menu"
+
+<PageTitle>Menu</PageTitle>
+
+<section class="page-hero page-hero--section">
+    <p class="page-hero__eyebrow">Guest Menu Preview</p>
+    <h1>Menu mockup</h1>
+    <p class="page-hero__lead">
+        The website menu should borrow the color, framing, and typography direction of the printed menu while becoming cleaner and easier to scan on phones and desktops.
+    </p>
+</section>
+
+<section class="section-shell">
+    <div class="menu-grid">
+        @foreach (var section in MockupContent.MenuSections)
+        {
+            <article class="menu-section @section.AccentClass">
+                <header class="menu-section__header">
+                    <h2>@section.Title</h2>
+                    <p>@section.Note</p>
+                </header>
+
+                <div class="menu-section__items">
+                    @foreach (var item in section.Items)
+                    {
+                        <article class="menu-item">
+                            <div class="menu-item__title-row">
+                                <h3>@item.Name</h3>
+                                <span>@item.Price</span>
+                            </div>
+                            <p>@item.Description</p>
+                        </article>
+                    }
+                </div>
+            </article>
+        }
+    </div>
+</section>

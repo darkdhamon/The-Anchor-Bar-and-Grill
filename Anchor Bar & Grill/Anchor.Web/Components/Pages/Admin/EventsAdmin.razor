@@ -1,0 +1,75 @@
+@page "/admin/events"
+
+<PageTitle>Events Admin</PageTitle>
+
+<section class="admin-page">
+    <div class="page-hero page-hero--section">
+        <p class="page-hero__eyebrow">Admin Mockup</p>
+        <h1>Events admin</h1>
+        <p class="page-hero__lead">
+            This mockup shows how an admin page could support adding, editing, and deleting events without assuming the user already knows the workflow.
+        </p>
+    </div>
+
+    <div class="admin-grid">
+        <aside class="admin-help">
+            <h2>How this page should work</h2>
+            <ul>
+                <li>Create upcoming events from a guided form with date, time, and callout fields.</li>
+                <li>Edit existing listings without losing track of what is already live.</li>
+                <li>Use clear delete confirmations so outdated events are removed intentionally.</li>
+            </ul>
+        </aside>
+
+        <div class="admin-stack">
+            <section class="admin-card">
+                <div class="admin-card__header">
+                    <h2>Add or edit event</h2>
+                    <span class="admin-card__badge">Draft Form</span>
+                </div>
+
+                <div class="mock-form__grid">
+                    <label>
+                        Event title
+                        <input type="text" value="Thursday Trivia" />
+                    </label>
+                    <label>
+                        Day and time
+                        <input type="text" value="Every Thursday · 7:00 PM" />
+                    </label>
+                    <label>
+                        Promo badge
+                        <input type="text" value="Weekly Favorite" />
+                    </label>
+                    <label class="mock-form__message">
+                        Guest-facing description
+                        <textarea rows="4">Team-based trivia with rotating categories and an appetizer special.</textarea>
+                    </label>
+                </div>
+            </section>
+
+            <section class="admin-card">
+                <div class="admin-card__header">
+                    <h2>Current event listings</h2>
+                    <span class="admin-card__badge">Edit + Delete</span>
+                </div>
+
+                <div class="admin-list">
+                    @foreach (var item in MockupContent.FeaturedEvents)
+                    {
+                        <article class="admin-list__item">
+                            <div>
+                                <h3>@item.Title</h3>
+                                <p>@item.DayLabel · @item.TimeLabel</p>
+                            </div>
+                            <div class="admin-list__actions">
+                                <button type="button">Edit</button>
+                                <button type="button" class="admin-list__danger">Delete</button>
+                            </div>
+                        </article>
+                    }
+                </div>
+            </section>
+        </div>
+    </div>
+</section>

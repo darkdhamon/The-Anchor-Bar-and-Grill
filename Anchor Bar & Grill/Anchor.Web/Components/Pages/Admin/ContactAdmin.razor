@@ -1,0 +1,75 @@
+@page "/admin/contact"
+
+<PageTitle>Contact Admin</PageTitle>
+
+<section class="admin-page">
+    <div class="page-hero page-hero--section">
+        <p class="page-hero__eyebrow">Admin Mockup</p>
+        <h1>Contact admin</h1>
+        <p class="page-hero__lead">
+            This page mockup shows how staff could maintain contact details, preview hours, and shape the guest inquiry experience in one place.
+        </p>
+    </div>
+
+    <div class="admin-grid">
+        <aside class="admin-help">
+            <h2>How this page should work</h2>
+            <ul>
+                <li>Keep address, phone, and hours editable without hunting through multiple screens.</li>
+                <li>Explain which contact fields guests will actually see on the website.</li>
+                <li>Use a clear confirmation pattern before removing hours or contact methods.</li>
+            </ul>
+        </aside>
+
+        <div class="admin-stack">
+            <section class="admin-card">
+                <div class="admin-card__header">
+                    <h2>Contact details form</h2>
+                    <span class="admin-card__badge">Guest Facing</span>
+                </div>
+
+                <div class="mock-form__grid">
+                    <label>
+                        Street address
+                        <input type="text" value="@MockupContent.Contact.StreetAddress" />
+                    </label>
+                    <label>
+                        City and state
+                        <input type="text" value="@MockupContent.Contact.CityState" />
+                    </label>
+                    <label>
+                        Phone number
+                        <input type="text" value="@MockupContent.Contact.PhoneNumber" />
+                    </label>
+                    <label class="mock-form__message">
+                        Guest contact note
+                        <textarea rows="4">Use for takeout questions, event inquiries, and same-day updates.</textarea>
+                    </label>
+                </div>
+            </section>
+
+            <section class="admin-card">
+                <div class="admin-card__header">
+                    <h2>Hours preview</h2>
+                    <span class="admin-card__badge">Edit + Delete</span>
+                </div>
+
+                <div class="admin-list">
+                    @foreach (var item in MockupContent.PreviewHours)
+                    {
+                        <article class="admin-list__item">
+                            <div>
+                                <h3>@item.Label</h3>
+                                <p>@item.Hours</p>
+                            </div>
+                            <div class="admin-list__actions">
+                                <button type="button">Edit</button>
+                                <button type="button" class="admin-list__danger">Delete</button>
+                            </div>
+                        </article>
+                    }
+                </div>
+            </section>
+        </div>
+    </div>
+</section>
