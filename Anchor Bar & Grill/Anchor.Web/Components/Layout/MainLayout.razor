@@ -23,8 +23,12 @@
                     </label>
                 </div>
 
-                <button class="menu-toggle" type="button" @onclick="ToggleMenu" aria-expanded="@isMenuOpen" aria-controls="site-header-nav">
-                    Menu
+                <button class="menu-toggle" type="button" @onclick="ToggleMenu" aria-expanded="@isMenuOpen" aria-controls="site-header-nav" aria-label="Toggle site menu">
+                    <span class="menu-toggle__icon" aria-hidden="true">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </span>
                 </button>
             </div>
 
