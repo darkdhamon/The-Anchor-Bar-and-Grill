@@ -28,5 +28,6 @@ This repository currently contains the first code-native website mockup for The 
 
 - The development configuration now includes a LocalDB connection string so the mockup can run locally without additional secret setup
 - The current homepage uses a styled building-photo placeholder until a real exterior image is added to the project
+- Account pages continue to use the server-routed Identity flow, so auth navigation should bypass interactive routing when needed
 - Starter scaffold pages such as `Counter`, `Weather`, and other unused sample content have been removed from the public experience
 

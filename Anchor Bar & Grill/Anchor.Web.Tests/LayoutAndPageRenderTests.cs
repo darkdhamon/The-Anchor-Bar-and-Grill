@@ -20,6 +20,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 
         Assert.Contains("theme-dark", cut.Markup);
         Assert.Contains("Preview body", cut.Markup);
+        Assert.Equal("false", cut.Find(".preview-nav__link--account").GetAttribute("data-enhance-nav"));
     }
 
     [Fact]
