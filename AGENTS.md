@@ -4,7 +4,9 @@
 - Never commit directly to `main`.
 - All changes must reach `main` through a pull request.
 - Non-code-related changes may be committed directly to `dev`.
+- All new work branches must be created from `dev` so they include the most recent unreleased changes.
 - Code-related changes must be made in a feature branch first.
+- After every code-related change, commit the change and push the branch so code work is not left only in the local repository.
 - Code-related changes must be brought into `dev` through a pull request, not through a direct merge outside the pull request workflow.
 - Every pull request from `dev` into `main` must include release notes covering all changes since the previous merge from `dev` into `main`.
 
@@ -77,7 +79,7 @@
 - Start by planning the work together before implementation begins.
 - Planning should include implementation approach, design choices, and other relevant decisions needed before code is written.
 - If a conversation starts with an issue number, analyze the task, create the feature branch immediately, and switch to that branch before continuing.
-- When creating a feature branch for an issue-driven conversation, base it on `dev` if `dev` exists; otherwise base it on `main`.
+- When creating a feature branch, always base it on `dev` so the branch starts from the most recent development code rather than only what has already been released.
 - Only begin code implementation when the user explicitly says to implement the code.
 - Before code work begins, confirm whether an issue already exists for the work.
 - If no issue exists, create one before starting code implementation.
