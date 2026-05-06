@@ -594,6 +594,45 @@ p {
     gap: 0.45rem;
 }
 
+.menu-item__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.menu-item__badges--admin {
+    margin: 0.35rem 0 0.45rem;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.28rem 0.72rem;
+    font-size: 0.82rem;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+}
+
+.status-pill--coming-soon {
+    background: rgba(89, 175, 226, 0.16);
+    border-color: rgba(89, 175, 226, 0.28);
+    color: var(--accent-readable);
+}
+
+.status-pill--seasonal {
+    background: rgba(121, 194, 95, 0.16);
+    border-color: rgba(121, 194, 95, 0.34);
+    color: var(--anchor-green);
+}
+
+.status-pill--limited {
+    background: rgba(210, 88, 152, 0.16);
+    border-color: rgba(210, 88, 152, 0.34);
+    color: var(--anchor-magenta);
+}
+
 .menu-item__title-row {
     display: flex;
     justify-content: space-between;
@@ -639,6 +678,11 @@ p {
     color: var(--accent-readable);
 }
 
+.menu-item__offer-range {
+    color: var(--text-secondary);
+    font-family: "Patrick Hand", "Segoe UI", cursive;
+}
+
 .hours-row {
     display: flex;
     justify-content: space-between;
@@ -672,6 +716,26 @@ p {
 
 .mock-form__message {
     grid-column: 1 / -1;
+}
+
+.mock-form__toggle {
+    grid-column: 1 / -1;
+}
+
+.mock-form__toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.mock-form__toggle-row input[type="checkbox"] {
+    width: 1.1rem;
+    height: 1.1rem;
+}
+
+.mock-form__toggle-row small {
+    color: var(--text-secondary);
+    line-height: 1.4;
 }
 
 .mock-form input,

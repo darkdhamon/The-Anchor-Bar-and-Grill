@@ -46,6 +46,21 @@
                         Menu image (optional)
                         <input type="text" value="images/menu/appetizers.svg" />
                     </label>
+                    <label>
+                        Offer start date
+                        <input type="text" value="@offerStartExample" />
+                    </label>
+                    <label>
+                        Offer end date (optional)
+                        <input type="text" value="@offerEndExample" />
+                    </label>
+                    <label class="mock-form__toggle">
+                        <span>Seasonal item?</span>
+                        <div class="mock-form__toggle-row">
+                            <input type="checkbox" checked />
+                            <small>If this is unchecked and an end date exists, the item is treated as a limited time special.</small>
+                        </div>
+                    </label>
                     <label class="mock-form__message">
                         Description
                         <textarea rows="4">Crisp white cheddar curds with your choice of dipping sauce.</textarea>
@@ -53,6 +68,7 @@
                 </div>
 
                 <p class="admin-field-note">Leave the image field blank when an item does not have a photo yet. The public menu mockup should still render the item cleanly.</p>
+                <p class="admin-field-note">A menu item without an end date is not treated as seasonal or limited time, but it can still be marked as coming soon when its start date is less than a month away.</p>
             </section>
 
             <section class="admin-card">
@@ -76,7 +92,21 @@
 
                             <div>
                                 <h3>@item.Name</h3>
+                                @if (item.GetStatusLabels(today).Count > 0)
+                                {
+                                    <div class="menu-item__badges menu-item__badges--admin">
+                                        @foreach (var label in item.GetStatusLabels(today))
+                                        {
+                                            <span class="status-pill @(GetBadgeClass(label))">@label</span>
+                                        }
+                                    </div>
+                                }
                                 <p>@item.Description</p>
+
+                                @if (item.GetOfferDateSummary(today) is { } offerSummary)
+                                {
+                                    <p class="menu-item__offer-range">@offerSummary</p>
+                                }
                             </div>
                             <div class="admin-list__actions">
                                 <span class="admin-price">@item.Price</span>
@@ -90,3 +120,17 @@
         </div>
     </div>
 </section>
+
+@code {
+    private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+    private readonly string offerStartExample = DateOnly.FromDateTime(DateTime.Today).AddDays(14).ToString("yyyy-MM-dd");
+    private readonly string offerEndExample = DateOnly.FromDateTime(DateTime.Today).AddDays(56).ToString("yyyy-MM-dd");
+
+    private static string GetBadgeClass(string label) =>
+        label switch
+        {
+            "Coming Soon" => "status-pill--coming-soon",
+            "Seasonal" => "status-pill--seasonal",
+            _ => "status-pill--limited"
+        };
+}

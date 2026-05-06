@@ -42,6 +42,9 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.NotEmpty(cut.FindAll(".menu-item__image"));
         Assert.NotEmpty(cut.FindAll(".menu-item--text-only"));
+        Assert.Contains("Coming Soon", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Seasonal", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Limited Time Special", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -94,6 +97,9 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Section preview", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Menu image (optional)", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Optional image", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Offer start date", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Seasonal item?", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("without an end date is not treated as seasonal or limited time", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

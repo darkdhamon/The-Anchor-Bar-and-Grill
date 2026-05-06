@@ -2,6 +2,8 @@ namespace Anchor.Web.Components.Site;
 
 public static class MockupContent
 {
+    private static readonly DateOnly OfferReferenceDate = DateOnly.FromDateTime(DateTime.Today);
+
     public static ContactDetails Contact { get; } = new(
         "301 Main Street",
         "Madison Lake, MN",
@@ -35,9 +37,9 @@ public static class MockupContent
             "Served with the menu's bright, approachable bar-and-grill energy.",
             [
                 new("Cheese Curds", "Crisp white cheddar curds with your choice of dipping sauce.", "$9", new("images/menu/appetizers.svg", "Mockup food photo for cheese curds")),
-                new("Mini Tacos", "Served with salsa and sour cream.", "$9"),
-                new("Quesadillas", "Loaded with cheese and served with salsa and sour cream.", "$11"),
-                new("Fish Tacos", "Finished with Boom Boom sauce for a bold bar-food favorite.", "$10", new("images/menu/appetizers.svg", "Mockup food photo for fish tacos"))
+                new("Mini Tacos", "Served with salsa and sour cream.", "$9", Offer: OfferStartingIn(14)),
+                new("Quesadillas", "Loaded with cheese and served with salsa and sour cream.", "$11", Offer: OfferStartingIn(-8, 62), IsSeasonal: true),
+                new("Fish Tacos", "Finished with Boom Boom sauce for a bold bar-food favorite.", "$10", new("images/menu/appetizers.svg", "Mockup food photo for fish tacos"), OfferStartingIn(-5, 22))
             ]),
         new(
             "Wings",
@@ -54,7 +56,7 @@ public static class MockupContent
             "A lighter section that still feels part of the same menu family.",
             [
                 new("The Anchor Salad", "Crisp greens, tomatoes, peppers, shaved red onions, and your choice of dressing.", "$10", new("images/menu/salads.svg", "Mockup food photo for the Anchor salad")),
-                new("Smoked Salmon Salad", "Finished with crumbled smoked salmon and poppyseed dressing.", "$13", new("images/menu/salads.svg", "Mockup food photo for a smoked salmon salad")),
+                new("Smoked Salmon Salad", "Finished with crumbled smoked salmon and poppyseed dressing.", "$13", new("images/menu/salads.svg", "Mockup food photo for a smoked salmon salad"), OfferStartingIn(9, 45), true),
                 new("BLT Salad", "Bacon, tomatoes, greens, and your choice of dressing.", "$12"),
                 new("Seasonal Soup", "Cup or bowl, updated as the kitchen rotates specials.", "$4/$6")
             ]),
@@ -101,7 +103,7 @@ public static class MockupContent
             "accent-magenta",
             "Accent color keeps the end of the menu feeling celebratory.",
             [
-                new("Chocolate Lava Cake", "Served warm with ice cream.", "$6", new("images/menu/desserts.svg", "Mockup food photo for chocolate lava cake")),
+                new("Chocolate Lava Cake", "Served warm with ice cream.", "$6", new("images/menu/desserts.svg", "Mockup food photo for chocolate lava cake"), OfferStartingIn(-2, 18)),
                 new("Mini Donuts", "Fair-style donuts for a casual sweet finish.", "$6", new("images/menu/desserts.svg", "Mockup food photo for mini donuts"))
             ])
     ];
@@ -156,6 +158,14 @@ public static class MockupContent
         "This first mockup uses a styled exterior-photo placeholder because a building image has not been added to the repo yet.",
         "Once a real building photo is available, the homepage hero should swap the placeholder for the final image treatment without changing the surrounding layout."
     ];
+
+    private static OfferWindow OfferStartingIn(int startOffsetDays, int? durationDays = null)
+    {
+        var startsOn = OfferReferenceDate.AddDays(startOffsetDays);
+        DateOnly? endsOn = durationDays is null ? null : startsOn.AddDays(durationDays.Value);
+
+        return new(startsOn, endsOn);
+    }
 }
 
 public sealed record ContactDetails(string StreetAddress, string CityState, string PhoneNumber, string EmailNote);
@@ -168,9 +178,67 @@ public sealed record FeatureCallout(string Title, string Description);
 
 public sealed record MenuSection(string Title, string AccentClass, string Note, IReadOnlyList<MenuItem> Items);
 
-public sealed record MenuItem(string Name, string Description, string Price, MenuItemImage? Image = null);
+public sealed record MenuItem(
+    string Name,
+    string Description,
+    string Price,
+    MenuItemImage? Image = null,
+    OfferWindow? Offer = null,
+    bool IsSeasonal = false)
+{
+    public bool IsSeasonalOffer => Offer?.EndsOn is not null && IsSeasonal;
+
+    public bool IsLimitedTimeSpecial => Offer?.EndsOn is not null && !IsSeasonal;
+
+    public bool IsComingSoon(DateOnly today) =>
+        Offer is not null
+        && Offer.StartsOn > today
+        && Offer.StartsOn <= today.AddDays(30);
+
+    public IReadOnlyList<string> GetStatusLabels(DateOnly today)
+    {
+        List<string> labels = [];
+
+        if (IsComingSoon(today))
+        {
+            labels.Add("Coming Soon");
+        }
+
+        if (IsSeasonalOffer)
+        {
+            labels.Add("Seasonal");
+        }
+        else if (IsLimitedTimeSpecial)
+        {
+            labels.Add("Limited Time Special");
+        }
+
+        return labels;
+    }
+
+    public string? GetOfferDateSummary(DateOnly today)
+    {
+        if (Offer is null)
+        {
+            return null;
+        }
+
+        if (Offer.EndsOn is null)
+        {
+            return Offer.StartsOn > today
+                ? $"Expected on {Offer.StartsOn:MMM d}"
+                : $"Available since {Offer.StartsOn:MMM d}";
+        }
+
+        return Offer.StartsOn > today
+            ? $"Offered {Offer.StartsOn:MMM d} - {Offer.EndsOn:MMM d}"
+            : $"Available through {Offer.EndsOn:MMM d}";
+    }
+}
 
 public sealed record MenuItemImage(string Source, string AltText);
+
+public sealed record OfferWindow(DateOnly StartsOn, DateOnly? EndsOn);
 
 public sealed record ScheduledEvent(string Title, string DayLabel, string TimeLabel, string Description, string Badge);
 
