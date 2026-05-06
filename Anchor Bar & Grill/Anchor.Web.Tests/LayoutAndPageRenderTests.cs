@@ -17,7 +17,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("theme-light", cut.Markup);
         Assert.DoesNotContain("site-header__nav-stack is-open", cut.Markup, StringComparison.Ordinal);
 
-        cut.Find(".theme-toggle").Click();
+        cut.Find(".switch input").Change(true);
 
         Assert.Contains("theme-dark", cut.Markup);
         Assert.Contains("Preview body", cut.Markup);

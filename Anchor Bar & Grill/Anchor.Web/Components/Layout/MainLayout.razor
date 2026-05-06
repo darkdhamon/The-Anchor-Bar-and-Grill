@@ -15,10 +15,13 @@
             </a>
 
             <div class="site-header__actions">
-                <button class="theme-toggle" type="button" @onclick="ToggleTheme" aria-pressed="@isDarkTheme">
+                <div class="theme-toggle">
                     <span class="theme-toggle__label">Theme</span>
-                    <strong>@(isDarkTheme ? "Dark" : "Light")</strong>
-                </button>
+                    <label class="switch">
+                        <input type="checkbox" @bind="isDarkTheme" aria-label="Toggle light and dark theme" />
+                        <span class="slider"></span>
+                    </label>
+                </div>
 
                 <button class="menu-toggle" type="button" @onclick="ToggleMenu" aria-expanded="@isMenuOpen" aria-controls="site-header-nav">
                     Menu
@@ -93,11 +96,6 @@
 @code {
     private bool isDarkTheme;
     private bool isMenuOpen;
-
-    private void ToggleTheme()
-    {
-        isDarkTheme = !isDarkTheme;
-    }
 
     private void ToggleMenu()
     {
