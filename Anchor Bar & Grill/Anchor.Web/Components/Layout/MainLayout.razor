@@ -2,7 +2,7 @@
 
 <div class="site-shell @(isDarkTheme ? "theme-dark" : "theme-light")">
     <header class="site-header">
-        <div class="site-header__top shell-container">
+        <div class="site-header__grid shell-container">
             <a class="brand-lockup" href="/">
                 <img class="brand-lockup__logo" src="images/AnchorLogo.png" alt="The Anchor Bar and Grill logo" />
                 <div class="brand-lockup__text">
@@ -22,27 +22,27 @@
                     Menu
                 </button>
             </div>
-        </div>
 
-        <div class="site-header__bottom shell-container">
-            <nav id="site-navigation" class="site-navigation @(isMenuOpen ? "is-open" : string.Empty)" aria-label="Primary">
-                @foreach (var link in SiteMap.PublicLinks)
-                {
-                    <NavLink class="site-navigation__link" href="@link.Href" Match="@(link.Href == "/" ? NavLinkMatch.All : NavLinkMatch.Prefix)" @onclick="CloseMenu">
-                        @link.Label
-                    </NavLink>
-                }
-            </nav>
+            <div class="site-header__nav-stack">
+                <nav id="site-navigation" class="site-navigation @(isMenuOpen ? "is-open" : string.Empty)" aria-label="Primary">
+                    @foreach (var link in SiteMap.PublicLinks)
+                    {
+                        <NavLink class="site-navigation__link" href="@link.Href" Match="@(link.Href == "/" ? NavLinkMatch.All : NavLinkMatch.Prefix)" @onclick="CloseMenu">
+                            @link.Label
+                        </NavLink>
+                    }
+                </nav>
 
-            <div class="preview-nav" aria-label="Admin mockup links">
-                <span class="preview-nav__label">Admin Mockups</span>
-                @foreach (var link in SiteMap.AdminLinks)
-                {
-                    <NavLink class="preview-nav__link" href="@link.Href" Match="NavLinkMatch.Prefix" @onclick="CloseMenu">
-                        @link.Label
-                    </NavLink>
-                }
-                <a class="preview-nav__link preview-nav__link--account" href="Account/Login" data-enhance-nav="false">Account</a>
+                <div class="preview-nav" aria-label="Admin mockup links">
+                    <span class="preview-nav__label">Admin Mockups</span>
+                    @foreach (var link in SiteMap.AdminLinks)
+                    {
+                        <NavLink class="preview-nav__link" href="@link.Href" Match="NavLinkMatch.Prefix" @onclick="CloseMenu">
+                            @link.Label
+                        </NavLink>
+                    }
+                    <a class="preview-nav__link preview-nav__link--account" href="Account/Login" data-enhance-nav="false">Account</a>
+                </div>
             </div>
         </div>
     </header>
