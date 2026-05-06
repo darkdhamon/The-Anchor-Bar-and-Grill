@@ -82,7 +82,9 @@
 - Before code work begins, confirm whether an issue already exists for the work.
 - If no issue exists, create one before starting code implementation.
 - After planning and research are complete for an issue, update the issue description so it matches the current agreed scope and implementation plan before code work begins.
+- Once the issue scope, implementation plan, and description are finalized, move the issue from `Backlog` to `Ready`.
 - After the issue is confirmed or created, create the feature branch if it has not already been created.
+- When code implementation begins, move the issue from `Ready` to `In Progress`.
 - Once planning is complete, the issue is ready, and the feature branch exists, wait for explicit user direction before starting code changes.
 
 # Pull Requests And Testing
@@ -107,6 +109,7 @@
 - Do not rely on GitHub branch protection or forced reviewer settings for this process because the repository currently operates with a single user account.
 - Track code review progress manually.
 - When creating a pull request from a feature branch into `dev`, create it as a draft pull request first.
+- When the pull request from the feature branch into `dev` is created, move the related issue from `In Progress` to `In Review`.
 - The first review stage is scope validation.
 - Scope validation confirms that the code does what the issue requires, covers the full intended scope of the issue, and includes the required unit test coverage.
 - After the first review stage, add a pull request comment documenting the review results, including whether it passed or whether changes are required.
@@ -118,10 +121,12 @@
 - After the third review stage, add a pull request comment documenting the review results, including whether it passed or whether changes are required.
 - Review-result comments must be recorded on the pull request, not on the issue.
 - After all three review stages are completed, complete the merge from the feature branch into `dev`.
+- After the feature-branch pull request is merged into `dev`, move the related issue to `In Dev Branch`.
 
 # Issue Requirement
 
 - All code-related changes must be attached to an issue.
+- New issues should be added to the project board in the `Backlog` column when they are created.
 - If code work does not already have an issue, create or confirm an issue before starting implementation.
 - Before creating a new issue, first check for an existing issue that matches the requested change.
 - If a possible matching issue already exists, confirm with the user whether that existing issue should be used or whether a new issue should be created.
@@ -141,6 +146,8 @@
 # Release Notes
 
 - Every pull request from `dev` into `main` must include release notes covering all changes since the previous merge from `dev` into `main`.
+- When a pull request from `dev` into `main` is created, move every issue included in that pull request from `In Dev Branch` to `In Plan Release`.
+- When the pull request from `dev` into `main` is merged, move each included issue to `Done` and then close the issue.
 - Release notes must include a short summary of the release.
 - Release notes must include an itemized list of changes made in the release.
 - When applicable, release notes should also identify bugs fixed and list the issues included in the release.
