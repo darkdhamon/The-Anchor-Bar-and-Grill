@@ -391,6 +391,13 @@ p {
     background: transparent;
 }
 
+.hero-actions__link--secondary:hover,
+.hero-actions__link--secondary:focus-visible {
+    background: rgba(48, 154, 221, 0.14);
+    border-color: rgba(48, 154, 221, 0.38);
+    color: var(--text-primary);
+}
+
 .hero-callouts,
 .feature-grid,
 .event-card-grid,
