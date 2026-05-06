@@ -5,6 +5,7 @@ This repository currently contains the first code-native website mockup for The 
 ## Current Mockup Scope
 
 - Guest-facing homepage with a welcome-first layout that is separate from the menu
+- Homepage preview of recurring weekly specials so guests can see day-of-week favorites before opening the full menu
 - Menu mockup page inspired by the existing printed menu
 - Weekly recurring specials on the menu mockup for day-of-week traditions like burger nights and dinner specials
 - Optional menu-item image support in the menu mockup and menu admin mockup
