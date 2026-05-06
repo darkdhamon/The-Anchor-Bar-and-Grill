@@ -39,7 +39,8 @@ a {
 
 button,
 input,
-textarea {
+textarea,
+select {
     font: inherit;
 }
 
@@ -527,6 +528,12 @@ p {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.recurring-specials-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
 .menu-section {
     padding: 1.25rem;
     display: grid;
@@ -627,6 +634,18 @@ p {
     color: var(--anchor-green);
 }
 
+.status-pill--today {
+    background: rgba(213, 202, 85, 0.16);
+    border-color: rgba(213, 202, 85, 0.34);
+    color: var(--anchor-gold);
+}
+
+.status-pill--schedule {
+    background: rgba(47, 109, 144, 0.14);
+    border-color: rgba(47, 109, 144, 0.28);
+    color: var(--accent-readable);
+}
+
 .status-pill--limited {
     background: rgba(210, 88, 152, 0.16);
     border-color: rgba(210, 88, 152, 0.34);
@@ -670,6 +689,48 @@ p {
 .event-preview__meta {
     color: var(--accent-readable);
     font-family: "Patrick Hand", "Segoe UI", cursive;
+}
+
+.recurring-special {
+    display: grid;
+    gap: 0.9rem;
+    background:
+        linear-gradient(180deg, rgba(48, 154, 221, 0.08), transparent 44%),
+        var(--surface);
+}
+
+.recurring-special--today {
+    border-color: rgba(213, 202, 85, 0.34);
+    box-shadow: 0 18px 42px rgba(31, 36, 58, 0.22);
+}
+
+.recurring-special__header,
+.recurring-special__footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.recurring-special__header {
+    align-items: flex-start;
+}
+
+.recurring-special__footer {
+    align-items: center;
+    padding-top: 0.85rem;
+    border-top: 1px dashed var(--outline);
+}
+
+.recurring-special__price {
+    font-family: "Bebas Neue", "Impact", sans-serif;
+    font-size: 1.5rem;
+    color: var(--accent-readable);
+}
+
+.recurring-special__placement {
+    color: var(--text-secondary);
+    line-height: 1.4;
+    text-align: right;
 }
 
 .contact-channel__value {
@@ -744,7 +805,8 @@ p {
 }
 
 .mock-form input,
-.mock-form textarea {
+.mock-form textarea,
+.mock-form select {
     width: 100%;
     padding: 0.85rem 1rem;
     color: var(--text-primary);
@@ -932,6 +994,7 @@ p {
     .hero-grid,
     .split-section,
     .feature-grid,
+    .recurring-specials-grid,
     .menu-grid,
     .event-card-grid,
     .admin-grid {
@@ -992,7 +1055,9 @@ p {
     .admin-card__header,
     .admin-list__item,
     .site-footer__grid,
-    .hours-row {
+    .hours-row,
+    .recurring-special__header,
+    .recurring-special__footer {
         flex-direction: column;
     }
 

@@ -18,6 +18,7 @@
                 <li>Let admins choose an existing section or type a new one from the same combo box, then create or edit items inside it.</li>
                 <li>Keep guest-facing descriptions short and readable.</li>
                 <li>Allow menu images when available, but never require them for an item to be published.</li>
+                <li>Manage recurring weekly specials separately from seasonal offer dates so day-of-week traditions stay easy to maintain.</li>
                 <li>Make pricing updates and item removal clear enough to prevent accidental mistakes.</li>
             </ul>
         </aside>
@@ -80,6 +81,66 @@
 
             <section class="admin-card">
                 <div class="admin-card__header">
+                    <h2>Recurring specials</h2>
+                    <span class="admin-card__badge">Weekly Schedule</span>
+                </div>
+
+                <div class="mock-form__grid">
+                    <label>
+                        Day of week
+                        <select>
+                            @foreach (var specialDay in recurringSpecialDayOptions)
+                            {
+                                if (specialDay == DayOfWeek.Monday)
+                                {
+                                    <option selected>@specialDay</option>
+                                }
+                                else
+                                {
+                                    <option>@specialDay</option>
+                                }
+                            }
+                        </select>
+                    </label>
+                    <label>
+                        Special title
+                        <input type="text" value="Monday Night Burgers" />
+                    </label>
+                    <label>
+                        Menu placement
+                        <input type="text" list="menu-section-options" value="Weekly specials block" />
+                        <small>Keep it in the weekly specials area or point guests toward the section it belongs with.</small>
+                    </label>
+                    <label>
+                        Featured menu item (optional)
+                        <input type="text" list="menu-item-options" value="Classic Hamburger" />
+                    </label>
+                    <datalist id="menu-item-options">
+                        @foreach (var itemName in menuItemOptions)
+                        {
+                            <option value="@itemName"></option>
+                        }
+                    </datalist>
+                    <label>
+                        Time note
+                        <input type="text" value="After 5:00 PM" />
+                    </label>
+                    <label>
+                        Price or callout
+                        <input type="text" value="$11 basket special" />
+                    </label>
+                    <label class="mock-form__message">
+                        Guest-facing description
+                        <textarea rows="4">A dependable burger-night draw with fries and easy weeknight pricing.</textarea>
+                    </label>
+                </div>
+
+                <p class="admin-field-note">Recurring specials belong to the weekly menu rhythm. Do not use seasonal offer dates unless the special itself is temporarily unavailable.</p>
+                <p class="admin-field-note">If a day has no special, leave it off the public schedule instead of showing a placeholder.</p>
+            </section>
+
+            <section class="admin-card">
+                <div class="admin-card__header">
                     <h2>Section preview</h2>
                     <span class="admin-card__badge">Live Order</span>
                 </div>
@@ -124,12 +185,56 @@
                     }
                 </div>
             </section>
+
+            <section class="admin-card">
+                <div class="admin-card__header">
+                    <h2>Recurring specials preview</h2>
+                    <span class="admin-card__badge">Edit + Delete</span>
+                </div>
+
+                <div class="admin-list">
+                    @foreach (var special in MockupContent.RecurringSpecials)
+                    {
+                        <article class="admin-list__item">
+                            <div>
+                                <h3>@special.Title</h3>
+                                <div class="menu-item__badges menu-item__badges--admin">
+                                    <span class="status-pill status-pill--schedule">@special.DayLabel</span>
+
+                                    @if (special.IsToday(today))
+                                    {
+                                        <span class="status-pill status-pill--today">Today</span>
+                                    }
+                                </div>
+                                <p>@special.Description</p>
+                                <p class="menu-item__offer-range">@special.TimeLabel · @special.PlacementSummary</p>
+                            </div>
+                            <div class="admin-list__actions">
+                                <span class="admin-price">@special.PriceNote</span>
+                                <button type="button">Edit</button>
+                                <button type="button" class="admin-list__danger">Delete</button>
+                            </div>
+                        </article>
+                    }
+                </div>
+            </section>
         </div>
     </div>
 </section>
 
 @code {
     private static readonly IReadOnlyList<string> sectionOptions = MockupContent.MenuSections.Select(section => section.Title).ToArray();
+    private static readonly IReadOnlyList<string> menuItemOptions = MockupContent.MenuSections.SelectMany(section => section.Items).Select(item => item.Name).Distinct().Order().ToArray();
+    private static readonly IReadOnlyList<DayOfWeek> recurringSpecialDayOptions =
+    [
+        DayOfWeek.Monday,
+        DayOfWeek.Tuesday,
+        DayOfWeek.Wednesday,
+        DayOfWeek.Thursday,
+        DayOfWeek.Friday,
+        DayOfWeek.Saturday,
+        DayOfWeek.Sunday
+    ];
     private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
     private readonly string offerStartExample = DateOnly.FromDateTime(DateTime.Today).AddDays(14).ToString("yyyy-MM-dd");
     private readonly string offerEndExample = DateOnly.FromDateTime(DateTime.Today).AddDays(56).ToString("yyyy-MM-dd");

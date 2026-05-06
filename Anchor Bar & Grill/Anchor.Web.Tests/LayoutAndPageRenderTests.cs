@@ -41,6 +41,8 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Menu mockup", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Appetizers", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Monday Night Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Sunday Pork Chop Dinner", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.NotEmpty(cut.FindAll(".menu-item__image"));
         Assert.NotEmpty(cut.FindAll(".menu-item--text-only"));
         Assert.Contains("Coming Soon", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -101,6 +103,9 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Choose an existing section or type a new section name to create it", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Offer start date", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(2, cut.FindAll("input[type='date']").Count);
+        Assert.Contains("Recurring specials", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Day of week", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Monday Night Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Seasonal item?", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("without an end date is not treated as seasonal or limited time", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }

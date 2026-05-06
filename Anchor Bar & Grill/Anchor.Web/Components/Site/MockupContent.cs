@@ -108,6 +108,15 @@ public static class MockupContent
             ])
     ];
 
+    public static IReadOnlyList<RecurringSpecial> RecurringSpecials { get; } =
+    [
+        new(DayOfWeek.Monday, "Monday Night Burgers", "A dependable burger-night draw with fries and easy weeknight pricing.", "$11 basket special", "After 5:00 PM", "Weekly specials block", "Classic Hamburger"),
+        new(DayOfWeek.Tuesday, "Tuesday Taco Basket", "A taco-night feature built for quick dinner traffic and casual bar seating.", "$10 dinner feature", "After 4:00 PM", "Weekly specials block", "Fish Tacos"),
+        new(DayOfWeek.Wednesday, "Wing Night", "Sauced wings with a strong shareable hook for midweek regulars.", "$16 dozen special", "After 5:00 PM", "Weekly specials block", "Traditional or Boneless (12)"),
+        new(DayOfWeek.Friday, "Friday Fish Fry", "A Friday dinner anchor that deserves a permanent home in the guest menu flow.", "$15 dinner plate", "After 4:00 PM", "Weekly specials block", "Walleye Sandwich"),
+        new(DayOfWeek.Sunday, "Sunday Pork Chop Dinner", "A hearty end-of-week dinner special that should read as a repeatable tradition.", "$17 dinner plate", "After 3:00 PM", "Weekly specials block")
+    ];
+
     public static IReadOnlyList<ScheduledEvent> FeaturedEvents { get; } =
     [
         new("Thursday Trivia", "Every Thursday", "7:00 PM", "Team-based trivia with rotating categories and a featured appetizer special.", "Weekly Favorite"),
@@ -139,11 +148,12 @@ public static class MockupContent
 
     public static IReadOnlyList<HourBlock> PreviewHours { get; } =
     [
+        new("Monday Burger Night", "5:00 PM - 8:00 PM"),
         new("Tuesday - Thursday", "11:00 AM - 9:00 PM"),
         new("Friday", "11:00 AM - 10:00 PM"),
         new("Saturday", "10:00 AM - 10:00 PM"),
         new("Sunday", "10:00 AM - 8:00 PM"),
-        new("Monday", "Closed or seasonal hours")
+        new("Special Hours Note", "Recurring specials may add day-specific dinner windows")
     ];
 
     public static IReadOnlyList<ContactChannel> ContactChannels { get; } =
@@ -239,6 +249,35 @@ public sealed record MenuItem(
 public sealed record MenuItemImage(string Source, string AltText);
 
 public sealed record OfferWindow(DateOnly StartsOn, DateOnly? EndsOn);
+
+public sealed record RecurringSpecial(
+    DayOfWeek DayOfWeek,
+    string Title,
+    string Description,
+    string PriceNote,
+    string TimeLabel,
+    string MenuPlacement,
+    string? RelatedMenuItem = null)
+{
+    public string DayLabel => DayOfWeek switch
+    {
+        DayOfWeek.Monday => "Monday",
+        DayOfWeek.Tuesday => "Tuesday",
+        DayOfWeek.Wednesday => "Wednesday",
+        DayOfWeek.Thursday => "Thursday",
+        DayOfWeek.Friday => "Friday",
+        DayOfWeek.Saturday => "Saturday",
+        DayOfWeek.Sunday => "Sunday",
+        _ => DayOfWeek.ToString()
+    };
+
+    public bool IsToday(DateOnly today) => today.DayOfWeek == DayOfWeek;
+
+    public string PlacementSummary =>
+        RelatedMenuItem is { Length: > 0 }
+            ? $"{MenuPlacement} · Featured item: {RelatedMenuItem}"
+            : MenuPlacement;
+}
 
 public sealed record ScheduledEvent(string Title, string DayLabel, string TimeLabel, string Description, string Badge);
 
