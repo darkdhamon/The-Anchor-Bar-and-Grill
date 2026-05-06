@@ -753,6 +753,14 @@ p {
     border-radius: 1rem;
 }
 
+.mock-form input[type="date"] {
+    color-scheme: light;
+}
+
+.site-shell.theme-dark .mock-form input[type="date"] {
+    color-scheme: dark;
+}
+
 .admin-page {
     display: grid;
     gap: 1.5rem;
