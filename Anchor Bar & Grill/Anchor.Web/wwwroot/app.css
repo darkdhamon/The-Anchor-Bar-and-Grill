@@ -404,7 +404,8 @@ p {
 .menu-grid,
 .admin-grid,
 .admin-stack,
-.contact-channel-list {
+.contact-channel-list,
+.social-profile-list {
     display: grid;
     gap: 1rem;
 }
@@ -500,6 +501,10 @@ p {
     display: grid;
     gap: 0.4rem;
     margin-bottom: 1rem;
+}
+
+.section-heading--compact {
+    margin: 1.5rem 0 1rem;
 }
 
 .feature-grid {
@@ -846,6 +851,41 @@ p {
     color: var(--accent-readable);
 }
 
+.social-profile-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.social-profile {
+    display: grid;
+    gap: 0.4rem;
+}
+
+.social-profile__link {
+    display: inline-flex;
+    width: fit-content;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.social-profile__link:hover,
+.social-profile__link:focus-visible {
+    color: var(--anchor-blue-300);
+    border-color: currentColor;
+    transform: translateY(-1px);
+}
+
+.social-profile__link--static:hover,
+.social-profile__link--static:focus-visible {
+    transform: none;
+}
+
+.social-profile__url {
+    color: var(--text-secondary);
+    line-height: 1.35;
+    word-break: break-word;
+}
+
 .menu-item__offer-range {
     color: var(--text-secondary);
     font-family: "Patrick Hand", "Segoe UI", cursive;
@@ -1125,7 +1165,8 @@ p {
     .recurring-specials-grid,
     .menu-grid,
     .event-card-grid,
-    .admin-grid {
+    .admin-grid,
+    .social-profile-list {
         grid-template-columns: 1fr;
     }
 

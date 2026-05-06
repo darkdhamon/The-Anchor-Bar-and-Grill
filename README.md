@@ -16,8 +16,9 @@ This repository currently contains the first code-native website mockup for The 
 - Menu admin section assignment mockup that lets staff choose an existing section or type a new one from the same combo-box field
 - Events mockup page that lists all upcoming events, including recurring schedules, optional event images, and richer cadence examples such as every other week or the third Friday of the month
 - About mockup page for the restaurant story and guest experience
-- Contact mockup page for location, phone, hours, and guest inquiry layout
+- Contact mockup page for location, phone, hours, dynamic social media links, and guest inquiry layout
 - Admin mockup pages for managing events, menu items, about content, and contact details
+- Contact admin mockup supports adding, editing, and deleting multiple social media profiles for the public contact page
 - Events admin mockup with date/time inputs, richer recurring-event controls, optional images, descriptions, and combo-select promo badges
 - Shared light and dark themes using the menu-inspired nautical palette
 

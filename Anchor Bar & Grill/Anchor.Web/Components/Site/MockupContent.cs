@@ -216,6 +216,20 @@ public static class MockupContent
         new("Website Form", "Guest inquiry mockup", "Use the mockup form to plan how questions about events, reservations, or groups will be handled.")
     ];
 
+    public static IReadOnlyList<SocialProfile> SocialProfiles { get; } =
+    [
+        new("Facebook", "The Anchor Bar & Grill", "https://www.facebook.com/theanchorbarandgrill", "Use the main page for weekly specials, event reminders, and community updates."),
+        new("Instagram", "@anchorbarandgrill", "https://www.instagram.com/anchorbarandgrill", "Food photos, patio moments, and short day-of-visit updates can live here."),
+        new("TikTok", "@anchornights", "https://www.tiktok.com/@anchornights", "This second-style profile shows the mockup can support more than one social presence when needed.")
+    ];
+
+    public static IReadOnlyList<string> SocialPlatformOptions { get; } =
+        SocialProfiles
+            .Select(item => item.Platform)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(item => item, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
     public static IReadOnlyList<string> BuildingPhotoNotes { get; } =
     [
         "This first mockup uses a styled exterior-photo placeholder because a building image has not been added to the repo yet.",
@@ -658,3 +672,5 @@ public sealed record ExperienceCard(string Title, string Description);
 public sealed record HourBlock(string Label, string Hours);
 
 public sealed record ContactChannel(string Title, string Value, string Description);
+
+public sealed record SocialProfile(string Platform, string ProfileLabel, string Url, string Description);

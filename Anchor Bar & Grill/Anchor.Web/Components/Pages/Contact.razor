@@ -27,6 +27,23 @@
                 </article>
             }
         </div>
+
+        <div class="section-heading section-heading--compact">
+            <p class="section-heading__eyebrow">Social Media</p>
+            <h2>Show every active profile guests may need without hard-coding the page to a single account.</h2>
+        </div>
+
+        <div class="social-profile-list">
+            @foreach (var profile in MockupContent.SocialProfiles)
+            {
+                <article class="contact-channel social-profile">
+                    <h3>@profile.Platform</h3>
+                    <a class="contact-channel__value social-profile__link" href="@profile.Url" target="_blank" rel="noreferrer noopener">@profile.ProfileLabel</a>
+                    <p class="social-profile__url">@profile.Url</p>
+                    <p>@profile.Description</p>
+                </article>
+            }
+        </div>
     </article>
 
     <article class="split-card">

@@ -87,6 +87,10 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 
         Assert.Contains("Contact mockup", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Hours Preview", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Social Media", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Facebook", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Instagram", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.NotEmpty(cut.FindAll(".social-profile__link"));
         Assert.Contains("Send Mockup Inquiry", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -149,5 +153,9 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Contact admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Contact details form", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Hours preview", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Social profiles", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Profile editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Choose an existing platform or type a new one", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Add another profile", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 }
