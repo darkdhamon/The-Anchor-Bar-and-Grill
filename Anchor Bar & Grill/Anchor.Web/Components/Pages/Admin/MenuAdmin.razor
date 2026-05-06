@@ -17,6 +17,7 @@
             <ul>
                 <li>Let admins pick a section, then create or edit items inside it.</li>
                 <li>Keep guest-facing descriptions short and readable.</li>
+                <li>Allow menu images when available, but never require them for an item to be published.</li>
                 <li>Make pricing updates and item removal clear enough to prevent accidental mistakes.</li>
             </ul>
         </aside>
@@ -41,11 +42,17 @@
                         Price
                         <input type="text" value="$9" />
                     </label>
+                    <label>
+                        Menu image (optional)
+                        <input type="text" value="images/menu/appetizers.svg" />
+                    </label>
                     <label class="mock-form__message">
                         Description
                         <textarea rows="4">Crisp white cheddar curds with your choice of dipping sauce.</textarea>
                     </label>
                 </div>
+
+                <p class="admin-field-note">Leave the image field blank when an item does not have a photo yet. The public menu mockup should still render the item cleanly.</p>
             </section>
 
             <section class="admin-card">
@@ -57,7 +64,16 @@
                 <div class="admin-list">
                     @foreach (var item in MockupContent.MenuSections.First().Items)
                     {
-                        <article class="admin-list__item">
+                        <article class="admin-list__item admin-list__item--media">
+                            @if (item.Image is not null)
+                            {
+                                <img class="admin-menu-thumb" src="@item.Image.Source" alt="@item.Image.AltText" />
+                            }
+                            else
+                            {
+                                <div class="admin-menu-thumb admin-menu-thumb--empty">Optional image</div>
+                            }
+
                             <div>
                                 <h3>@item.Name</h3>
                                 <p>@item.Description</p>

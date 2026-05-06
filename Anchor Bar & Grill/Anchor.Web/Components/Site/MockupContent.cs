@@ -34,18 +34,18 @@ public static class MockupContent
             "accent-blue",
             "Served with the menu's bright, approachable bar-and-grill energy.",
             [
-                new("Cheese Curds", "Crisp white cheddar curds with your choice of dipping sauce.", "$9"),
+                new("Cheese Curds", "Crisp white cheddar curds with your choice of dipping sauce.", "$9", new("images/menu/appetizers.svg", "Mockup food photo for cheese curds")),
                 new("Mini Tacos", "Served with salsa and sour cream.", "$9"),
                 new("Quesadillas", "Loaded with cheese and served with salsa and sour cream.", "$11"),
-                new("Fish Tacos", "Finished with Boom Boom sauce for a bold bar-food favorite.", "$10")
+                new("Fish Tacos", "Finished with Boom Boom sauce for a bold bar-food favorite.", "$10", new("images/menu/appetizers.svg", "Mockup food photo for fish tacos"))
             ]),
         new(
             "Wings",
             "accent-blue",
             "Mockup sauces mirror the flavor-forward tone of the printed menu.",
             [
-                new("Traditional or Boneless (6)", "Choice of one sauce.", "$9"),
-                new("Traditional or Boneless (12)", "Choice of two sauces.", "$16"),
+                new("Traditional or Boneless (6)", "Choice of one sauce.", "$9", new("images/menu/wings.svg", "Mockup food photo for a basket of wings")),
+                new("Traditional or Boneless (12)", "Choice of two sauces.", "$16", new("images/menu/wings.svg", "Mockup food photo for a platter of wings")),
                 new("Add Fries", "Upgrade any wing order with a side of fries.", "$3")
             ]),
         new(
@@ -53,8 +53,8 @@ public static class MockupContent
             "accent-green",
             "A lighter section that still feels part of the same menu family.",
             [
-                new("The Anchor Salad", "Crisp greens, tomatoes, peppers, shaved red onions, and your choice of dressing.", "$10"),
-                new("Smoked Salmon Salad", "Finished with crumbled smoked salmon and poppyseed dressing.", "$13"),
+                new("The Anchor Salad", "Crisp greens, tomatoes, peppers, shaved red onions, and your choice of dressing.", "$10", new("images/menu/salads.svg", "Mockup food photo for the Anchor salad")),
+                new("Smoked Salmon Salad", "Finished with crumbled smoked salmon and poppyseed dressing.", "$13", new("images/menu/salads.svg", "Mockup food photo for a smoked salmon salad")),
                 new("BLT Salad", "Bacon, tomatoes, greens, and your choice of dressing.", "$12"),
                 new("Seasonal Soup", "Cup or bowl, updated as the kitchen rotates specials.", "$4/$6")
             ]),
@@ -63,8 +63,8 @@ public static class MockupContent
             "accent-gold",
             "Hearty handhelds inspired by the current printed menu.",
             [
-                new("Grilled Chicken Sandwich", "Lettuce, tomato, and mayo on a toasted bun.", "$13"),
-                new("Steak Sandwich", "Grilled sirloin, smoked gouda, peppers, and onions.", "$14"),
+                new("Grilled Chicken Sandwich", "Lettuce, tomato, and mayo on a toasted bun.", "$13", new("images/menu/sandwiches.svg", "Mockup food photo for a grilled chicken sandwich")),
+                new("Steak Sandwich", "Grilled sirloin, smoked gouda, peppers, and onions.", "$14", new("images/menu/sandwiches.svg", "Mockup food photo for a steak sandwich")),
                 new("Ranch Melt", "Swiss cheese, grilled ham, smoked bacon, and classic ranch.", "$13"),
                 new("Walleye Sandwich", "Breaded walleye on a toasted bun.", "$14")
             ]),
@@ -73,8 +73,8 @@ public static class MockupContent
             "accent-magenta",
             "Big labels and clean pricing should make the burger section easy to scan.",
             [
-                new("Classic Hamburger", "Fresh hand-pattied burger; add cheese if desired.", "$11"),
-                new("Bacon Cheeseburger", "A familiar favorite with bacon and melty cheese.", "$13"),
+                new("Classic Hamburger", "Fresh hand-pattied burger; add cheese if desired.", "$11", new("images/menu/burgers.svg", "Mockup food photo for a classic hamburger")),
+                new("Bacon Cheeseburger", "A familiar favorite with bacon and melty cheese.", "$13", new("images/menu/burgers.svg", "Mockup food photo for a bacon cheeseburger")),
                 new("Western Burger", "Bacon, BBQ sauce, and a crisp onion ring.", "$14"),
                 new("Sunrise Burger", "Bacon, American cheese, and egg.", "$14")
             ]),
@@ -83,8 +83,8 @@ public static class MockupContent
             "accent-blue",
             "Bright blue framed panels from the menu carry over nicely here.",
             [
-                new("Chicken Wrap", "Grilled or crispy chicken, tomatoes, onions, lettuce, and dressing.", "$13"),
-                new("Steak Wrap", "Steak, peppers, onions, cheese, lettuce, and dressing.", "$13"),
+                new("Chicken Wrap", "Grilled or crispy chicken, tomatoes, onions, lettuce, and dressing.", "$13", new("images/menu/wraps.svg", "Mockup food photo for a chicken wrap")),
+                new("Steak Wrap", "Steak, peppers, onions, cheese, lettuce, and dressing.", "$13", new("images/menu/wraps.svg", "Mockup food photo for a steak wrap")),
                 new("Buffalo Chicken Wrap", "Crispy chicken tossed in buffalo with ranch-style cooling balance.", "$13")
             ]),
         new(
@@ -93,7 +93,7 @@ public static class MockupContent
             "A small playful section with clearer sizing and pricing for families.",
             [
                 new("Mac & Cheese", "Served with one side and a kid drink mockup option.", "$7"),
-                new("Mini Corn Dogs", "The classic choice for a quick family meal.", "$7"),
+                new("Mini Corn Dogs", "The classic choice for a quick family meal.", "$7", new("images/menu/kids.svg", "Mockup food photo for mini corn dogs")),
                 new("Chicken Strips", "Served with sauce.", "$7")
             ]),
         new(
@@ -101,8 +101,8 @@ public static class MockupContent
             "accent-magenta",
             "Accent color keeps the end of the menu feeling celebratory.",
             [
-                new("Chocolate Lava Cake", "Served warm with ice cream.", "$6"),
-                new("Mini Donuts", "Fair-style donuts for a casual sweet finish.", "$6")
+                new("Chocolate Lava Cake", "Served warm with ice cream.", "$6", new("images/menu/desserts.svg", "Mockup food photo for chocolate lava cake")),
+                new("Mini Donuts", "Fair-style donuts for a casual sweet finish.", "$6", new("images/menu/desserts.svg", "Mockup food photo for mini donuts"))
             ])
     ];
 
@@ -168,7 +168,9 @@ public sealed record FeatureCallout(string Title, string Description);
 
 public sealed record MenuSection(string Title, string AccentClass, string Note, IReadOnlyList<MenuItem> Items);
 
-public sealed record MenuItem(string Name, string Description, string Price);
+public sealed record MenuItem(string Name, string Description, string Price, MenuItemImage? Image = null);
+
+public sealed record MenuItemImage(string Source, string AltText);
 
 public sealed record ScheduledEvent(string Title, string DayLabel, string TimeLabel, string Description, string Badge);
 

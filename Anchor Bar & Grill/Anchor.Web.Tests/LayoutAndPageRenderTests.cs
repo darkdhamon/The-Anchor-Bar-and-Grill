@@ -40,6 +40,8 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Menu mockup", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Appetizers", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.NotEmpty(cut.FindAll(".menu-item__image"));
+        Assert.NotEmpty(cut.FindAll(".menu-item--text-only"));
     }
 
     [Fact]
@@ -90,6 +92,8 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Menu admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Item editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Section preview", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Menu image (optional)", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Optional image", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
