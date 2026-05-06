@@ -51,4 +51,20 @@ public sealed class ThemePersistenceIntegrationTests : IClassFixture<WebApplicat
         Assert.Contains("new Date().getHours()", markup, StringComparison.Ordinal);
         Assert.Contains("theme.js", markup, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task AccountLogin_RendersBrandedAccountFormLayout()
+    {
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
+
+        var markup = await client.GetStringAsync("/Account/Login");
+
+        Assert.Contains("account-page", markup, StringComparison.Ordinal);
+        Assert.Contains("Secure Access", markup, StringComparison.Ordinal);
+        Assert.Contains("account-form__divider", markup, StringComparison.Ordinal);
+        Assert.Contains("Log in with a passkey", markup, StringComparison.Ordinal);
+    }
 }

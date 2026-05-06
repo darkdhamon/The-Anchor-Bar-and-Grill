@@ -1248,6 +1248,123 @@ html.anchor-theme-dark .site-shell {
     line-height: 1.45;
 }
 
+.account-page {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.account-page__hero {
+    margin-bottom: 0;
+}
+
+.account-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.95fr);
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.account-panel {
+    padding: 1.25rem;
+}
+
+.account-panel__body {
+    display: grid;
+    gap: 1rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.account-panel__body p {
+    margin: 0;
+}
+
+.account-panel__body form,
+.account-panel__body form > div,
+.account-panel__body form p {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.account-panel__body button {
+    justify-self: start;
+}
+
+.account-form {
+    margin-top: 1rem;
+}
+
+.account-form__validation {
+    margin: 0 0 1rem;
+}
+
+.account-form__actions {
+    display: flex;
+    justify-content: stretch;
+    margin-top: 1rem;
+}
+
+.account-form__submit,
+.account-form__passkey {
+    width: 100%;
+    justify-content: center;
+}
+
+.account-form__divider {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    margin: 1rem 0;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-size: 0.88rem;
+}
+
+.account-form__divider::before,
+.account-form__divider::after {
+    content: "";
+    flex: 1 1 auto;
+    border-top: 1px solid var(--outline);
+}
+
+.account-links {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 1.25rem;
+}
+
+.account-links a,
+.account-panel__body a {
+    color: var(--accent-readable);
+}
+
+.account-links a:hover,
+.account-panel__body a:hover,
+.account-links a:focus-visible,
+.account-panel__body a:focus-visible {
+    color: var(--anchor-white);
+}
+
+.alert {
+    margin: 0 0 1rem;
+    padding: 0.85rem 1rem;
+    border-radius: 1rem;
+    border: 1px solid transparent;
+}
+
+.alert-success {
+    color: var(--anchor-green);
+    background: rgba(121, 194, 95, 0.12);
+    border-color: rgba(121, 194, 95, 0.28);
+}
+
+.alert-danger {
+    color: #ffb9cf;
+    background: rgba(210, 88, 152, 0.14);
+    border-color: rgba(210, 88, 152, 0.32);
+}
+
 .site-footer {
     padding: 1rem 0 2rem;
 }
@@ -1309,6 +1426,10 @@ html.anchor-theme-dark .site-shell {
 
 .validation-message {
     color: var(--anchor-magenta);
+    display: block;
+    font-size: 0.92rem;
+    line-height: 1.35;
+    margin-top: 0.2rem;
 }
 
 .blazor-error-boundary {
@@ -1328,6 +1449,7 @@ html.anchor-theme-dark .site-shell {
     .menu-grid,
     .event-card-grid,
     .admin-grid,
+    .account-grid,
     .social-profile-list {
         grid-template-columns: 1fr;
     }
