@@ -17,7 +17,7 @@
             <ul>
                 <li>Create upcoming events from a guided form with title, image, date, time, badge, and description fields.</li>
                 <li>Let admins choose an existing promo badge or type a new one from the same combo box when a fresh badge is needed.</li>
-                <li>Support recurring events so weekly nights automatically produce more than one public listing.</li>
+                <li>Support recurring events with schedules like every week, every other week, or the third Friday of the month.</li>
                 <li>Use clear delete confirmations so outdated events are removed intentionally.</li>
             </ul>
         </aside>
@@ -59,11 +59,44 @@
                         }
                     </datalist>
                     <label>
+                        Recurrence pattern
+                        <select>
+                            @foreach (var pattern in recurrencePatternOptions)
+                            {
+                                if (pattern == "Weekly")
+                                {
+                                    <option selected>@pattern</option>
+                                }
+                                else
+                                {
+                                    <option>@pattern</option>
+                                }
+                            }
+                        </select>
+                    </label>
+                    <label>
+                        Repeat cadence
+                        <select>
+                            @foreach (var cadence in recurrenceCadenceOptions)
+                            {
+                                if (cadence == "Every other week")
+                                {
+                                    <option selected>@cadence</option>
+                                }
+                                else
+                                {
+                                    <option>@cadence</option>
+                                }
+                            }
+                        </select>
+                        <small>Use cadence to handle schedules like every other Friday without creating duplicate event definitions.</small>
+                    </label>
+                    <label>
                         Repeats on
                         <select>
                             @foreach (var day in recurringEventDayOptions)
                             {
-                                if (day == DayOfWeek.Thursday)
+                                if (day == DayOfWeek.Friday)
                                 {
                                     <option selected>@day</option>
                                 }
@@ -74,11 +107,33 @@
                             }
                         </select>
                     </label>
+                    <label>
+                        Week of month
+                        <select>
+                            @foreach (var week in recurrenceWeekOptions)
+                            {
+                                if (week == "Third")
+                                {
+                                    <option selected>@week</option>
+                                }
+                                else
+                                {
+                                    <option>@week</option>
+                                }
+                            }
+                        </select>
+                        <small>Use this only when the pattern is monthly, such as a third Friday dinner feature.</small>
+                    </label>
+                    <label>
+                        Recurs until (optional)
+                        <input type="date" value="@exampleRecurringEndDate" />
+                        <small>Leave this blank for an open-ended schedule, or use it to stop a seasonal recurring event automatically.</small>
+                    </label>
                     <label class="mock-form__toggle">
                         <span>Recurring event?</span>
                         <div class="mock-form__toggle-row">
                             <input type="checkbox" checked />
-                            <small>When this is checked, the public schedule will generate repeating event dates automatically.</small>
+                            <small>When this is checked, the public schedule will generate repeating event dates automatically from the pattern and cadence shown here.</small>
                         </div>
                     </label>
                     <label class="mock-form__message">
@@ -89,6 +144,7 @@
 
                 <p class="admin-field-note">Leave the image field blank when an event does not need artwork. The public events list should still render cleanly without it.</p>
                 <p class="admin-field-note">Recurring events should stay tied to one event definition so editing the title, badge, or description updates every future occurrence.</p>
+                <p class="admin-field-note">This mockup assumes the same scheduling tool can support weekly, every-other-week, and nth-weekday monthly patterns before any backend recurrence engine is built.</p>
             </section>
 
             <section class="admin-card">
@@ -133,6 +189,26 @@
 
 @code {
     private static readonly IReadOnlyList<string> eventBadgeOptions = MockupContent.EventBadgeOptions;
+    private static readonly IReadOnlyList<string> recurrencePatternOptions =
+    [
+        "Weekly",
+        "Monthly nth weekday"
+    ];
+    private static readonly IReadOnlyList<string> recurrenceCadenceOptions =
+    [
+        "Every week",
+        "Every other week",
+        "Every 3 weeks",
+        "Every month"
+    ];
+    private static readonly IReadOnlyList<string> recurrenceWeekOptions =
+    [
+        "First",
+        "Second",
+        "Third",
+        "Fourth",
+        "Last"
+    ];
     private static readonly IReadOnlyList<DayOfWeek> recurringEventDayOptions =
     [
         DayOfWeek.Monday,
@@ -145,5 +221,9 @@
     ];
 
     private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
-    private readonly EventDefinition exampleEvent = MockupContent.EventDefinitions.First();
+    private readonly EventDefinition exampleEvent = MockupContent.EventDefinitions
+        .First(item => item.Title == "Friday Live Music");
+
+    private string exampleRecurringEndDate =>
+        exampleEvent.Recurrence?.EndsOn?.ToString("yyyy-MM-dd") ?? string.Empty;
 }

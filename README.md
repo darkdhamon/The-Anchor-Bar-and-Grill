@@ -14,11 +14,11 @@ This repository currently contains the first code-native website mockup for The 
 - Native date-picker inputs in the menu admin mockup for offer start and end dates
 - Menu admin recurring-specials editor mockup for defining weekly specials separately from one-off offer windows
 - Menu admin section assignment mockup that lets staff choose an existing section or type a new one from the same combo-box field
-- Events mockup page that lists all upcoming events, including recurring schedules and optional event images
+- Events mockup page that lists all upcoming events, including recurring schedules, optional event images, and richer cadence examples such as every other week or the third Friday of the month
 - About mockup page for the restaurant story and guest experience
 - Contact mockup page for location, phone, hours, and guest inquiry layout
 - Admin mockup pages for managing events, menu items, about content, and contact details
-- Events admin mockup with date/time inputs, recurring-event controls, optional images, descriptions, and combo-select promo badges
+- Events admin mockup with date/time inputs, richer recurring-event controls, optional images, descriptions, and combo-select promo badges
 - Shared light and dark themes using the menu-inspired nautical palette
 
 ## Design Direction
@@ -33,6 +33,7 @@ This repository currently contains the first code-native website mockup for The 
 
 - The development configuration now includes a LocalDB connection string so the mockup can run locally without additional secret setup
 - The current homepage uses a styled building-photo placeholder until a real exterior image is added to the project
+- The event mockup data now demonstrates weekly, every-other-week, and nth-weekday monthly recurrence patterns so the UI direction can be reviewed before backend scheduling is built
 - Account pages continue to use the server-routed Identity flow, so auth navigation should bypass interactive routing when needed
 - Starter scaffold pages such as `Counter`, `Weather`, and other unused sample content have been removed from the public experience
 

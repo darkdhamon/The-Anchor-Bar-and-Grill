@@ -128,42 +128,47 @@ public static class MockupContent
             "Weekly Favorite",
             new(19, 0),
             new("images/events/trivia-night.svg", "Mockup event image for Thursday trivia"),
-            EventReferenceDate.AddDays(-14),
-            true,
-            DayOfWeek.Thursday,
-            NextOccurrenceOnOrAfter(EventReferenceDate.AddDays(20), DayOfWeek.Thursday)),
+            StartsOn: NextOccurrenceOnOrAfter(EventReferenceDate.AddDays(-14), DayOfWeek.Thursday),
+            Recurrence: new(
+                EventRecurrencePattern.Weekly,
+                DayOfWeek.Thursday,
+                EndsOn: NextOccurrenceOnOrAfter(EventReferenceDate.AddDays(35), DayOfWeek.Thursday))),
         new(
             "Friday Live Music",
             "A rotating lineup of regional acts with a brighter evening atmosphere.",
             "Live Music",
             new(20, 30),
             new("images/events/live-music.svg", "Mockup event image for Friday live music"),
-            EventReferenceDate.AddDays(-7),
-            true,
-            DayOfWeek.Friday,
-            NextOccurrenceOnOrAfter(EventReferenceDate.AddDays(20), DayOfWeek.Friday)),
+            StartsOn: NextOccurrenceOnOrAfter(EventReferenceDate.AddDays(-7), DayOfWeek.Friday),
+            Recurrence: new(
+                EventRecurrencePattern.Weekly,
+                DayOfWeek.Friday,
+                Interval: 2,
+                EndsOn: NextOccurrenceOnOrAfter(EventReferenceDate.AddDays(49), DayOfWeek.Friday))),
+        new(
+            "Third Friday Steak Night",
+            "A once-a-month dinner event that should read clearly as the third Friday tradition.",
+            "Monthly Feature",
+            new(18, 30),
+            StartsOn: GetNthWeekdayOfMonth(EventReferenceDate.Year, EventReferenceDate.Month, DayOfWeek.Friday, EventRecurrenceWeek.Third),
+            Recurrence: new(
+                EventRecurrencePattern.MonthlyNthWeekday,
+                DayOfWeek.Friday,
+                WeekOfMonth: EventRecurrenceWeek.Third,
+                EndsOn: GetNthWeekdayOfMonth(EventReferenceDate.AddMonths(2).Year, EventReferenceDate.AddMonths(2).Month, DayOfWeek.Friday, EventRecurrenceWeek.Third))),
         new(
             "Summer Kickoff Patio Party",
             "Kick off patio season with shared plates, a feature drink menu, and extended evening energy.",
             "Seasonal",
             new(18, 0),
             new("images/events/patio-party.svg", "Mockup event image for a patio party"),
-            EventReferenceDate.AddDays(12)),
+            StartsOn: EventReferenceDate.AddDays(12)),
         new(
             "Community Bingo Fundraiser",
             "A family-friendly fundraiser event with raffle prizes and simple dinner specials.",
             "Community Night",
             new(11, 0),
-            EventDate: EventReferenceDate.AddDays(25)),
-        new(
-            "Sunday Watch Party",
-            "Large-screen viewing, baskets, burgers, and a crowd-friendly setup.",
-            "Game Day",
-            new(12, 30),
-            EventDate: EventReferenceDate.AddDays(-7),
-            IsRecurring: true,
-            RepeatsOn: DayOfWeek.Sunday,
-            RepeatsUntil: NextOccurrenceOnOrAfter(EventReferenceDate.AddDays(13), DayOfWeek.Sunday))
+            StartsOn: EventReferenceDate.AddDays(25))
     ];
 
     public static IReadOnlyList<string> EventBadgeOptions { get; } =
@@ -176,8 +181,8 @@ public static class MockupContent
     public static IReadOnlyList<WeeklyRhythm> WeeklyRhythms { get; } =
     [
         new("Weeknights", "Give regulars a dependable rhythm with trivia, music, or simple dinner specials."),
-        new("Weekends", "Lean into the Anchor as both a casual stop and a local social destination."),
-        new("Private Events", "Reserve room in the mockup for future bookings, community nights, or team gatherings.")
+        new("Every Other Week", "Some live entertainment or community programs may intentionally land every other week instead of every week."),
+        new("Monthly Traditions", "Reserve space for events like third-Friday dinners or monthly featured nights that guests learn to expect.")
     ];
 
     public static IReadOnlyList<StoryPoint> AboutStory { get; } =
@@ -237,26 +242,9 @@ public static class MockupContent
 
         foreach (var item in EventDefinitions)
         {
-            if (item.IsRecurring && item.RepeatsOn is { } repeatsOn)
+            foreach (var occursOn in item.GetOccurrences(fromDate, throughDate))
             {
-                var firstPossibleDate = item.EventDate is { } eventDate && eventDate > fromDate
-                    ? eventDate
-                    : fromDate;
-                var occurrenceDate = NextOccurrenceOnOrAfter(firstPossibleDate, repeatsOn);
-                var finalDate = item.RepeatsUntil ?? throughDate;
-
-                while (occurrenceDate <= throughDate && occurrenceDate <= finalDate)
-                {
-                    upcomingEvents.Add(new(item, occurrenceDate));
-                    occurrenceDate = occurrenceDate.AddDays(7);
-                }
-
-                continue;
-            }
-
-            if (item.EventDate is { } oneTimeDate && oneTimeDate >= fromDate && oneTimeDate <= throughDate)
-            {
-                upcomingEvents.Add(new(item, oneTimeDate));
+                upcomingEvents.Add(new(item, occursOn));
             }
         }
 
@@ -268,9 +256,7 @@ public static class MockupContent
     private static DateOnly GetEventPreviewEndDate(DateOnly fromDate)
     {
         var lastScheduledDate = EventDefinitions
-            .Select(item => item.IsRecurring ? item.RepeatsUntil : item.EventDate)
-            .Where(item => item is not null)
-            .Select(item => item!.Value)
+            .Select(item => item.GetPreviewEndDate())
             .DefaultIfEmpty(fromDate)
             .Max();
 
@@ -281,6 +267,23 @@ public static class MockupContent
     {
         var offset = ((int)dayOfWeek - (int)fromDate.DayOfWeek + 7) % 7;
         return fromDate.AddDays(offset);
+    }
+
+    private static DateOnly GetNthWeekdayOfMonth(int year, int month, DayOfWeek dayOfWeek, EventRecurrenceWeek weekOfMonth)
+    {
+        if (weekOfMonth == EventRecurrenceWeek.Last)
+        {
+            var lastDayOfMonth = new DateOnly(year, month, DateTime.DaysInMonth(year, month));
+            var offsetFromEnd = ((int)lastDayOfMonth.DayOfWeek - (int)dayOfWeek + 7) % 7;
+
+            return lastDayOfMonth.AddDays(-offsetFromEnd);
+        }
+
+        var firstDayOfMonth = new DateOnly(year, month, 1);
+        var offsetFromStart = ((int)dayOfWeek - (int)firstDayOfMonth.DayOfWeek + 7) % 7;
+        var candidate = firstDayOfMonth.AddDays(offsetFromStart + (7 * ((int)weekOfMonth - 1)));
+
+        return candidate.Month == month ? candidate : firstDayOfMonth;
     }
 }
 
@@ -391,52 +394,198 @@ public sealed record EventDefinition(
     string PromoBadge,
     TimeOnly StartsAt,
     EventImage? Image = null,
-    DateOnly? EventDate = null,
-    bool IsRecurring = false,
-    DayOfWeek? RepeatsOn = null,
-    DateOnly? RepeatsUntil = null)
+    DateOnly? StartsOn = null,
+    EventRecurrence? Recurrence = null)
 {
+    public bool IsRecurring => Recurrence is not null;
+
     public string TimeLabel => StartsAt.ToString("h:mm tt", CultureInfo.InvariantCulture);
 
-    public string DateInputValue => (EventDate ?? DateOnly.FromDateTime(DateTime.Today)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    public string DateInputValue => (StartsOn ?? DateOnly.FromDateTime(DateTime.Today)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
     public string TimeInputValue => StartsAt.ToString("HH:mm", CultureInfo.InvariantCulture);
 
-    public DateOnly? GetNextOccurrence(DateOnly fromDate)
-    {
-        if (IsRecurring && RepeatsOn is { } repeatsOn)
-        {
-            var firstPossibleDate = EventDate is { } eventDate && eventDate > fromDate
-                ? eventDate
-                : fromDate;
-            var nextDate = NextOccurrenceOnOrAfter(firstPossibleDate, repeatsOn);
+    public DateOnly GetPreviewEndDate() => Recurrence?.EndsOn ?? StartsOn ?? DateOnly.FromDateTime(DateTime.Today);
 
-            return RepeatsUntil is null || nextDate <= RepeatsUntil ? nextDate : null;
+    public IReadOnlyList<DateOnly> GetOccurrences(DateOnly fromDate, DateOnly throughDate)
+    {
+        var startDate = StartsOn ?? fromDate;
+
+        if (Recurrence is null)
+        {
+            return startDate >= fromDate && startDate <= throughDate ? [startDate] : [];
         }
 
-        return EventDate is { } oneTimeDate && oneTimeDate >= fromDate ? oneTimeDate : null;
+        return Recurrence.GetOccurrences(startDate, fromDate, throughDate);
+    }
+
+    public DateOnly? GetNextOccurrence(DateOnly fromDate)
+    {
+        var startDate = StartsOn ?? fromDate;
+
+        if (Recurrence is null)
+        {
+            return startDate >= fromDate ? startDate : null;
+        }
+
+        return Recurrence.GetNextOccurrence(startDate, fromDate);
     }
 
     public string GetScheduleSummary(DateOnly fromDate)
     {
-        if (IsRecurring && RepeatsOn is { } repeatsOn)
+        if (Recurrence is null)
         {
-            var repeatLabel = $"Recurring every {GetDayLabel(repeatsOn)} at {TimeLabel}";
-
-            return GetNextOccurrence(fromDate) is { } nextDate
-                ? $"{repeatLabel} - next on {nextDate:MMM d, yyyy}"
-                : repeatLabel;
+            return StartsOn is { } oneTimeDate
+                ? $"One-time event on {oneTimeDate:MMM d, yyyy} at {TimeLabel}"
+                : $"One-time event at {TimeLabel}";
         }
 
-        return EventDate is { } oneTimeDate
-            ? $"One-time event on {oneTimeDate:MMM d, yyyy} at {TimeLabel}"
-            : $"One-time event at {TimeLabel}";
+        return Recurrence.GetSummary(StartsOn ?? fromDate, StartsAt, fromDate);
+    }
+}
+
+public sealed record EventImage(string Source, string AltText);
+
+public sealed record EventRecurrence(
+    EventRecurrencePattern Pattern,
+    DayOfWeek DayOfWeek,
+    int Interval = 1,
+    EventRecurrenceWeek WeekOfMonth = EventRecurrenceWeek.First,
+    DateOnly? EndsOn = null)
+{
+    public IReadOnlyList<DateOnly> GetOccurrences(DateOnly startDate, DateOnly fromDate, DateOnly throughDate)
+    {
+        if (throughDate < fromDate)
+        {
+            return [];
+        }
+
+        var finalDate = EndsOn is { } endsOn && endsOn < throughDate ? endsOn : throughDate;
+
+        if (finalDate < fromDate)
+        {
+            return [];
+        }
+
+        return Pattern switch
+        {
+            EventRecurrencePattern.Weekly => GetWeeklyOccurrences(startDate, fromDate, finalDate),
+            EventRecurrencePattern.MonthlyNthWeekday => GetMonthlyNthWeekdayOccurrences(startDate, fromDate, finalDate),
+            _ => []
+        };
+    }
+
+    public DateOnly? GetNextOccurrence(DateOnly startDate, DateOnly fromDate)
+    {
+        var searchEnd = EndsOn ?? fromDate.AddYears(1);
+        var occurrences = GetOccurrences(startDate, fromDate, searchEnd);
+
+        return occurrences.Count > 0 ? occurrences[0] : null;
+    }
+
+    public string GetSummary(DateOnly startDate, TimeOnly startsAt, DateOnly fromDate)
+    {
+        var timeLabel = startsAt.ToString("h:mm tt", CultureInfo.InvariantCulture);
+        var cadence = Pattern switch
+        {
+            EventRecurrencePattern.Weekly when Interval == 1 => $"Recurring every {GetDayLabel(DayOfWeek)} at {timeLabel}",
+            EventRecurrencePattern.Weekly when Interval == 2 => $"Recurring every other {GetDayLabel(DayOfWeek)} at {timeLabel}",
+            EventRecurrencePattern.Weekly => $"Recurring every {Interval} weeks on {GetDayLabel(DayOfWeek)} at {timeLabel}",
+            EventRecurrencePattern.MonthlyNthWeekday when Interval == 1 => $"Recurring on the {GetWeekLabel(WeekOfMonth).ToLowerInvariant()} {GetDayLabel(DayOfWeek)} of each month at {timeLabel}",
+            EventRecurrencePattern.MonthlyNthWeekday => $"Recurring every {Interval} months on the {GetWeekLabel(WeekOfMonth).ToLowerInvariant()} {GetDayLabel(DayOfWeek)} at {timeLabel}",
+            _ => $"Recurring at {timeLabel}"
+        };
+
+        return GetNextOccurrence(startDate, fromDate) is { } nextDate
+            ? $"{cadence} - next on {nextDate:MMM d, yyyy}"
+            : cadence;
+    }
+
+    public string GetPatternLabel() => Pattern switch
+    {
+        EventRecurrencePattern.Weekly when Interval == 1 => $"Every {GetDayLabel(DayOfWeek)}",
+        EventRecurrencePattern.Weekly when Interval == 2 => $"Every other {GetDayLabel(DayOfWeek)}",
+        EventRecurrencePattern.Weekly => $"Every {Interval} weeks on {GetDayLabel(DayOfWeek)}",
+        EventRecurrencePattern.MonthlyNthWeekday when Interval == 1 => $"{GetWeekLabel(WeekOfMonth)} {GetDayLabel(DayOfWeek)} of the month",
+        EventRecurrencePattern.MonthlyNthWeekday => $"{GetWeekLabel(WeekOfMonth)} {GetDayLabel(DayOfWeek)} every {Interval} months",
+        _ => "Recurring schedule"
+    };
+
+    private IReadOnlyList<DateOnly> GetWeeklyOccurrences(DateOnly startDate, DateOnly fromDate, DateOnly throughDate)
+    {
+        List<DateOnly> occurrences = [];
+        var anchorDate = NextOccurrenceOnOrAfter(startDate, DayOfWeek);
+        var occurrenceDate = anchorDate > fromDate ? anchorDate : NextOccurrenceOnOrAfter(fromDate, DayOfWeek);
+
+        if (Interval > 1)
+        {
+            var weeksFromAnchor = (occurrenceDate.DayNumber - anchorDate.DayNumber) / 7;
+            var remainder = weeksFromAnchor % Interval;
+
+            if (remainder != 0)
+            {
+                occurrenceDate = occurrenceDate.AddDays((Interval - remainder) * 7);
+            }
+        }
+
+        while (occurrenceDate <= throughDate)
+        {
+            occurrences.Add(occurrenceDate);
+            occurrenceDate = occurrenceDate.AddDays(Interval * 7);
+        }
+
+        return occurrences;
+    }
+
+    private IReadOnlyList<DateOnly> GetMonthlyNthWeekdayOccurrences(DateOnly startDate, DateOnly fromDate, DateOnly throughDate)
+    {
+        List<DateOnly> occurrences = [];
+        var anchorMonth = new DateOnly(startDate.Year, startDate.Month, 1);
+        var cursorDate = startDate > fromDate ? startDate : fromDate;
+        var cursorMonth = new DateOnly(cursorDate.Year, cursorDate.Month, 1);
+        var finalMonth = new DateOnly(throughDate.Year, throughDate.Month, 1);
+
+        while (cursorMonth <= finalMonth)
+        {
+            var monthOffset = ((cursorMonth.Year - anchorMonth.Year) * 12) + cursorMonth.Month - anchorMonth.Month;
+
+            if (monthOffset >= 0 && monthOffset % Interval == 0)
+            {
+                var occurrenceDate = GetNthWeekdayOfMonth(cursorMonth.Year, cursorMonth.Month, DayOfWeek, WeekOfMonth);
+
+                if (occurrenceDate >= startDate && occurrenceDate >= fromDate && occurrenceDate <= throughDate)
+                {
+                    occurrences.Add(occurrenceDate);
+                }
+            }
+
+            cursorMonth = cursorMonth.AddMonths(1);
+        }
+
+        return occurrences;
     }
 
     private static DateOnly NextOccurrenceOnOrAfter(DateOnly fromDate, DayOfWeek dayOfWeek)
     {
         var offset = ((int)dayOfWeek - (int)fromDate.DayOfWeek + 7) % 7;
         return fromDate.AddDays(offset);
+    }
+
+    private static DateOnly GetNthWeekdayOfMonth(int year, int month, DayOfWeek dayOfWeek, EventRecurrenceWeek weekOfMonth)
+    {
+        if (weekOfMonth == EventRecurrenceWeek.Last)
+        {
+            var lastDayOfMonth = new DateOnly(year, month, DateTime.DaysInMonth(year, month));
+            var offsetFromEnd = ((int)lastDayOfMonth.DayOfWeek - (int)dayOfWeek + 7) % 7;
+
+            return lastDayOfMonth.AddDays(-offsetFromEnd);
+        }
+
+        var firstDayOfMonth = new DateOnly(year, month, 1);
+        var offsetFromStart = ((int)dayOfWeek - (int)firstDayOfMonth.DayOfWeek + 7) % 7;
+        var candidate = firstDayOfMonth.AddDays(offsetFromStart + (7 * ((int)weekOfMonth - 1)));
+
+        return candidate.Month == month ? candidate : firstDayOfMonth;
     }
 
     private static string GetDayLabel(DayOfWeek dayOfWeek) => dayOfWeek switch
@@ -450,9 +599,32 @@ public sealed record EventDefinition(
         DayOfWeek.Sunday => "Sunday",
         _ => dayOfWeek.ToString()
     };
+
+    private static string GetWeekLabel(EventRecurrenceWeek weekOfMonth) => weekOfMonth switch
+    {
+        EventRecurrenceWeek.First => "First",
+        EventRecurrenceWeek.Second => "Second",
+        EventRecurrenceWeek.Third => "Third",
+        EventRecurrenceWeek.Fourth => "Fourth",
+        EventRecurrenceWeek.Last => "Last",
+        _ => "First"
+    };
 }
 
-public sealed record EventImage(string Source, string AltText);
+public enum EventRecurrencePattern
+{
+    Weekly,
+    MonthlyNthWeekday
+}
+
+public enum EventRecurrenceWeek
+{
+    First = 1,
+    Second = 2,
+    Third = 3,
+    Fourth = 4,
+    Last = 5
+}
 
 public sealed record UpcomingEventOccurrence(EventDefinition SourceEvent, DateOnly OccursOn)
 {
@@ -472,23 +644,9 @@ public sealed record UpcomingEventOccurrence(EventDefinition SourceEvent, DateOn
 
     public string DateTimeLabel => $"{OccursOn:ddd, MMM d, yyyy} at {SourceEvent.TimeLabel}";
 
-    public string ScheduleDetail => IsRecurring && SourceEvent.RepeatsOn is { } repeatsOn
-        ? $"Repeats every {GetDayLabel(repeatsOn)}"
-        : "Scheduled one time";
+    public string ScheduleDetail => SourceEvent.Recurrence?.GetPatternLabel() ?? "Scheduled one time";
 
     public DateTime SortAt => OccursOn.ToDateTime(SourceEvent.StartsAt);
-
-    private static string GetDayLabel(DayOfWeek dayOfWeek) => dayOfWeek switch
-    {
-        DayOfWeek.Monday => "Monday",
-        DayOfWeek.Tuesday => "Tuesday",
-        DayOfWeek.Wednesday => "Wednesday",
-        DayOfWeek.Thursday => "Thursday",
-        DayOfWeek.Friday => "Friday",
-        DayOfWeek.Saturday => "Saturday",
-        DayOfWeek.Sunday => "Sunday",
-        _ => dayOfWeek.ToString()
-    };
 }
 
 public sealed record WeeklyRhythm(string Label, string Description);
