@@ -1,13 +1,15 @@
-﻿@page "/Account/ExternalLogin"
+@page "/Account/ExternalLogin"
 
 @using System.ComponentModel.DataAnnotations
 @using System.Security.Claims
 @using System.Text
 @using System.Text.Encodings.Web
+@using Anchor.Domain.Identity.Configuration
+@using Anchor.Web.Data
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
-@using Anchor.Web.Data
 
+@inject IConfirmedAccountConfigurationService ConfirmedAccountConfigurationService
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
 @inject IUserStore<ApplicationUser> UserStore
@@ -18,31 +20,63 @@
 
 <PageTitle>Register</PageTitle>
 
-<StatusMessage Message="@message" />
-<h1>Register</h1>
-<h2>Associate your @ProviderDisplayName account.</h2>
-<hr />
-
-<div  class="alert alert-info">
-    You've successfully authenticated with <strong>@ProviderDisplayName</strong>.
-    Please enter an email address for this site below and click the Register button to finish
-    logging in.
-</div>
-
-<div class="row">
-    <div class="col-md-4">
-        <EditForm Model="Input" OnValidSubmit="OnValidSubmitAsync" FormName="confirmation" method="post">
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="email" placeholder="Please enter your email." />
-                <label for="Input.Email" class="form-label">Email</label>
-                <ValidationMessage For="() => Input.Email" />
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
-        </EditForm>
+<section class="account-page">
+    <div class="page-hero page-hero--section account-page__hero">
+        <p class="page-hero__eyebrow">External Sign-In</p>
+        <h1>Finish account setup</h1>
+        <p class="page-hero__lead">
+            You've authenticated with <strong>@ProviderDisplayName</strong>. Finish the connection by confirming the email
+            address that should be used for this site's staff account.
+        </p>
     </div>
-</div>
+
+    <div class="account-grid">
+        <section class="admin-card account-panel">
+            <div class="admin-card__header">
+                <h2>Associate your @ProviderDisplayName account.</h2>
+                <span class="admin-card__badge">External Provider</span>
+            </div>
+
+            <StatusMessage Message="@message" />
+
+            <p class="status-banner status-banner--info">
+                Enter the email address this site should use for your staff account, then complete registration below.
+            </p>
+
+            <EditForm Model="Input" OnValidSubmit="OnValidSubmitAsync" FormName="confirmation" method="post" class="editor-form account-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="validation-message account-form__validation" role="alert" />
+
+                <div class="editor-form__grid">
+                    <label>
+                        Email
+                        <InputText @bind-Value="Input.Email" id="Input.Email" autocomplete="email" placeholder="name@example.com" />
+                        <ValidationMessage For="() => Input.Email" class="validation-message" />
+                    </label>
+                </div>
+
+                <div class="account-form__actions">
+                    <button type="submit" class="hero-actions__link hero-actions__link--primary account-form__submit">Finish registration</button>
+                </div>
+            </EditForm>
+        </section>
+
+        <section class="admin-card account-panel">
+            <div class="admin-card__header">
+                <h2>What to expect</h2>
+                <span class="admin-card__badge">Next steps</span>
+            </div>
+
+            <div class="account-panel__body">
+                <ul class="feature-list">
+                    <li>If confirmed accounts are currently required, you may still need an <strong>Admin</strong> to confirm the linked account.</li>
+                    <li>After sign-in, an <strong>Admin</strong> can add any operational or technical roles you need.</li>
+                    <li>If you were seeded as the bootstrap admin, the site will require an immediate password change before broader access is allowed.</li>
+                </ul>
+            </div>
+        </section>
+    </div>
+</section>
 
 @code {
     public const string LoginCallbackAction = "LoginCallback";
@@ -94,8 +128,6 @@
                 return;
             }
 
-            // We should only reach this page via the login callback, so redirect back to
-            // the login page if we get here some other way.
             RedirectManager.RedirectTo("Account/Login");
         }
     }
@@ -108,7 +140,18 @@
             return;
         }
 
-        // Sign in the user with this external login provider if the user already has a login.
+        var linkedUser = await UserManager.FindByLoginAsync(externalLoginInfo.LoginProvider, externalLoginInfo.ProviderKey);
+        if (linkedUser is not null &&
+            await ConfirmedAccountConfigurationService.IsConfirmationRequiredAsync() &&
+            !linkedUser.EmailConfirmed)
+        {
+            RedirectManager.RedirectToWithStatus(
+                "Account/Login",
+                "Your account must be confirmed by an administrator before you can sign in.",
+                HttpContext);
+            return;
+        }
+
         var result = await SignInManager.ExternalLoginSignInAsync(
             externalLoginInfo.LoginProvider,
             externalLoginInfo.ProviderKey,
@@ -121,6 +164,13 @@
                 "{Name} logged in with {LoginProvider} provider.",
                 externalLoginInfo.Principal.Identity?.Name,
                 externalLoginInfo.LoginProvider);
+
+            if (linkedUser?.MustChangePassword == true)
+            {
+                RedirectManager.RedirectTo("Account/Manage/ChangePassword", new() { ["forced"] = true });
+                return;
+            }
+
             RedirectManager.RedirectTo(ReturnUrl);
             return;
         }
@@ -130,8 +180,7 @@
             return;
         }
 
-        // If the user does not have an account, then ask the user to create an account.
-        if (externalLoginInfo.Principal.HasClaim(c => c.Type == ClaimTypes.Email))
+        if (externalLoginInfo.Principal.HasClaim(claim => claim.Type == ClaimTypes.Email))
         {
             Input.Email = externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Email) ?? "";
         }
@@ -152,37 +201,38 @@
         await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
 
         var result = await UserManager.CreateAsync(user);
-        if (result.Succeeded)
+        if (!result.Succeeded)
         {
-            result = await UserManager.AddLoginAsync(user, externalLoginInfo);
-            if (result.Succeeded)
-            {
-                Logger.LogInformation("User created an account using {Name} provider.", externalLoginInfo.LoginProvider);
+            message = $"Error: {string.Join(",", result.Errors.Select(error => error.Description))}";
+            return;
+        }
 
-                var userId = await UserManager.GetUserIdAsync(user);
-                var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
-                code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+        result = await UserManager.AddLoginAsync(user, externalLoginInfo);
+        if (!result.Succeeded)
+        {
+            message = $"Error: {string.Join(",", result.Errors.Select(error => error.Description))}";
+            return;
+        }
 
-                var callbackUrl = NavigationManager.GetUriWithQueryParameters(
-                    NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
-                    new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code });
-                await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
+        Logger.LogInformation("User created an account using {Name} provider.", externalLoginInfo.LoginProvider);
 
-                // If account confirmation is required, we need to show the link if we don't have a real email sender
-                if (UserManager.Options.SignIn.RequireConfirmedAccount)
-                {
-                    RedirectManager.RedirectTo("Account/RegisterConfirmation", new() { ["email"] = Input.Email });
-                }
-                else
-                {
-                    await SignInManager.SignInAsync(user, isPersistent: false, externalLoginInfo.LoginProvider);
-                    RedirectManager.RedirectTo(ReturnUrl);
-                }
-            }
+        var userId = await UserManager.GetUserIdAsync(user);
+        var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+
+        var callbackUrl = NavigationManager.GetUriWithQueryParameters(
+            NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
+            new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code });
+        await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
+
+        if (await ConfirmedAccountConfigurationService.IsConfirmationRequiredAsync())
+        {
+            RedirectManager.RedirectTo("Account/RegisterConfirmation", new() { ["email"] = Input.Email });
         }
         else
         {
-            message = $"Error: {string.Join(",", result.Errors.Select(error => error.Description))}";
+            await SignInManager.SignInAsync(user, isPersistent: false, externalLoginInfo.LoginProvider);
+            RedirectManager.RedirectTo(ReturnUrl);
         }
     }
 
@@ -205,6 +255,7 @@
         {
             throw new NotSupportedException("The default UI requires a user store with email support.");
         }
+
         return (IUserEmailStore<ApplicationUser>)UserStore;
     }
 

@@ -1,0 +1,77 @@
+@page "/help"
+
+@using Anchor.Domain.Identity
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize]
+
+<PageTitle>Help</PageTitle>
+
+<section class="admin-page">
+    <div class="page-hero page-hero--section">
+        <p class="page-hero__eyebrow">Signed-In Help</p>
+        <h1>Help</h1>
+        <p class="page-hero__lead">
+            This guide is only visible after sign-in and explains how the current role model, bootstrap flow,
+            and staff onboarding process fit together.
+        </p>
+    </div>
+
+    <StatusMessage />
+
+    <div class="feature-grid">
+        <article class="feature-card feature-card--tight">
+            <p class="feature-card__eyebrow">Staff Workflow</p>
+            <h3>Start with registration, then assign roles.</h3>
+            <ul class="feature-list">
+                <li>New staff members can self-register using the public account flow.</li>
+                <li>An <strong>Admin</strong> can confirm the account when confirmed-account enforcement is enabled.</li>
+                <li>An <strong>Admin</strong> then assigns the operational or technical roles that person actually needs.</li>
+            </ul>
+        </article>
+
+        <article class="feature-card feature-card--tight">
+            <p class="feature-card__eyebrow">Role Summary</p>
+            <h3>Keep responsibilities separated.</h3>
+            <ul class="feature-list">
+                <li><strong>Admin</strong>: full access, user management, role assignment, and security settings.</li>
+                <li><strong>EventManager</strong>: event-related administration only.</li>
+                <li><strong>MenuManager</strong>: menu-related administration only.</li>
+                <li><strong>IT</strong>: technical and system-facing functionality.</li>
+            </ul>
+        </article>
+
+        <article class="feature-card feature-card--tight">
+            <p class="feature-card__eyebrow">Bootstrap Safety</p>
+            <h3>Use the seed account only to get the site operational.</h3>
+            <ul class="feature-list">
+                <li>The app seeds required roles automatically on startup.</li>
+                <li>The bootstrap user stops seeding once the system has at least one <strong>Admin</strong> and one <strong>IT</strong> user.</li>
+                <li>The seeded password must be changed before that account can open the rest of the site.</li>
+            </ul>
+        </article>
+
+        <article class="feature-card feature-card--tight">
+            <p class="feature-card__eyebrow">Confirmed Accounts</p>
+            <h3>Configuration controls the live rule.</h3>
+            <ul class="feature-list">
+                <li>The fallback value lives in <code>appsettings.json</code>.</li>
+                <li>An environment variable can override the live behavior.</li>
+                <li>The Security page shows both the effective value and the fallback file value.</li>
+            </ul>
+        </article>
+    </div>
+
+    <AuthorizeView Policy="@ApplicationPolicies.AdminAccess">
+        <section class="admin-card">
+            <div class="admin-card__header">
+                <h2>Admin pages</h2>
+                <span class="admin-card__badge">Staff setup</span>
+            </div>
+            <ul class="feature-list">
+                <li><strong>User Management</strong> is where you confirm users and add or remove roles.</li>
+                <li><strong>Security</strong> is where you update the fallback confirmed-account setting and review bootstrap coverage.</li>
+            </ul>
+        </section>
+    </AuthorizeView>
+</section>

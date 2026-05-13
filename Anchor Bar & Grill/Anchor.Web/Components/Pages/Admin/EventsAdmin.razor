@@ -1,4 +1,8 @@
 @page "/admin/events"
+@using Anchor.Domain.Identity
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Policy = ApplicationPolicies.EventManagement)]
 
 <PageTitle>Events Admin</PageTitle>
 

@@ -1,0 +1,162 @@
+@page "/admin/users"
+@rendermode InteractiveServer
+
+@using Anchor.Domain.Identity
+@using Anchor.Domain.Identity.Users
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Policy = ApplicationPolicies.AdminAccess)]
+
+@inject IIdentityAdministrationService IdentityAdministrationService
+
+<PageTitle>User Management</PageTitle>
+
+<section class="admin-page">
+    <div class="page-hero page-hero--section">
+        <p class="page-hero__eyebrow">Admin Access</p>
+        <h1>User management</h1>
+        <p class="page-hero__lead">
+            Confirm staff accounts, assign operational or technical roles, and keep the site staffed without
+            guessing which permissions belong to which user.
+        </p>
+    </div>
+
+    <div class="admin-grid">
+        <aside class="admin-help">
+            <h2>How to use this page</h2>
+            <ul class="feature-list">
+                <li>Confirm an account here if confirmed-account enforcement is on and a new staff member is waiting for access.</li>
+                <li>Assign <strong>EventManager</strong>, <strong>MenuManager</strong>, and <strong>IT</strong> only when the user needs that responsibility.</li>
+                <li>Do not remove the final <strong>Admin</strong> or final <strong>IT</strong> assignment because the site requires both for safe operation.</li>
+            </ul>
+        </aside>
+
+        <div class="admin-stack">
+            <StatusMessage Message="@statusMessage" />
+
+            @if (users is null)
+            {
+                <section class="admin-card">
+                    <div class="admin-card__header">
+                        <h2>Current staff accounts</h2>
+                        <span class="admin-card__badge">Loading</span>
+                    </div>
+                    <p class="admin-field-note">Gathering the current registration and role state now.</p>
+                </section>
+            }
+            else
+            {
+                <section class="admin-card">
+                    <div class="admin-card__header">
+                        <h2>Current staff accounts</h2>
+                        <span class="admin-card__badge">@users.Count user@(users.Count == 1 ? string.Empty : "s")</span>
+                    </div>
+
+                    <div class="admin-list">
+                        @foreach (var user in users)
+                        {
+                            <article class="admin-list__item user-admin-list__item">
+                                <div class="user-admin-list__summary">
+                                    <div class="user-admin-list__heading">
+                                        <h3>@user.Email</h3>
+                                    </div>
+
+                                    <div class="chip-list">
+                                        @if (user.Roles.Count == 0)
+                                        {
+                                            <span class="chip chip--neutral">No roles assigned</span>
+                                        }
+                                        else
+                                        {
+                                            @foreach (var role in user.Roles)
+                                            {
+                                                <span class="chip chip--role">@role</span>
+                                            }
+                                        }
+                                    </div>
+
+                                    <div class="chip-list">
+                                        <span class="chip @(user.EmailConfirmed ? "chip--success" : "chip--warning")">
+                                            @(user.EmailConfirmed ? "Confirmed" : "Pending confirmation")
+                                        </span>
+                                        @if (user.IsBootstrapAccount)
+                                        {
+                                            <span class="chip chip--info">Bootstrap account</span>
+                                        }
+                                        @if (user.MustChangePassword)
+                                        {
+                                            <span class="chip chip--danger">Password change required</span>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="action-row action-row--wrap">
+                                    <button class="action-button @(user.EmailConfirmed ? "action-button--secondary" : "action-button--success")"
+                                            @onclick="() => SetConfirmationAsync(user, !user.EmailConfirmed)"
+                                            disabled="@isBusy">
+                                        @(user.EmailConfirmed ? "Mark unconfirmed" : "Confirm account")
+                                    </button>
+
+                                    @foreach (var roleName in ApplicationRoles.All)
+                                    {
+                                        var hasRole = user.Roles.Contains(roleName, StringComparer.Ordinal);
+                                        <button class="action-button @(hasRole ? "action-button--danger" : "action-button--primary")"
+                                                @onclick="() => ToggleRoleAsync(user, roleName, hasRole)"
+                                                disabled="@isBusy">
+                                            @(hasRole ? $"Remove {roleName}" : $"Add {roleName}")
+                                        </button>
+                                    }
+                                </div>
+                            </article>
+                        }
+                    </div>
+                </section>
+            }
+        </div>
+    </div>
+</section>
+
+@code {
+    private bool isBusy;
+    private string? statusMessage;
+    private IReadOnlyList<ManagedUserSummary>? users;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsersAsync();
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        users = await IdentityAdministrationService.GetUsersAsync();
+    }
+
+    private async Task SetConfirmationAsync(ManagedUserSummary user, bool confirmed)
+    {
+        isBusy = true;
+
+        var result = await IdentityAdministrationService.SetEmailConfirmedAsync(user.UserId, confirmed);
+        statusMessage = result.Succeeded
+            ? $"{user.Email} is now {(confirmed ? "confirmed" : "unconfirmed")}."
+            : $"Error: {string.Join(" ", result.Errors)}";
+
+        await LoadUsersAsync();
+        isBusy = false;
+    }
+
+    private async Task ToggleRoleAsync(ManagedUserSummary user, string roleName, bool hasRole)
+    {
+        isBusy = true;
+
+        var result = hasRole
+            ? await IdentityAdministrationService.RemoveRoleAsync(user.UserId, roleName)
+            : await IdentityAdministrationService.AddRoleAsync(user.UserId, roleName);
+
+        statusMessage = result.Succeeded
+            ? $"{roleName} was {(hasRole ? "removed from" : "added to")} {user.Email}."
+            : $"Error: {string.Join(" ", result.Errors)}";
+
+        await LoadUsersAsync();
+        isBusy = false;
+    }
+}

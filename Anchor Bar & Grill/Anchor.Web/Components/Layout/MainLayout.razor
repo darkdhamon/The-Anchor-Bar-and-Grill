@@ -1,6 +1,8 @@
 @inherits LayoutComponentBase
+@using Anchor.Domain.Identity
 @inject IHttpContextAccessor HttpContextAccessor
 @inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
 
 <div class="site-shell @(isDarkTheme ? "theme-dark" : "theme-light")">
     <header class="site-header">
@@ -44,15 +46,85 @@
                     }
                 </nav>
 
-                <div class="preview-nav @(isMenuOpen ? "is-open" : string.Empty)" aria-label="Admin mockup links">
-                    <span class="preview-nav__label">Admin Mockups</span>
-                    @foreach (var link in SiteMap.AdminLinks)
-                    {
-                        <NavLink class="preview-nav__link" href="@link.Href" Match="NavLinkMatch.Prefix" @onclick="CloseMenu">
-                            @link.Label
-                        </NavLink>
-                    }
-                    <a class="preview-nav__link preview-nav__link--account" href="Account/Login" data-enhance-nav="false">Account</a>
+                <div class="preview-nav @(isMenuOpen ? "is-open" : string.Empty)" aria-label="Staff tools">
+                    <AuthorizeView Context="layoutAuthState">
+                        <Authorized>
+                            <span class="preview-nav__label">Staff Tools</span>
+
+                            @foreach (var link in SiteMap.AuthenticatedLinks)
+                            {
+                                <NavLink class="preview-nav__link" href="@link.Href" Match="NavLinkMatch.Prefix" @onclick="CloseMenu">
+                                    @link.Label
+                                </NavLink>
+                            }
+
+                            <AuthorizeView Policy="@ApplicationPolicies.EventManagement" Context="eventPolicyState">
+                                @foreach (var link in SiteMap.EventManagementLinks)
+                                {
+                                    <NavLink class="preview-nav__link" href="@link.Href" Match="NavLinkMatch.Prefix" @onclick="CloseMenu">
+                                        @link.Label
+                                    </NavLink>
+                                }
+                            </AuthorizeView>
+
+                            <AuthorizeView Policy="@ApplicationPolicies.MenuManagement" Context="menuPolicyState">
+                                @foreach (var link in SiteMap.MenuManagementLinks)
+                                {
+                                    <NavLink class="preview-nav__link" href="@link.Href" Match="NavLinkMatch.Prefix" @onclick="CloseMenu">
+                                        @link.Label
+                                    </NavLink>
+                                }
+                            </AuthorizeView>
+
+                            <AuthorizeView Policy="@ApplicationPolicies.AdminAccess" Context="adminPolicyState">
+                                @foreach (var link in SiteMap.AdminAccessLinks)
+                                {
+                                    <NavLink class="preview-nav__link" href="@link.Href" Match="NavLinkMatch.Prefix" @onclick="CloseMenu">
+                                        @link.Label
+                                    </NavLink>
+                                }
+                            </AuthorizeView>
+
+                            <AuthorizeView Policy="@ApplicationPolicies.ITAccess" Context="itPolicyState">
+                                @foreach (var link in SiteMap.TechnicalLinks)
+                                {
+                                    <NavLink class="preview-nav__link" href="@link.Href" Match="NavLinkMatch.Prefix" @onclick="CloseMenu">
+                                        @link.Label
+                                    </NavLink>
+                                }
+                            </AuthorizeView>
+
+                            <a class="preview-nav__link preview-nav__link--account"
+                               href="Account/Manage"
+                               data-enhance-nav="false"
+                               @onclick="CloseMenu">
+                                Manage Account
+                            </a>
+
+                            <form class="preview-nav__logout" action="Account/Logout" method="post">
+                                <AntiforgeryToken />
+                                <input type="hidden" name="returnUrl" value="@LogoutReturnUrl" />
+                                <button class="preview-nav__link preview-nav__link--account preview-nav__link--button" type="submit">
+                                    Log Out
+                                </button>
+                            </form>
+                        </Authorized>
+                        <NotAuthorized>
+                            <span class="preview-nav__label">Staff Access</span>
+                            <a class="preview-nav__link preview-nav__link--account"
+                               href="Account/Login"
+                               data-enhance-nav="false"
+                               @onclick="CloseMenu">
+                                Log In
+                            </a>
+                            <a class="preview-nav__link"
+                               href="Account/Register"
+                               data-enhance-nav="false"
+                               @onclick="CloseMenu">
+                                Register
+                            </a>
+                        </NotAuthorized>
+                    </AuthorizeView>
                 </div>
             </div>
         </div>
@@ -106,6 +178,8 @@
     private bool isDarkTheme;
     private bool isMenuOpen;
     private bool hasInitializedThemePreference;
+
+    private string LogoutReturnUrl => NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
 
     protected override void OnParametersSet()
     {

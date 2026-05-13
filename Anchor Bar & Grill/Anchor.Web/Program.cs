@@ -1,5 +1,11 @@
+using Anchor.Domain;
+using Anchor.Domain.Identity;
+using Anchor.Domain.Identity.Bootstrap;
+using Anchor.Domain.Identity.Configuration;
+using Anchor.Domain.Identity.Users;
 using Anchor.Web.Components;
 using Anchor.Web.Components.Account;
+using Anchor.Web.Configuration;
 using Anchor.Web.Data;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -7,7 +13,6 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
@@ -23,16 +28,29 @@ builder.Services.AddAuthentication(options =>
     })
     .AddIdentityCookies();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+builder.Services.AddAuthorizationBuilder()
+    .AddAnchorAuthorizationPolicies();
+
+builder.Services.Configure<AnchorIdentityOptions>(builder.Configuration.GetSection(AnchorIdentityConfigurationKeys.SectionName));
+builder.Services.AddAnchorDomainServices();
+builder.Services.AddScoped<IConfirmedAccountConfigurationStore, JsonConfirmedAccountConfigurationStore>();
+builder.Services.AddScoped<IIdentityAdministrationRepository, IdentityAdministrationRepository>();
+builder.Services.AddScoped<IIdentityBootstrapRepository, IdentityBootstrapRepository>();
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
-        options.SignIn.RequireConfirmedAccount = true;
+        options.SignIn.RequireConfirmedAccount = false;
         options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
     })
+    .AddRoles<IdentityRole>()
+    .AddClaimsPrincipalFactory<ApplicationUserClaimsPrincipalFactory>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
@@ -41,7 +59,12 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSe
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+using (var scope = app.Services.CreateScope())
+{
+    var bootstrapService = scope.ServiceProvider.GetRequiredService<IIdentityBootstrapService>();
+    await bootstrapService.BootstrapAsync();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
@@ -49,9 +72,9 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
@@ -61,7 +84,6 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-// Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
 
 app.Run();

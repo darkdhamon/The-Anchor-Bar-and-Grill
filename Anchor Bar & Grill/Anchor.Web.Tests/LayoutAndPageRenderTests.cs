@@ -1,36 +1,69 @@
+using Anchor.Domain.Identity;
 using Anchor.Web.Components.Layout;
 using Anchor.Web.Components.Pages;
 using Anchor.Web.Components.Pages.Admin;
 using Bunit;
 using Bunit.JSInterop;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using System.Security.Claims;
 
 namespace Anchor.Web.Tests;
 
 public sealed class LayoutAndPageRenderTests : BunitContext
 {
+    private readonly TestAuthenticationStateProvider authStateProvider;
+
     public LayoutAndPageRenderTests()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddSingleton<IHttpContextAccessor>(new HttpContextAccessor());
+        Services.AddLogging();
+        Services.AddAuthorizationCore(options =>
+        {
+            options.AddPolicy(ApplicationPolicies.AdminAccess, policy => policy.RequireRole(ApplicationRoles.Admin));
+            options.AddPolicy(ApplicationPolicies.EventManagement, policy => policy.RequireRole(ApplicationRoles.Admin, ApplicationRoles.EventManager));
+            options.AddPolicy(ApplicationPolicies.MenuManagement, policy => policy.RequireRole(ApplicationRoles.Admin, ApplicationRoles.MenuManager));
+            options.AddPolicy(ApplicationPolicies.ITAccess, policy => policy.RequireRole(ApplicationRoles.Admin, ApplicationRoles.It));
+        });
+        Services.AddSingleton<IAuthorizationService, TestAuthorizationService>();
+        authStateProvider = new TestAuthenticationStateProvider();
+        Services.AddSingleton<AuthenticationStateProvider>(authStateProvider);
+        Services.AddCascadingAuthenticationState();
     }
 
     [Fact]
-    public void MainLayout_TogglesBetweenLightAndDarkThemes()
+    public void MainLayout_TogglesBetweenLightAndDarkThemes_ForGuests()
     {
-        var cut = Render<MainLayout>(parameters => parameters
-            .Add(layout => layout.Body, (RenderFragment)(builder => builder.AddMarkupContent(0, "<section>Preview body</section>"))));
+        authStateProvider.SetUser(new ClaimsPrincipal(new ClaimsIdentity()));
+
+        var cut = Render(builder =>
+        {
+            builder.OpenComponent<CascadingAuthenticationState>(0);
+            builder.AddAttribute(1, "ChildContent", (RenderFragment)(childBuilder =>
+            {
+                childBuilder.OpenComponent<MainLayout>(0);
+                childBuilder.AddAttribute(1, "Body", (RenderFragment)(bodyBuilder => bodyBuilder.AddMarkupContent(0, "<section>Preview body</section>")));
+                childBuilder.CloseComponent();
+            }));
+            builder.CloseComponent();
+        });
 
         Assert.Contains("theme-light", cut.Markup);
+        Assert.Contains("Staff Access", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Log In", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Register", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Events Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("site-header__nav-stack is-open", cut.Markup, StringComparison.Ordinal);
 
         cut.Find(".switch input").Change(true);
 
         Assert.Contains("theme-dark", cut.Markup);
         Assert.Contains("Preview body", cut.Markup);
-        Assert.Equal("false", cut.Find(".preview-nav__link--account").GetAttribute("data-enhance-nav"));
 
         cut.Find(".menu-toggle").Click();
 
@@ -40,15 +73,82 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     [Fact]
     public void MainLayout_UsesPersistedThemeCookieForInitialRender()
     {
+        authStateProvider.SetUser(new ClaimsPrincipal(new ClaimsIdentity()));
+
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Headers.Cookie = "anchor-theme=dark";
         Services.GetRequiredService<IHttpContextAccessor>().HttpContext = httpContext;
 
-        var cut = Render<MainLayout>(parameters => parameters
-            .Add(layout => layout.Body, (RenderFragment)(builder => builder.AddMarkupContent(0, "<section>Preview body</section>"))));
+        var cut = Render(builder =>
+        {
+            builder.OpenComponent<CascadingAuthenticationState>(0);
+            builder.AddAttribute(1, "ChildContent", (RenderFragment)(childBuilder =>
+            {
+                childBuilder.OpenComponent<MainLayout>(0);
+                childBuilder.AddAttribute(1, "Body", (RenderFragment)(bodyBuilder => bodyBuilder.AddMarkupContent(0, "<section>Preview body</section>")));
+                childBuilder.CloseComponent();
+            }));
+            builder.CloseComponent();
+        });
 
         Assert.Contains("theme-dark", cut.Markup);
         Assert.Contains("checked", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void MainLayout_ShowsRoleScopedStaffLinksForAdminUsers()
+    {
+        authStateProvider.SetUser(CreateUser("admin@anchor.test", ApplicationRoles.Admin));
+
+        var cut = Render(builder =>
+        {
+            builder.OpenComponent<CascadingAuthenticationState>(0);
+            builder.AddAttribute(1, "ChildContent", (RenderFragment)(childBuilder =>
+            {
+                childBuilder.OpenComponent<MainLayout>(0);
+                childBuilder.AddAttribute(1, "Body", (RenderFragment)(bodyBuilder => bodyBuilder.AddMarkupContent(0, "<section>Preview body</section>")));
+                childBuilder.CloseComponent();
+            }));
+            builder.CloseComponent();
+        });
+
+        Assert.Contains("Staff Tools", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Help", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Events Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Menu Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("About Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Contact Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("User Management", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Security", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("IT / System", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Manage Account", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Log Out", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(">Register<", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void MainLayout_ShowsOnlyEventToolsForEventManagers()
+    {
+        authStateProvider.SetUser(CreateUser("events@anchor.test", ApplicationRoles.EventManager));
+
+        var cut = Render(builder =>
+        {
+            builder.OpenComponent<CascadingAuthenticationState>(0);
+            builder.AddAttribute(1, "ChildContent", (RenderFragment)(childBuilder =>
+            {
+                childBuilder.OpenComponent<MainLayout>(0);
+                childBuilder.AddAttribute(1, "Body", (RenderFragment)(bodyBuilder => bodyBuilder.AddMarkupContent(0, "<section>Preview body</section>")));
+                childBuilder.CloseComponent();
+            }));
+            builder.CloseComponent();
+        });
+
+        Assert.Contains("Help", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Events Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Menu Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("User Management", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Security", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("IT / System", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -185,5 +285,84 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Profile editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Choose an existing platform or type a new one", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Add another profile", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void SystemToolsPage_RendersTechnicalPlaceholderGuidance()
+    {
+        var cut = Render<SystemTools>();
+
+        Assert.Contains("IT / System", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Reserved technical surface", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Technical dashboards", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static ClaimsPrincipal CreateUser(string userName, params string[] roles)
+    {
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Name, userName),
+            new(ClaimTypes.NameIdentifier, userName)
+        };
+
+        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+
+        return new ClaimsPrincipal(new ClaimsIdentity(claims, authenticationType: "TestAuth"));
+    }
+
+    private sealed class TestAuthenticationStateProvider : AuthenticationStateProvider
+    {
+        private AuthenticationState authenticationState = new(new ClaimsPrincipal(new ClaimsIdentity()));
+
+        public override Task<AuthenticationState> GetAuthenticationStateAsync() =>
+            Task.FromResult(authenticationState);
+
+        public void SetUser(ClaimsPrincipal user)
+        {
+            authenticationState = new AuthenticationState(user);
+            NotifyAuthenticationStateChanged(Task.FromResult(authenticationState));
+        }
+    }
+
+    private sealed class TestAuthorizationService(IAuthorizationPolicyProvider policyProvider) : IAuthorizationService
+    {
+        public async Task<AuthorizationResult> AuthorizeAsync(
+            ClaimsPrincipal user,
+            object? resource,
+            IEnumerable<IAuthorizationRequirement> requirements)
+        {
+            return await Task.FromResult(Evaluate(user, requirements));
+        }
+
+        public async Task<AuthorizationResult> AuthorizeAsync(
+            ClaimsPrincipal user,
+            object? resource,
+            string policyName)
+        {
+            var policy = await policyProvider.GetPolicyAsync(policyName);
+            return policy is null
+                ? AuthorizationResult.Failed()
+                : Evaluate(user, policy.Requirements);
+        }
+
+        private static AuthorizationResult Evaluate(
+            ClaimsPrincipal user,
+            IEnumerable<IAuthorizationRequirement> requirements)
+        {
+            foreach (var requirement in requirements)
+            {
+                switch (requirement)
+                {
+                    case DenyAnonymousAuthorizationRequirement when user.Identity?.IsAuthenticated != true:
+                        return AuthorizationResult.Failed();
+
+                    case RolesAuthorizationRequirement rolesRequirement
+                        when !rolesRequirement.AllowedRoles.Any(user.IsInRole):
+                        return AuthorizationResult.Failed();
+                }
+            }
+
+            return AuthorizationResult.Success();
+        }
     }
 }

@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Identity;
 
-namespace Anchor.Web.Data
-{
-    // Add profile data for application users by adding properties to the ApplicationUser class
-    public class ApplicationUser : IdentityUser
-    {
-    }
+namespace Anchor.Web.Data;
 
+public class ApplicationUser : IdentityUser
+{
+    public bool MustChangePassword { get; set; }
+
+    public bool IsBootstrapAccount { get; set; }
 }

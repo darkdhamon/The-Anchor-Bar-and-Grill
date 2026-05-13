@@ -1,4 +1,8 @@
 @page "/admin/contact"
+@using Anchor.Domain.Identity
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Policy = ApplicationPolicies.AdminAccess)]
 
 <PageTitle>Contact Admin</PageTitle>
 

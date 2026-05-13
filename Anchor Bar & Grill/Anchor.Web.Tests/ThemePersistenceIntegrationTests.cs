@@ -1,24 +1,22 @@
+using Anchor.Web.Data;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Anchor.Web.Tests;
 
 public sealed class ThemePersistenceIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
 {
+    private const string TestConnectionString = "Server=(localdb)\\MSSQLLocalDB;Database=AnchorThemeIntegrationTests;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true";
+    private static readonly object syncLock = new();
+    private static bool databaseReady;
     private readonly WebApplicationFactory<Program> factory;
 
     public ThemePersistenceIntegrationTests(WebApplicationFactory<Program> factory)
     {
-        this.factory = factory.WithWebHostBuilder(builder =>
-        {
-            builder.ConfigureAppConfiguration((_, config) =>
-            {
-                config.AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["ConnectionStrings:DefaultConnection"] = "Server=(localdb)\\MSSQLLocalDB;Database=AnchorThemeIntegrationTests;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true"
-                });
-            });
-        });
+        Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", TestConnectionString);
+        EnsureDatabaseReady();
+        this.factory = factory;
     }
 
     [Fact]
@@ -66,5 +64,26 @@ public sealed class ThemePersistenceIntegrationTests : IClassFixture<WebApplicat
         Assert.Contains("Secure Access", markup, StringComparison.Ordinal);
         Assert.Contains("account-form__divider", markup, StringComparison.Ordinal);
         Assert.Contains("Log in with a passkey", markup, StringComparison.Ordinal);
+    }
+
+    private static void EnsureDatabaseReady()
+    {
+        lock (syncLock)
+        {
+            if (databaseReady)
+            {
+                return;
+            }
+
+            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+                .UseSqlServer(TestConnectionString)
+                .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning))
+                .Options;
+
+            using var context = new ApplicationDbContext(options);
+            context.Database.EnsureDeleted();
+            context.Database.Migrate();
+            databaseReady = true;
+        }
     }
 }

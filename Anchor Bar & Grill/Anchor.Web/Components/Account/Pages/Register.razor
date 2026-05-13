@@ -1,12 +1,14 @@
-﻿@page "/Account/Register"
+@page "/Account/Register"
 
 @using System.ComponentModel.DataAnnotations
 @using System.Text
 @using System.Text.Encodings.Web
+@using Anchor.Domain.Identity.Configuration
+@using Anchor.Web.Data
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
-@using Anchor.Web.Data
 
+@inject IConfirmedAccountConfigurationService ConfirmedAccountConfigurationService
 @inject UserManager<ApplicationUser> UserManager
 @inject IUserStore<ApplicationUser> UserStore
 @inject SignInManager<ApplicationUser> SignInManager
@@ -17,42 +19,82 @@
 
 <PageTitle>Register</PageTitle>
 
-<h1>Register</h1>
+<section class="account-page">
+    <div class="page-hero page-hero--section account-page__hero">
+        <p class="page-hero__eyebrow">Staff Registration</p>
+        <h1>Register</h1>
+        <p class="page-hero__lead">
+            Public registration stays enabled so staff can create their own account first, then an
+            <strong>Admin</strong> can confirm it and assign the roles needed for real work.
+        </p>
+    </div>
 
-<div class="row">
-    <div class="col-lg-6">
-        <StatusMessage Message="@Message" />
-        <EditForm Model="Input" method="post" OnValidSubmit="RegisterUser" FormName="register">
-            <DataAnnotationsValidator />
-            <h2>Create a new account.</h2>
-            <hr />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                <label for="Input.Email">Email</label>
-                <ValidationMessage For="() => Input.Email" class="text-danger" />
+    <div class="account-grid">
+        <section class="admin-card account-panel">
+            <div class="admin-card__header">
+                <h2>Create a local account.</h2>
+                <span class="admin-card__badge">Registration</span>
             </div>
-            <div class="form-floating mb-3">
-                <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label for="Input.Password">Password</label>
-                <ValidationMessage For="() => Input.Password" class="text-danger" />
-            </div>
-            <div class="form-floating mb-3">
-                <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label for="Input.ConfirmPassword">Confirm Password</label>
-                <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
-        </EditForm>
-    </div>
-    <div class="col-lg-4 col-lg-offset-2">
-        <section>
-            <h3>Use another service to register.</h3>
-            <hr />
-            <ExternalLoginPicker />
+
+            <StatusMessage Message="@Message" />
+
+            <EditForm Model="Input" method="post" OnValidSubmit="RegisterUser" FormName="register" class="editor-form account-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="validation-message account-form__validation" role="alert" />
+
+                <div class="editor-form__grid">
+                    <label>
+                        Email
+                        <InputText @bind-Value="Input.Email" id="Input.Email" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                        <ValidationMessage For="() => Input.Email" class="validation-message" />
+                    </label>
+                    <label>
+                        Password
+                        <InputText type="password" @bind-Value="Input.Password" id="Input.Password" autocomplete="new-password" aria-required="true" placeholder="Create a password" />
+                        <ValidationMessage For="() => Input.Password" class="validation-message" />
+                    </label>
+                    <label>
+                        Confirm password
+                        <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" autocomplete="new-password" aria-required="true" placeholder="Confirm your password" />
+                        <ValidationMessage For="() => Input.ConfirmPassword" class="validation-message" />
+                    </label>
+                </div>
+
+                <div class="account-form__actions">
+                    <button type="submit" class="hero-actions__link hero-actions__link--primary account-form__submit">Register</button>
+                </div>
+            </EditForm>
         </section>
+
+        <div class="account-panel-stack">
+            <section class="admin-card account-panel">
+                <div class="admin-card__header">
+                    <h2>What happens next</h2>
+                    <span class="admin-card__badge">Onboarding</span>
+                </div>
+
+                <div class="account-panel__body">
+                    <ul class="feature-list">
+                        <li>If confirmed accounts are required, registration will pause until an <strong>Admin</strong> confirms you.</li>
+                        <li>After sign-in, an <strong>Admin</strong> assigns <strong>EventManager</strong>, <strong>MenuManager</strong>, and/or <strong>IT</strong> as needed.</li>
+                        <li>Use the Help page after sign-in for a plain-language walkthrough of the staff workflow.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="admin-card account-panel">
+                <div class="admin-card__header">
+                    <h2>Use another service to register.</h2>
+                    <span class="admin-card__badge">External Providers</span>
+                </div>
+
+                <div class="account-panel__body">
+                    <ExternalLoginPicker />
+                </div>
+            </section>
+        </div>
     </div>
-</div>
+</section>
 
 @code {
     private IEnumerable<IdentityError>? identityErrors;
@@ -96,7 +138,7 @@
 
         await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
 
-        if (UserManager.Options.SignIn.RequireConfirmedAccount)
+        if (await ConfirmedAccountConfigurationService.IsConfirmationRequiredAsync())
         {
             RedirectManager.RedirectTo(
                 "Account/RegisterConfirmation",
@@ -128,6 +170,7 @@
         {
             throw new NotSupportedException("The default UI requires a user store with email support.");
         }
+
         return (IUserEmailStore<ApplicationUser>)UserStore;
     }
 

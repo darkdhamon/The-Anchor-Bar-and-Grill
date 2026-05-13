@@ -17,10 +17,29 @@ This repository currently contains the first code-native website mockup for The 
 - Events mockup page that lists all upcoming events, including recurring schedules, optional event images, and richer cadence examples such as every other week or the third Friday of the month
 - About mockup page for the restaurant story and guest experience
 - Contact mockup page for location, phone, hours, dynamic social media links, and guest inquiry layout
-- Admin mockup pages for managing events, menu items, about content, and contact details
+- Role-gated admin mockup pages for managing events, menu items, about content, and contact details
 - Contact admin mockup supports adding, editing, and deleting multiple social media profiles for the public contact page
 - Events admin mockup with date/time inputs, richer recurring-event controls, optional images, descriptions, and combo-select promo badges
+- Signed-in-only Help page that explains staff onboarding, roles, bootstrap behavior, and security configuration
+- Admin-only User Management page for confirming staff accounts and assigning or removing `Admin`, `EventManager`, `MenuManager`, and `IT`
+- Admin-only Security page for reviewing bootstrap coverage and changing the fallback confirmed-account setting in `appsettings.json`
+- IT-only placeholder system page that reserves a dedicated technical surface for future diagnostics and tooling
 - Shared light and dark themes using the menu-inspired nautical palette
+
+## Staff Access And Security
+
+- Public self-registration remains enabled for staff onboarding
+- Required application roles are `Admin`, `EventManager`, `MenuManager`, and `IT`
+- Authorization is policy-based, with `Admin` acting as the centralized override role
+- The application seeds missing roles on startup
+- A bootstrap account is created only while the site does not yet have at least one `Admin` user and one `IT` user
+- The bootstrap account is seeded with both `Admin` and `IT`, is confirmed automatically, and must change its password after first successful sign-in before broader access is allowed
+- The confirmed-account requirement defaults to `false`
+- The confirmed-account rule is controlled by configuration rather than the database
+- `AnchorIdentity__RequireConfirmedAccount` acts as the environment-variable override
+- `AnchorIdentity:RequireConfirmedAccount` in `appsettings.json` is the admin-editable fallback value
+- Admins can manually confirm or unconfirm users because email delivery is still implemented with the no-op sender
+- The app prevents removing the last `Admin` assignment or the last `IT` assignment
 
 ## Design Direction
 
@@ -37,9 +56,13 @@ This repository currently contains the first code-native website mockup for The 
 - The current homepage uses a styled building-photo placeholder until a real exterior image is added to the project
 - The event mockup data now demonstrates weekly, every-other-week, and nth-weekday monthly recurrence patterns so the UI direction can be reviewed before backend scheduling is built
 - On mobile, the shared header now keeps public and admin mockup links inside the expandable menu and uses an icon-style site-menu control so it does not compete with the food Menu link
+- The shared header now shows public navigation to everyone, while staff tools only appear after sign-in and are filtered by the current user's roles
 - Admin editor controls now share the same themed styling and normalized field sizing across light and dark modes instead of falling back to browser-default inputs
 - The login page now uses the same branded themed form treatment as the rest of the site instead of the stock floating-label scaffold
+- Register, external-login completion, forced password change, access-denied, and register-confirmation screens now use the same branded account layout as the login page
+- Startup bootstrap runs before the request pipeline so roles and the initial administrative account exist before the first login attempt
 - Non-editor elements such as navigation targets and post-navigation page headings suppress the default browser focus outline, while editor fields keep their normal editing focus behavior
 - Account pages continue to use the server-routed Identity flow, so auth navigation should bypass interactive routing when needed
+- Test coverage now spans domain policy/bootstrap logic, repository behavior, layout and page rendering, themed account-route integration, and the full migration chain for the Identity schema
 - Starter scaffold pages such as `Counter`, `Weather`, and other unused sample content have been removed from the public experience
 

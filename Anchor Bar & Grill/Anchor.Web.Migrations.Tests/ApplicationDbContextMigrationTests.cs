@@ -10,7 +10,7 @@ public sealed class ApplicationDbContextMigrationTests
     [Fact]
     public async Task IdentitySchemaMigration_AppliesCleanlyToLocalDb()
     {
-        var databaseName = $"AnchorWebMockup_{Guid.NewGuid():N}";
+        var databaseName = $"AnchorWebIdentity_{Guid.NewGuid():N}";
         var connectionString = new SqlConnectionStringBuilder
         {
             DataSource = @"(localdb)\MSSQLLocalDB",
@@ -25,23 +25,70 @@ public sealed class ApplicationDbContextMigrationTests
             .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning))
             .Options;
 
-        await using var dbContext = new ApplicationDbContext(options);
+        await using var context = new ApplicationDbContext(options);
+        await context.Database.EnsureDeletedAsync();
 
         try
         {
-            await dbContext.Database.EnsureDeletedAsync();
-            await dbContext.Database.MigrateAsync();
+            await context.Database.MigrateAsync();
 
-            var appliedMigrations = (await dbContext.Database.GetAppliedMigrationsAsync()).ToArray();
-            var pendingMigrations = (await dbContext.Database.GetPendingMigrationsAsync()).ToArray();
+            var appliedMigrations = (await context.Database.GetAppliedMigrationsAsync()).ToArray();
+            var pendingMigrations = (await context.Database.GetPendingMigrationsAsync()).ToArray();
 
             Assert.Contains("00000000000000_CreateIdentitySchema", appliedMigrations);
+            Assert.Contains("20260513172154_AddBootstrapIdentityFields", appliedMigrations);
             Assert.Empty(pendingMigrations);
-            Assert.True(await dbContext.Database.CanConnectAsync());
+            Assert.True(await context.Database.CanConnectAsync());
+
+            var columnNames = await GetAspNetUsersColumnNamesAsync(connectionString);
+            Assert.Contains("MustChangePassword", columnNames);
+            Assert.Contains("IsBootstrapAccount", columnNames);
+
+            var user = new ApplicationUser
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                UserName = "bootstrap@anchor.test",
+                NormalizedUserName = "BOOTSTRAP@ANCHOR.TEST",
+                Email = "bootstrap@anchor.test",
+                NormalizedEmail = "BOOTSTRAP@ANCHOR.TEST",
+                MustChangePassword = true,
+                IsBootstrapAccount = true,
+                SecurityStamp = Guid.NewGuid().ToString("N"),
+                ConcurrencyStamp = Guid.NewGuid().ToString("N")
+            };
+
+            context.Users.Add(user);
+            await context.SaveChangesAsync();
+
+            var persistedUser = await context.Users.SingleAsync(savedUser => savedUser.Id == user.Id);
+            Assert.True(persistedUser.MustChangePassword);
+            Assert.True(persistedUser.IsBootstrapAccount);
         }
         finally
         {
-            await dbContext.Database.EnsureDeletedAsync();
+            await context.Database.EnsureDeletedAsync();
         }
+    }
+
+    private static async Task<IReadOnlyList<string>> GetAspNetUsersColumnNamesAsync(string connectionString)
+    {
+        var columnNames = new List<string>();
+        await using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT COLUMN_NAME
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'AspNetUsers'
+            ORDER BY COLUMN_NAME;
+            """;
+
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            columnNames.Add(reader.GetString(0));
+        }
+
+        return columnNames;
     }
 }
