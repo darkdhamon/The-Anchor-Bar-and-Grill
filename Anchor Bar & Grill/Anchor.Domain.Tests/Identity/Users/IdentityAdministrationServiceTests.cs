@@ -65,6 +65,37 @@ public sealed class IdentityAdministrationServiceTests
     }
 
     [Fact]
+    public async Task UpdateUserProfileAsync_trims_profile_values_before_persisting()
+    {
+        var repository = new FakeIdentityAdministrationRepository();
+        var service = new IdentityAdministrationService(repository);
+
+        var result = await service.UpdateUserProfileAsync(
+            new UpdateManagedUserProfileRequest(" user-1 ", "  Alice  ", "  Anchor ", " 507-555-1212 "));
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(repository.LastUpdatedProfile);
+        Assert.Equal("user-1", repository.LastUpdatedProfile.UserId);
+        Assert.Equal("Alice", repository.LastUpdatedProfile.FirstName);
+        Assert.Equal("Anchor", repository.LastUpdatedProfile.LastName);
+        Assert.Equal("507-555-1212", repository.LastUpdatedProfile.PhoneNumber);
+    }
+
+    [Fact]
+    public async Task UpdateUserProfileAsync_rejects_invalid_phone_numbers()
+    {
+        var repository = new FakeIdentityAdministrationRepository();
+        var service = new IdentityAdministrationService(repository);
+
+        var result = await service.UpdateUserProfileAsync(
+            new UpdateManagedUserProfileRequest("user-1", "Alice", "Anchor", "not-a-phone"));
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("valid phone number", result.Errors.Single(), StringComparison.OrdinalIgnoreCase);
+        Assert.Null(repository.LastUpdatedProfile);
+    }
+
+    [Fact]
     public async Task RemoveRoleAsync_blocks_removal_of_the_last_admin()
     {
         var repository = new FakeIdentityAdministrationRepository
@@ -72,7 +103,7 @@ public sealed class IdentityAdministrationServiceTests
             AdminCount = 1,
             Users =
             [
-                new ManagedUserSummary("user-1", "admin@anchor.test", true, false, false, [ApplicationRoles.Admin])
+                new ManagedUserSummary("user-1", "admin@anchor.test", null, null, null, true, false, false, [ApplicationRoles.Admin])
             ]
         };
         var service = new IdentityAdministrationService(repository);
@@ -92,7 +123,7 @@ public sealed class IdentityAdministrationServiceTests
             AdminCount = 2,
             Users =
             [
-                new ManagedUserSummary("user-1", "admin@anchor.test", true, false, false, [ApplicationRoles.Admin])
+                new ManagedUserSummary("user-1", "admin@anchor.test", null, null, null, true, false, false, [ApplicationRoles.Admin])
             ]
         };
         var service = new IdentityAdministrationService(repository);
@@ -112,7 +143,7 @@ public sealed class IdentityAdministrationServiceTests
             ItCount = 1,
             Users =
             [
-                new ManagedUserSummary("user-1", "it@anchor.test", true, false, false, [ApplicationRoles.It])
+                new ManagedUserSummary("user-1", "it@anchor.test", null, null, null, true, false, false, [ApplicationRoles.It])
             ]
         };
         var service = new IdentityAdministrationService(repository);
@@ -132,7 +163,7 @@ public sealed class IdentityAdministrationServiceTests
             AdminCount = 2,
             Users =
             [
-                new ManagedUserSummary("user-1", "admin@anchor.test", true, false, false, [ApplicationRoles.Admin])
+                new ManagedUserSummary("user-1", "admin@anchor.test", null, null, null, true, false, false, [ApplicationRoles.Admin])
             ]
         };
         var service = new IdentityAdministrationService(repository);
@@ -157,6 +188,8 @@ public sealed class IdentityAdministrationServiceTests
 
         public CreateManagedUserRequest? LastCreatedUser { get; private set; }
 
+        public UpdateManagedUserProfileRequest? LastUpdatedProfile { get; private set; }
+
         public string? LastRemovedRole { get; private set; }
 
         public Task<IReadOnlyList<ManagedUserSummary>> GetUsersAsync(CancellationToken cancellationToken = default) =>
@@ -168,6 +201,12 @@ public sealed class IdentityAdministrationServiceTests
         public Task<IdentityOperationResult> CreateUserAsync(CreateManagedUserRequest request, CancellationToken cancellationToken = default)
         {
             LastCreatedUser = request;
+            return Task.FromResult(IdentityOperationResult.Success());
+        }
+
+        public Task<IdentityOperationResult> UpdateUserProfileAsync(UpdateManagedUserProfileRequest request, CancellationToken cancellationToken = default)
+        {
+            LastUpdatedProfile = request;
             return Task.FromResult(IdentityOperationResult.Success());
         }
 

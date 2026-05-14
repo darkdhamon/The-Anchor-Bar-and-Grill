@@ -295,6 +295,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 
         Assert.Contains("Admins create staff accounts, then assign roles.", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("creates each staff account", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("profile details", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("self-register", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -317,8 +318,8 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         {
             Users =
             [
-                new ManagedUserSummary("user-1", "admin@anchor.test", true, false, false, [ApplicationRoles.Admin]),
-                new ManagedUserSummary("user-2", "backup-admin@anchor.test", true, false, false, [ApplicationRoles.Admin])
+                new ManagedUserSummary("user-1", "admin@anchor.test", "Admin", "User", "507-555-1000", true, false, false, [ApplicationRoles.Admin]),
+                new ManagedUserSummary("user-2", "backup-admin@anchor.test", "Backup", "Admin", null, true, false, false, [ApplicationRoles.Admin])
             ]
         });
 
@@ -339,6 +340,9 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.True(keepAdminButton.HasAttribute("disabled"));
         Assert.Contains("own account", keepAdminButton.GetAttribute("title"), StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Remove Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Profile details", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Phone on file: 507-555-1000", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Save profile details", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -431,6 +435,9 @@ public sealed class LayoutAndPageRenderTests : BunitContext
             Task.FromResult(new BootstrapSecurityOverview(1, 1, 1));
 
         public Task<IdentityOperationResult> CreateUserAsync(CreateManagedUserRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(IdentityOperationResult.Success());
+
+        public Task<IdentityOperationResult> UpdateUserProfileAsync(UpdateManagedUserProfileRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(IdentityOperationResult.Success());
 
         public Task<IdentityOperationResult> AddRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default) =>

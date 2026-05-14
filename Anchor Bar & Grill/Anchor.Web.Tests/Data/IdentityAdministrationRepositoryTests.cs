@@ -21,6 +21,9 @@ public sealed class IdentityAdministrationRepositoryTests
         {
             UserName = "alpha@anchor.test",
             Email = "alpha@anchor.test",
+            FirstName = "Alpha",
+            LastName = "Captain",
+            PhoneNumber = "507-555-0001",
             EmailConfirmed = true,
             IsBootstrapAccount = true,
             MustChangePassword = true
@@ -43,6 +46,9 @@ public sealed class IdentityAdministrationRepositoryTests
             first =>
             {
                 Assert.Equal("alpha@anchor.test", first.Email);
+                Assert.Equal("Alpha", first.FirstName);
+                Assert.Equal("Captain", first.LastName);
+                Assert.Equal("507-555-0001", first.PhoneNumber);
                 Assert.True(first.EmailConfirmed);
                 Assert.True(first.IsBootstrapAccount);
                 Assert.True(first.MustChangePassword);
@@ -51,6 +57,9 @@ public sealed class IdentityAdministrationRepositoryTests
             second =>
             {
                 Assert.Equal("beta@anchor.test", second.Email);
+                Assert.Null(second.FirstName);
+                Assert.Null(second.LastName);
+                Assert.Null(second.PhoneNumber);
                 Assert.False(second.EmailConfirmed);
                 Assert.Empty(second.Roles);
             });
@@ -98,6 +107,38 @@ public sealed class IdentityAdministrationRepositoryTests
         Assert.True(result.Succeeded);
         Assert.NotNull(refreshedUser);
         Assert.True(refreshedUser.EmailConfirmed);
+    }
+
+    [Fact]
+    public async Task UpdateUserProfileAsync_updates_name_and_phone_details()
+    {
+        await using var identityContext = await SqliteIdentityTestContext.CreateAsync();
+        var repository = new IdentityAdministrationRepository(identityContext.DbContext, identityContext.UserManager);
+
+        var user = new ApplicationUser
+        {
+            UserName = "profile@anchor.test",
+            Email = "profile@anchor.test",
+            PhoneNumber = "507-555-0000",
+            PhoneNumberConfirmed = true
+        };
+        Assert.True((await identityContext.UserManager.CreateAsync(user, "Password1!")).Succeeded);
+
+        var result = await repository.UpdateUserProfileAsync(
+            new Anchor.Domain.Identity.Users.UpdateManagedUserProfileRequest(
+                user.Id,
+                "Harbor",
+                "Manager",
+                "507-555-1212"));
+
+        var refreshedUser = await identityContext.UserManager.FindByIdAsync(user.Id);
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(refreshedUser);
+        Assert.Equal("Harbor", refreshedUser.FirstName);
+        Assert.Equal("Manager", refreshedUser.LastName);
+        Assert.Equal("507-555-1212", refreshedUser.PhoneNumber);
+        Assert.False(refreshedUser.PhoneNumberConfirmed);
     }
 
     [Fact]

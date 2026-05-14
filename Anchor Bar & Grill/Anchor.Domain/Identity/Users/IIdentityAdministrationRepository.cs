@@ -8,6 +8,8 @@ public interface IIdentityAdministrationRepository
 
     Task<IdentityOperationResult> CreateUserAsync(CreateManagedUserRequest request, CancellationToken cancellationToken = default);
 
+    Task<IdentityOperationResult> UpdateUserProfileAsync(UpdateManagedUserProfileRequest request, CancellationToken cancellationToken = default);
+
     Task<int> CountUsersInRoleAsync(string roleName, CancellationToken cancellationToken = default);
 
     Task<int> CountBootstrapUsersAsync(CancellationToken cancellationToken = default);

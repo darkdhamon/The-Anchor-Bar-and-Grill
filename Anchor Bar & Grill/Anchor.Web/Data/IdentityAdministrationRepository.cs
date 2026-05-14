@@ -17,6 +17,9 @@ public sealed class IdentityAdministrationRepository(
             {
                 user.Id,
                 Email = user.Email ?? user.UserName ?? "(no email)",
+                user.FirstName,
+                user.LastName,
+                user.PhoneNumber,
                 user.EmailConfirmed,
                 user.MustChangePassword,
                 user.IsBootstrapAccount
@@ -29,6 +32,9 @@ public sealed class IdentityAdministrationRepository(
             .Select(user => new ManagedUserSummary(
                 UserId: user.Id,
                 Email: user.Email,
+                FirstName: user.FirstName,
+                LastName: user.LastName,
+                PhoneNumber: user.PhoneNumber,
                 EmailConfirmed: user.EmailConfirmed,
                 MustChangePassword: user.MustChangePassword,
                 IsBootstrapAccount: user.IsBootstrapAccount,
@@ -45,6 +51,9 @@ public sealed class IdentityAdministrationRepository(
             {
                 candidate.Id,
                 Email = candidate.Email ?? candidate.UserName ?? "(no email)",
+                candidate.FirstName,
+                candidate.LastName,
+                candidate.PhoneNumber,
                 candidate.EmailConfirmed,
                 candidate.MustChangePassword,
                 candidate.IsBootstrapAccount
@@ -61,6 +70,9 @@ public sealed class IdentityAdministrationRepository(
         return new ManagedUserSummary(
             UserId: user.Id,
             Email: user.Email,
+            FirstName: user.FirstName,
+            LastName: user.LastName,
+            PhoneNumber: user.PhoneNumber,
             EmailConfirmed: user.EmailConfirmed,
             MustChangePassword: user.MustChangePassword,
             IsBootstrapAccount: user.IsBootstrapAccount,
@@ -78,6 +90,47 @@ public sealed class IdentityAdministrationRepository(
         };
 
         var result = await userManager.CreateAsync(user, request.TemporaryPassword);
+
+        return result.Succeeded
+            ? IdentityOperationResult.Success()
+            : IdentityOperationResult.Failure(result.Errors.Select(error => error.Description));
+    }
+
+    public async Task<IdentityOperationResult> UpdateUserProfileAsync(UpdateManagedUserProfileRequest request, CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByIdAsync(request.UserId);
+        if (user is null)
+        {
+            return IdentityOperationResult.Failure("The selected user could not be found.");
+        }
+
+        var hasChanges = false;
+
+        if (!string.Equals(user.FirstName, request.FirstName, StringComparison.Ordinal))
+        {
+            user.FirstName = request.FirstName;
+            hasChanges = true;
+        }
+
+        if (!string.Equals(user.LastName, request.LastName, StringComparison.Ordinal))
+        {
+            user.LastName = request.LastName;
+            hasChanges = true;
+        }
+
+        if (!string.Equals(user.PhoneNumber, request.PhoneNumber, StringComparison.Ordinal))
+        {
+            user.PhoneNumber = request.PhoneNumber;
+            user.PhoneNumberConfirmed = false;
+            hasChanges = true;
+        }
+
+        if (!hasChanges)
+        {
+            return IdentityOperationResult.Success();
+        }
+
+        var result = await userManager.UpdateAsync(user);
 
         return result.Succeeded
             ? IdentityOperationResult.Success()

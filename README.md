@@ -21,7 +21,7 @@ This repository currently contains the first code-native website mockup for The 
 - Contact admin mockup supports adding, editing, and deleting multiple social media profiles for the public contact page
 - Events admin mockup with date/time inputs, richer recurring-event controls, optional images, descriptions, and combo-select promo badges
 - Signed-in-only Help page that explains staff onboarding, roles, bootstrap behavior, and security configuration
-- Admin-only User Management page for confirming staff accounts and assigning or removing `Admin`, `EventManager`, `MenuManager`, and `IT`
+- Admin-only User Management page for maintaining staff profile details, confirming staff accounts, and assigning or removing `Admin`, `EventManager`, `MenuManager`, and `IT`
 - Admin-only Security page for reviewing bootstrap coverage and changing the fallback confirmed-account setting in `appsettings.json`
 - IT-only placeholder system page that reserves a dedicated technical surface for future diagnostics and tooling
 - Shared light and dark themes using the menu-inspired nautical palette
@@ -61,6 +61,7 @@ This repository currently contains the first code-native website mockup for The 
 - Admin editor controls now share the same themed styling and normalized field sizing across light and dark modes instead of falling back to browser-default inputs
 - The login page now uses the same branded themed form treatment as the rest of the site instead of the stock floating-label scaffold
 - The public register entry points are disabled, and admins now create staff accounts directly from User Management with a temporary password
+- Admins can update each staff member's first name, last name, and phone number from User Management without changing the sign-in email
 - Passkey requests now start only after the user clicks the passkey action instead of auto-starting on login-page load
 - Register, external-login completion, forced password change, access-denied, and register-confirmation screens now use the same branded account layout as the login page
 - Startup bootstrap runs before the request pipeline so roles and the initial administrative account exist before the first login attempt

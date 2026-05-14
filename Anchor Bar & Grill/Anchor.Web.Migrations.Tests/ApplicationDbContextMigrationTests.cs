@@ -37,12 +37,15 @@ public sealed class ApplicationDbContextMigrationTests
 
             Assert.Contains("00000000000000_CreateIdentitySchema", appliedMigrations);
             Assert.Contains("20260513172154_AddBootstrapIdentityFields", appliedMigrations);
+            Assert.Contains("20260514200752_AddManagedUserProfileFields", appliedMigrations);
             Assert.Empty(pendingMigrations);
             Assert.True(await context.Database.CanConnectAsync());
 
             var columnNames = await GetAspNetUsersColumnNamesAsync(connectionString);
+            Assert.Contains("FirstName", columnNames);
             Assert.Contains("MustChangePassword", columnNames);
             Assert.Contains("IsBootstrapAccount", columnNames);
+            Assert.Contains("LastName", columnNames);
 
             var user = new ApplicationUser
             {
@@ -51,6 +54,8 @@ public sealed class ApplicationDbContextMigrationTests
                 NormalizedUserName = "BOOTSTRAP@ANCHOR.TEST",
                 Email = "bootstrap@anchor.test",
                 NormalizedEmail = "BOOTSTRAP@ANCHOR.TEST",
+                FirstName = "Bootstrap",
+                LastName = "Captain",
                 MustChangePassword = true,
                 IsBootstrapAccount = true,
                 SecurityStamp = Guid.NewGuid().ToString("N"),
@@ -61,6 +66,8 @@ public sealed class ApplicationDbContextMigrationTests
             await context.SaveChangesAsync();
 
             var persistedUser = await context.Users.SingleAsync(savedUser => savedUser.Id == user.Id);
+            Assert.Equal("Bootstrap", persistedUser.FirstName);
+            Assert.Equal("Captain", persistedUser.LastName);
             Assert.True(persistedUser.MustChangePassword);
             Assert.True(persistedUser.IsBootstrapAccount);
         }

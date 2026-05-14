@@ -1,7 +1,14 @@
+using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
+
 namespace Anchor.Domain.Identity.Users;
 
 public sealed class IdentityAdministrationService(IIdentityAdministrationRepository repository) : IIdentityAdministrationService
 {
+    private static readonly Regex PhoneNumberPattern = new(
+        @"^[0-9()+.\-\s]{7,25}$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
     public Task<IReadOnlyList<ManagedUserSummary>> GetUsersAsync(CancellationToken cancellationToken = default) =>
         repository.GetUsersAsync(cancellationToken);
 
@@ -32,6 +39,43 @@ public sealed class IdentityAdministrationService(IIdentityAdministrationReposit
             {
                 Email = normalizedEmail,
                 TemporaryPassword = request.TemporaryPassword.Trim()
+            },
+            cancellationToken);
+    }
+
+    public Task<IdentityOperationResult> UpdateUserProfileAsync(UpdateManagedUserProfileRequest request, CancellationToken cancellationToken = default)
+    {
+        var normalizedUserId = request.UserId.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedUserId))
+        {
+            return Task.FromResult(IdentityOperationResult.Failure("A user identifier is required."));
+        }
+
+        var normalizedFirstName = NormalizeOptionalValue(request.FirstName);
+        if (normalizedFirstName is { Length: > 100 })
+        {
+            return Task.FromResult(IdentityOperationResult.Failure("First name cannot be longer than 100 characters."));
+        }
+
+        var normalizedLastName = NormalizeOptionalValue(request.LastName);
+        if (normalizedLastName is { Length: > 100 })
+        {
+            return Task.FromResult(IdentityOperationResult.Failure("Last name cannot be longer than 100 characters."));
+        }
+
+        var normalizedPhoneNumber = NormalizeOptionalValue(request.PhoneNumber);
+        if (normalizedPhoneNumber is not null && !PhoneNumberPattern.IsMatch(normalizedPhoneNumber))
+        {
+            return Task.FromResult(IdentityOperationResult.Failure("Enter a valid phone number before saving the user profile."));
+        }
+
+        return repository.UpdateUserProfileAsync(
+            request with
+            {
+                UserId = normalizedUserId,
+                FirstName = normalizedFirstName,
+                LastName = normalizedLastName,
+                PhoneNumber = normalizedPhoneNumber
             },
             cancellationToken);
     }
@@ -96,4 +140,9 @@ public sealed class IdentityAdministrationService(IIdentityAdministrationReposit
 
     public Task<IdentityOperationResult> SetEmailConfirmedAsync(string userId, bool emailConfirmed, CancellationToken cancellationToken = default) =>
         repository.SetEmailConfirmedAsync(userId, emailConfirmed, cancellationToken);
+
+    private static string? NormalizeOptionalValue(string? value) =>
+        string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim();
 }

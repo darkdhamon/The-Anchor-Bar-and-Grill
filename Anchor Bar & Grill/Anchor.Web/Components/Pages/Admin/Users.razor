@@ -31,6 +31,7 @@
                 <li>Create every staff account here. Public self-registration is disabled, so admins own onboarding.</li>
                 <li>Share the temporary password with the employee, then let them change it after first sign-in.</li>
                 <li>Confirm an account here if confirmed-account enforcement is on and a new staff member is waiting for access.</li>
+                <li>Use the profile editor on each staff card to keep the employee's first name, last name, and phone number current.</li>
                 <li>Assign <strong>EventManager</strong>, <strong>MenuManager</strong>, and <strong>IT</strong> only when the user needs that responsibility.</li>
                 <li>Do not remove the final <strong>Admin</strong> or final <strong>IT</strong> assignment, and do not remove <strong>Admin</strong> from your own signed-in account.</li>
             </ul>
@@ -45,7 +46,7 @@
                     <span class="admin-card__badge">Admin only</span>
                 </div>
 
-                <EditForm Model="createUserInput" OnValidSubmit="CreateUserAsync" class="editor-form account-form">
+                <EditForm Model="createUserInput" OnValidSubmit="CreateUserAsync" FormName="CreateStaffAccount" class="editor-form account-form">
                     <DataAnnotationsValidator />
                     <ValidationSummary class="validation-message account-form__validation" role="alert" />
 
@@ -103,7 +104,15 @@
                             <article class="admin-list__item user-admin-list__item">
                                 <div class="user-admin-list__summary">
                                     <div class="user-admin-list__heading">
-                                        <h3>@user.Email</h3>
+                                        <h3>@GetUserHeading(user)</h3>
+                                        @if (!string.Equals(GetUserHeading(user), user.Email, StringComparison.Ordinal))
+                                        {
+                                            <p class="admin-field-note">@user.Email</p>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(user.PhoneNumber))
+                                        {
+                                            <p class="admin-field-note">Phone on file: @user.PhoneNumber</p>
+                                        }
                                     </div>
 
                                     <div class="chip-list">
@@ -154,6 +163,7 @@
                                         </button>
                                     }
                                 </div>
+                                <ManagedUserProfileEditor User="user" IsBusy="isBusy" OnSave="UpdateProfileAsync" />
                             </article>
                         }
                     </div>
@@ -204,6 +214,20 @@
         {
             createUserInput = new();
         }
+
+        await LoadUsersAsync();
+        isBusy = false;
+    }
+
+    private async Task UpdateProfileAsync(UpdateManagedUserProfileRequest request)
+    {
+        isBusy = true;
+
+        var result = await IdentityAdministrationService.UpdateUserProfileAsync(request);
+
+        statusMessage = result.Succeeded
+            ? $"Profile details were updated for the selected user."
+            : $"Error: {string.Join(" ", result.Errors)}";
 
         await LoadUsersAsync();
         isBusy = false;
@@ -260,6 +284,11 @@
         blocksSelfAdminRemoval
             ? "You cannot remove the Admin role from your own account."
             : null;
+
+    private static string GetUserHeading(ManagedUserSummary user) =>
+        string.IsNullOrWhiteSpace(user.DisplayName)
+            ? user.Email
+            : user.DisplayName;
 
     private sealed class CreateUserInputModel
     {
