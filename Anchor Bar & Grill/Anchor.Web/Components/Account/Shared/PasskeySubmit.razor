@@ -6,6 +6,7 @@
     operation="@Operation"
     name="@Name"
     email-name="@EmailName"
+    auto-request="@(AutoRequest ? "true" : "false")"
     request-token-name="@tokens?.HeaderName"
     request-token-value="@tokens?.RequestToken">
 </passkey-submit>
@@ -26,6 +27,9 @@
 
     [Parameter]
     public string? EmailName { get; set; }
+
+    [Parameter]
+    public bool AutoRequest { get; set; }
 
     [Parameter]
     public RenderFragment? ChildContent { get; set; }

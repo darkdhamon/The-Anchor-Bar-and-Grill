@@ -59,6 +59,7 @@ This repository currently contains the first code-native website mockup for The 
 - The shared header now shows public navigation to everyone, while staff tools only appear after sign-in and are filtered by the current user's roles
 - Admin editor controls now share the same themed styling and normalized field sizing across light and dark modes instead of falling back to browser-default inputs
 - The login page now uses the same branded themed form treatment as the rest of the site instead of the stock floating-label scaffold
+- Passkey requests now start only after the user clicks the passkey action instead of auto-starting on login-page load
 - Register, external-login completion, forced password change, access-denied, and register-confirmation screens now use the same branded account layout as the login page
 - Startup bootstrap runs before the request pipeline so roles and the initial administrative account exist before the first login attempt
 - Non-editor elements such as navigation targets and post-navigation page headings suppress the default browser focus outline, while editor fields keep their normal editing focus behavior
