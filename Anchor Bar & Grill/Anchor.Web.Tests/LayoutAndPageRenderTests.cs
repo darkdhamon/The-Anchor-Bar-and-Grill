@@ -290,18 +290,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     [Fact]
     public void HelpPage_ExplainsAdminCreatedAccounts()
     {
-        var httpContext = new DefaultHttpContext();
-        var cut = Render(builder =>
-        {
-            builder.OpenComponent<CascadingValue<HttpContext>>(0);
-            builder.AddAttribute(1, nameof(CascadingValue<HttpContext>.Value), httpContext);
-            builder.AddAttribute(2, nameof(CascadingValue<HttpContext>.ChildContent), (RenderFragment)(childBuilder =>
-            {
-                childBuilder.OpenComponent<Help>(0);
-                childBuilder.CloseComponent();
-            }));
-            builder.CloseComponent();
-        });
+        var cut = Render<Help>();
 
         Assert.Contains("Admins create staff accounts, then assign roles.", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("creates each staff account", cut.Markup, StringComparison.OrdinalIgnoreCase);
