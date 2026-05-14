@@ -1,6 +1,7 @@
 @page "/admin/users"
 @rendermode InteractiveServer
 
+@using System.ComponentModel.DataAnnotations
 @using Anchor.Domain.Identity
 @using Anchor.Domain.Identity.Users
 @using Microsoft.AspNetCore.Authorization
@@ -16,8 +17,8 @@
         <p class="page-hero__eyebrow">Admin Access</p>
         <h1>User management</h1>
         <p class="page-hero__lead">
-            Confirm staff accounts, assign operational or technical roles, and keep the site staffed without
-            guessing which permissions belong to which user.
+            Create staff accounts, confirm them when needed, and assign only the operational or technical access
+            each employee should have.
         </p>
     </div>
 
@@ -25,6 +26,8 @@
         <aside class="admin-help">
             <h2>How to use this page</h2>
             <ul class="feature-list">
+                <li>Create every staff account here. Public self-registration is disabled, so admins own onboarding.</li>
+                <li>Share the temporary password with the employee, then let them change it after first sign-in.</li>
                 <li>Confirm an account here if confirmed-account enforcement is on and a new staff member is waiting for access.</li>
                 <li>Assign <strong>EventManager</strong>, <strong>MenuManager</strong>, and <strong>IT</strong> only when the user needs that responsibility.</li>
                 <li>Do not remove the final <strong>Admin</strong> or final <strong>IT</strong> assignment because the site requires both for safe operation.</li>
@@ -33,6 +36,46 @@
 
         <div class="admin-stack">
             <StatusMessage Message="@statusMessage" />
+
+            <section class="admin-card">
+                <div class="admin-card__header">
+                    <h2>Create a staff account</h2>
+                    <span class="admin-card__badge">Admin only</span>
+                </div>
+
+                <EditForm Model="createUserInput" OnValidSubmit="CreateUserAsync" class="editor-form account-form">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="validation-message account-form__validation" role="alert" />
+
+                    <div class="editor-form__grid">
+                        <label>
+                            Email
+                            <InputText @bind-Value="createUserInput.Email" id="CreateUser.Email" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                            <ValidationMessage For="() => createUserInput.Email" class="validation-message" />
+                        </label>
+                        <label>
+                            Temporary password
+                            <InputText type="password" @bind-Value="createUserInput.TemporaryPassword" id="CreateUser.TemporaryPassword" autocomplete="new-password" aria-required="true" placeholder="Create a temporary password" />
+                            <ValidationMessage For="() => createUserInput.TemporaryPassword" class="validation-message" />
+                        </label>
+                        <label class="editor-form__toggle">
+                            <span>Confirm account now</span>
+                            <div class="editor-form__toggle-row">
+                                <InputCheckbox @bind-Value="createUserInput.EmailConfirmed" />
+                                <small>Turn this on if the account should be able to sign in immediately when confirmed-account enforcement is enabled.</small>
+                            </div>
+                        </label>
+                    </div>
+
+                    <p class="admin-field-note">
+                        New accounts are created without any staff roles and are forced to change the temporary password after the first successful sign-in.
+                    </p>
+
+                    <div class="action-row">
+                        <button type="submit" class="action-button action-button--primary" disabled="@isBusy">Create staff account</button>
+                    </div>
+                </EditForm>
+            </section>
 
             @if (users is null)
             {
@@ -119,6 +162,7 @@
 @code {
     private bool isBusy;
     private string? statusMessage;
+    private CreateUserInputModel createUserInput = new();
     private IReadOnlyList<ManagedUserSummary>? users;
 
     protected override async Task OnInitializedAsync()
@@ -129,6 +173,29 @@
     private async Task LoadUsersAsync()
     {
         users = await IdentityAdministrationService.GetUsersAsync();
+    }
+
+    private async Task CreateUserAsync()
+    {
+        isBusy = true;
+
+        var result = await IdentityAdministrationService.CreateUserAsync(
+            new CreateManagedUserRequest(
+                createUserInput.Email,
+                createUserInput.TemporaryPassword,
+                createUserInput.EmailConfirmed));
+
+        statusMessage = result.Succeeded
+            ? $"{createUserInput.Email} was created and will be prompted to change the temporary password after the first successful sign-in."
+            : $"Error: {string.Join(" ", result.Errors)}";
+
+        if (result.Succeeded)
+        {
+            createUserInput = new();
+        }
+
+        await LoadUsersAsync();
+        isBusy = false;
     }
 
     private async Task SetConfirmationAsync(ManagedUserSummary user, bool confirmed)
@@ -158,5 +225,18 @@
 
         await LoadUsersAsync();
         isBusy = false;
+    }
+
+    private sealed class CreateUserInputModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [StringLength(100, ErrorMessage = "The temporary password must be at least {2} and at most {1} characters long.", MinimumLength = 6)]
+        public string TemporaryPassword { get; set; } = "";
+
+        public bool EmailConfirmed { get; set; }
     }
 }

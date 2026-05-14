@@ -99,4 +99,25 @@ public sealed class IdentityAdministrationRepositoryTests
         Assert.NotNull(refreshedUser);
         Assert.True(refreshedUser.EmailConfirmed);
     }
+
+    [Fact]
+    public async Task CreateUserAsync_creates_confirmed_user_that_must_rotate_password()
+    {
+        await using var identityContext = await SqliteIdentityTestContext.CreateAsync();
+        var repository = new IdentityAdministrationRepository(identityContext.DbContext, identityContext.UserManager);
+
+        var result = await repository.CreateUserAsync(
+            new Anchor.Domain.Identity.Users.CreateManagedUserRequest(
+                "newstaff@anchor.test",
+                "Password1!",
+                true));
+
+        var createdUser = await identityContext.UserManager.FindByEmailAsync("newstaff@anchor.test");
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(createdUser);
+        Assert.True(createdUser.EmailConfirmed);
+        Assert.True(createdUser.MustChangePassword);
+        Assert.False(createdUser.IsBootstrapAccount);
+    }
 }

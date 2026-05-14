@@ -6,6 +6,8 @@ public interface IIdentityAdministrationService
 
     Task<BootstrapSecurityOverview> GetSecurityOverviewAsync(CancellationToken cancellationToken = default);
 
+    Task<IdentityOperationResult> CreateUserAsync(CreateManagedUserRequest request, CancellationToken cancellationToken = default);
+
     Task<IdentityOperationResult> AddRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default);
 
     Task<IdentityOperationResult> RemoveRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default);

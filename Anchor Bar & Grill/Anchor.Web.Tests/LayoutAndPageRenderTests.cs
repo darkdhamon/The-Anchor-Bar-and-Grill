@@ -56,7 +56,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("theme-light", cut.Markup);
         Assert.Contains("Staff Access", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Log In", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Register", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(">Register<", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Events Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("site-header__nav-stack is-open", cut.Markup, StringComparison.Ordinal);
 
@@ -285,6 +285,38 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Profile editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Choose an existing platform or type a new one", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Add another profile", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void HelpPage_ExplainsAdminCreatedAccounts()
+    {
+        var httpContext = new DefaultHttpContext();
+        var cut = Render(builder =>
+        {
+            builder.OpenComponent<CascadingValue<HttpContext>>(0);
+            builder.AddAttribute(1, nameof(CascadingValue<HttpContext>.Value), httpContext);
+            builder.AddAttribute(2, nameof(CascadingValue<HttpContext>.ChildContent), (RenderFragment)(childBuilder =>
+            {
+                childBuilder.OpenComponent<Help>(0);
+                childBuilder.CloseComponent();
+            }));
+            builder.CloseComponent();
+        });
+
+        Assert.Contains("Admins create staff accounts, then assign roles.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("creates each staff account", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("self-register", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void RegisterPage_ShowsAdminManagedAccountCreationNotice()
+    {
+        var cut = Render<Anchor.Web.Components.Account.Pages.Register>();
+
+        Assert.Contains("Account creation is handled by an admin.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Public self-registration is disabled.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Go to login", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("type=\"submit\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

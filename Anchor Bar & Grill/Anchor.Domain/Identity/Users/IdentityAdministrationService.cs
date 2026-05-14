@@ -14,6 +14,28 @@ public sealed class IdentityAdministrationService(IIdentityAdministrationReposit
         return new BootstrapSecurityOverview(adminCount, itCount, bootstrapCount);
     }
 
+    public Task<IdentityOperationResult> CreateUserAsync(CreateManagedUserRequest request, CancellationToken cancellationToken = default)
+    {
+        var normalizedEmail = request.Email.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedEmail))
+        {
+            return Task.FromResult(IdentityOperationResult.Failure("An email address is required."));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.TemporaryPassword))
+        {
+            return Task.FromResult(IdentityOperationResult.Failure("A temporary password is required."));
+        }
+
+        return repository.CreateUserAsync(
+            request with
+            {
+                Email = normalizedEmail,
+                TemporaryPassword = request.TemporaryPassword.Trim()
+            },
+            cancellationToken);
+    }
+
     public Task<IdentityOperationResult> AddRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default)
     {
         if (!Identity.ApplicationRoles.IsManagedRole(roleName))

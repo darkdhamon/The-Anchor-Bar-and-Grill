@@ -67,6 +67,23 @@ public sealed class IdentityAdministrationRepository(
             Roles: rolesByUserId.GetValueOrDefault(user.Id, Array.Empty<string>()));
     }
 
+    public async Task<IdentityOperationResult> CreateUserAsync(CreateManagedUserRequest request, CancellationToken cancellationToken = default)
+    {
+        var user = new ApplicationUser
+        {
+            UserName = request.Email,
+            Email = request.Email,
+            EmailConfirmed = request.EmailConfirmed,
+            MustChangePassword = true
+        };
+
+        var result = await userManager.CreateAsync(user, request.TemporaryPassword);
+
+        return result.Succeeded
+            ? IdentityOperationResult.Success()
+            : IdentityOperationResult.Failure(result.Errors.Select(error => error.Description));
+    }
+
     public Task<int> CountUsersInRoleAsync(string roleName, CancellationToken cancellationToken = default) =>
         CountDistinctUsersInRoleAsync(roleName, cancellationToken);
 

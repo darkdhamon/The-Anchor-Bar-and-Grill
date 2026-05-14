@@ -37,6 +37,34 @@ public sealed class IdentityAdministrationServiceTests
     }
 
     [Fact]
+    public async Task CreateUserAsync_rejects_blank_email()
+    {
+        var repository = new FakeIdentityAdministrationRepository();
+        var service = new IdentityAdministrationService(repository);
+
+        var result = await service.CreateUserAsync(new CreateManagedUserRequest("   ", "Password1!", false));
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("email address is required", result.Errors.Single(), StringComparison.OrdinalIgnoreCase);
+        Assert.Null(repository.LastCreatedUser);
+    }
+
+    [Fact]
+    public async Task CreateUserAsync_trims_email_and_password_before_persisting()
+    {
+        var repository = new FakeIdentityAdministrationRepository();
+        var service = new IdentityAdministrationService(repository);
+
+        var result = await service.CreateUserAsync(new CreateManagedUserRequest(" staff@anchor.test ", " Password1! ", true));
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(repository.LastCreatedUser);
+        Assert.Equal("staff@anchor.test", repository.LastCreatedUser.Email);
+        Assert.Equal("Password1!", repository.LastCreatedUser.TemporaryPassword);
+        Assert.True(repository.LastCreatedUser.EmailConfirmed);
+    }
+
+    [Fact]
     public async Task RemoveRoleAsync_blocks_removal_of_the_last_admin()
     {
         var repository = new FakeIdentityAdministrationRepository
@@ -107,6 +135,8 @@ public sealed class IdentityAdministrationServiceTests
 
         public string? LastAddedRole { get; private set; }
 
+        public CreateManagedUserRequest? LastCreatedUser { get; private set; }
+
         public string? LastRemovedRole { get; private set; }
 
         public Task<IReadOnlyList<ManagedUserSummary>> GetUsersAsync(CancellationToken cancellationToken = default) =>
@@ -114,6 +144,12 @@ public sealed class IdentityAdministrationServiceTests
 
         public Task<ManagedUserSummary?> GetUserAsync(string userId, CancellationToken cancellationToken = default) =>
             Task.FromResult(Users.SingleOrDefault(user => user.UserId == userId));
+
+        public Task<IdentityOperationResult> CreateUserAsync(CreateManagedUserRequest request, CancellationToken cancellationToken = default)
+        {
+            LastCreatedUser = request;
+            return Task.FromResult(IdentityOperationResult.Success());
+        }
 
         public Task<int> CountUsersInRoleAsync(string roleName, CancellationToken cancellationToken = default) =>
             Task.FromResult(roleName switch

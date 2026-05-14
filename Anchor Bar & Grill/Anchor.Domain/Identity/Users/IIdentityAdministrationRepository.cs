@@ -6,6 +6,8 @@ public interface IIdentityAdministrationRepository
 
     Task<ManagedUserSummary?> GetUserAsync(string userId, CancellationToken cancellationToken = default);
 
+    Task<IdentityOperationResult> CreateUserAsync(CreateManagedUserRequest request, CancellationToken cancellationToken = default);
+
     Task<int> CountUsersInRoleAsync(string roleName, CancellationToken cancellationToken = default);
 
     Task<int> CountBootstrapUsersAsync(CancellationToken cancellationToken = default);

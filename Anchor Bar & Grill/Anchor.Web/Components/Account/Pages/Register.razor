@@ -1,195 +1,45 @@
 @page "/Account/Register"
 
-@using System.ComponentModel.DataAnnotations
-@using System.Text
-@using System.Text.Encodings.Web
-@using Anchor.Domain.Identity.Configuration
-@using Anchor.Web.Data
-@using Microsoft.AspNetCore.Identity
-@using Microsoft.AspNetCore.WebUtilities
-
-@inject IConfirmedAccountConfigurationService ConfirmedAccountConfigurationService
-@inject UserManager<ApplicationUser> UserManager
-@inject IUserStore<ApplicationUser> UserStore
-@inject SignInManager<ApplicationUser> SignInManager
-@inject IEmailSender<ApplicationUser> EmailSender
-@inject ILogger<Register> Logger
-@inject NavigationManager NavigationManager
-@inject IdentityRedirectManager RedirectManager
-
-<PageTitle>Register</PageTitle>
+<PageTitle>Account creation unavailable</PageTitle>
 
 <section class="account-page">
     <div class="page-hero page-hero--section account-page__hero">
-        <p class="page-hero__eyebrow">Staff Registration</p>
-        <h1>Register</h1>
+        <p class="page-hero__eyebrow">Staff Access</p>
+        <h1>Account creation is handled by an admin.</h1>
         <p class="page-hero__lead">
-            Public registration stays enabled so staff can create their own account first, then an
-            <strong>Admin</strong> can confirm it and assign the roles needed for real work.
+            Public self-registration is disabled. Ask a site <strong>Admin</strong> to create your staff account,
+            share your temporary password, and assign the roles you need.
         </p>
     </div>
 
     <div class="account-grid">
         <section class="admin-card account-panel">
             <div class="admin-card__header">
-                <h2>Create a local account.</h2>
-                <span class="admin-card__badge">Registration</span>
+                <h2>What to do next</h2>
+                <span class="admin-card__badge">Onboarding</span>
             </div>
 
-            <StatusMessage Message="@Message" />
-
-            <EditForm Model="Input" method="post" OnValidSubmit="RegisterUser" FormName="register" class="editor-form account-form">
-                <DataAnnotationsValidator />
-                <ValidationSummary class="validation-message account-form__validation" role="alert" />
-
-                <div class="editor-form__grid">
-                    <label>
-                        Email
-                        <InputText @bind-Value="Input.Email" id="Input.Email" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                        <ValidationMessage For="() => Input.Email" class="validation-message" />
-                    </label>
-                    <label>
-                        Password
-                        <InputText type="password" @bind-Value="Input.Password" id="Input.Password" autocomplete="new-password" aria-required="true" placeholder="Create a password" />
-                        <ValidationMessage For="() => Input.Password" class="validation-message" />
-                    </label>
-                    <label>
-                        Confirm password
-                        <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" autocomplete="new-password" aria-required="true" placeholder="Confirm your password" />
-                        <ValidationMessage For="() => Input.ConfirmPassword" class="validation-message" />
-                    </label>
-                </div>
-
-                <div class="account-form__actions">
-                    <button type="submit" class="hero-actions__link hero-actions__link--primary account-form__submit">Register</button>
-                </div>
-            </EditForm>
+            <div class="account-panel__body">
+                <ul class="feature-list">
+                    <li>Contact a site <strong>Admin</strong> so they can create your account from User Management.</li>
+                    <li>If confirmed-account enforcement is active, the same <strong>Admin</strong> can confirm the account there too.</li>
+                    <li>Once the account exists, return to the login page and sign in with the temporary password you were given.</li>
+                </ul>
+            </div>
         </section>
 
-        <div class="account-panel-stack">
-            <section class="admin-card account-panel">
-                <div class="admin-card__header">
-                    <h2>What happens next</h2>
-                    <span class="admin-card__badge">Onboarding</span>
-                </div>
+        <section class="admin-card account-panel">
+            <div class="admin-card__header">
+                <h2>Already have an account?</h2>
+                <span class="admin-card__badge">Next step</span>
+            </div>
 
-                <div class="account-panel__body">
-                    <ul class="feature-list">
-                        <li>If confirmed accounts are required, registration will pause until an <strong>Admin</strong> confirms you.</li>
-                        <li>After sign-in, an <strong>Admin</strong> assigns <strong>EventManager</strong>, <strong>MenuManager</strong>, and/or <strong>IT</strong> as needed.</li>
-                        <li>Use the Help page after sign-in for a plain-language walkthrough of the staff workflow.</li>
-                    </ul>
+            <div class="account-panel__body">
+                <p>Use the normal staff login flow if an admin has already created your account.</p>
+                <div class="account-form__actions">
+                    <a class="hero-actions__link hero-actions__link--primary account-form__submit" href="Account/Login">Go to login</a>
                 </div>
-            </section>
-
-            <section class="admin-card account-panel">
-                <div class="admin-card__header">
-                    <h2>Use another service to register.</h2>
-                    <span class="admin-card__badge">External Providers</span>
-                </div>
-
-                <div class="account-panel__body">
-                    <ExternalLoginPicker />
-                </div>
-            </section>
-        </div>
+            </div>
+        </section>
     </div>
 </section>
-
-@code {
-    private IEnumerable<IdentityError>? identityErrors;
-
-    [SupplyParameterFromForm]
-    private InputModel Input { get; set; } = default!;
-
-    [SupplyParameterFromQuery]
-    private string? ReturnUrl { get; set; }
-
-    private string? Message => identityErrors is null ? null : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
-
-    protected override void OnInitialized()
-    {
-        Input ??= new();
-    }
-
-    public async Task RegisterUser(EditContext editContext)
-    {
-        var user = CreateUser();
-
-        await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
-        var emailStore = GetEmailStore();
-        await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
-        var result = await UserManager.CreateAsync(user, Input.Password);
-
-        if (!result.Succeeded)
-        {
-            identityErrors = result.Errors;
-            return;
-        }
-
-        Logger.LogInformation("User created a new account with password.");
-
-        var userId = await UserManager.GetUserIdAsync(user);
-        var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
-        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-        var callbackUrl = NavigationManager.GetUriWithQueryParameters(
-            NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
-            new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code, ["returnUrl"] = ReturnUrl });
-
-        await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
-
-        if (await ConfirmedAccountConfigurationService.IsConfirmationRequiredAsync())
-        {
-            RedirectManager.RedirectTo(
-                "Account/RegisterConfirmation",
-                new() { ["email"] = Input.Email, ["returnUrl"] = ReturnUrl });
-        }
-        else
-        {
-            await SignInManager.SignInAsync(user, isPersistent: false);
-            RedirectManager.RedirectTo(ReturnUrl);
-        }
-    }
-
-    private ApplicationUser CreateUser()
-    {
-        try
-        {
-            return Activator.CreateInstance<ApplicationUser>();
-        }
-        catch
-        {
-            throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " +
-                $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor.");
-        }
-    }
-
-    private IUserEmailStore<ApplicationUser> GetEmailStore()
-    {
-        if (!UserManager.SupportsUserEmail)
-        {
-            throw new NotSupportedException("The default UI requires a user store with email support.");
-        }
-
-        return (IUserEmailStore<ApplicationUser>)UserStore;
-    }
-
-    private sealed class InputModel
-    {
-        [Required]
-        [EmailAddress]
-        [Display(Name = "Email")]
-        public string Email { get; set; } = "";
-
-        [Required]
-        [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
-        [DataType(DataType.Password)]
-        [Display(Name = "Password")]
-        public string Password { get; set; } = "";
-
-        [DataType(DataType.Password)]
-        [Display(Name = "Confirm password")]
-        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
-        public string ConfirmPassword { get; set; } = "";
-    }
-}
