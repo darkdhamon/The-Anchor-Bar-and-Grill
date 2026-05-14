@@ -46,7 +46,11 @@ public sealed class IdentityAdministrationService(IIdentityAdministrationReposit
         return repository.AddRoleAsync(userId, roleName, cancellationToken);
     }
 
-    public async Task<IdentityOperationResult> RemoveRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default)
+    public async Task<IdentityOperationResult> RemoveRoleAsync(
+        string userId,
+        string roleName,
+        string actingUserId,
+        CancellationToken cancellationToken = default)
     {
         if (!Identity.ApplicationRoles.IsManagedRole(roleName))
         {
@@ -66,6 +70,11 @@ public sealed class IdentityAdministrationService(IIdentityAdministrationReposit
 
         if (roleName == Identity.ApplicationRoles.Admin)
         {
+            if (string.Equals(userId, actingUserId, StringComparison.Ordinal))
+            {
+                return IdentityOperationResult.Failure("You cannot remove the Admin role from your own account.");
+            }
+
             var adminCount = await repository.CountUsersInRoleAsync(Identity.ApplicationRoles.Admin, cancellationToken);
             if (adminCount <= 1)
             {

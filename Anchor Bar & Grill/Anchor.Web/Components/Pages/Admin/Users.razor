@@ -2,9 +2,11 @@
 @rendermode InteractiveServer
 
 @using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
 @using Anchor.Domain.Identity
 @using Anchor.Domain.Identity.Users
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 
 @attribute [Authorize(Policy = ApplicationPolicies.AdminAccess)]
 
@@ -30,7 +32,7 @@
                 <li>Share the temporary password with the employee, then let them change it after first sign-in.</li>
                 <li>Confirm an account here if confirmed-account enforcement is on and a new staff member is waiting for access.</li>
                 <li>Assign <strong>EventManager</strong>, <strong>MenuManager</strong>, and <strong>IT</strong> only when the user needs that responsibility.</li>
-                <li>Do not remove the final <strong>Admin</strong> or final <strong>IT</strong> assignment because the site requires both for safe operation.</li>
+                <li>Do not remove the final <strong>Admin</strong> or final <strong>IT</strong> assignment, and do not remove <strong>Admin</strong> from your own signed-in account.</li>
             </ul>
         </aside>
 
@@ -143,10 +145,12 @@
                                     @foreach (var roleName in ApplicationRoles.All)
                                     {
                                         var hasRole = user.Roles.Contains(roleName, StringComparer.Ordinal);
+                                        var blocksSelfAdminRemoval = BlocksSelfAdminRemoval(user, roleName, hasRole);
                                         <button class="action-button @(hasRole ? "action-button--danger" : "action-button--primary")"
                                                 @onclick="() => ToggleRoleAsync(user, roleName, hasRole)"
-                                                disabled="@isBusy">
-                                            @(hasRole ? $"Remove {roleName}" : $"Add {roleName}")
+                                                disabled="@(isBusy || blocksSelfAdminRemoval)"
+                                                title="@GetRoleActionTitle(blocksSelfAdminRemoval)">
+                                            @GetRoleActionLabel(roleName, hasRole, blocksSelfAdminRemoval)
                                         </button>
                                     }
                                 </div>
@@ -160,13 +164,20 @@
 </section>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
     private bool isBusy;
+    private string? currentUserId;
     private string? statusMessage;
     private CreateUserInputModel createUserInput = new();
     private IReadOnlyList<ManagedUserSummary>? users;
 
     protected override async Task OnInitializedAsync()
     {
+        var authenticationState = await AuthenticationStateTask;
+        currentUserId = authenticationState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
         await LoadUsersAsync();
     }
 
@@ -213,10 +224,16 @@
 
     private async Task ToggleRoleAsync(ManagedUserSummary user, string roleName, bool hasRole)
     {
+        if (hasRole && BlocksSelfAdminRemoval(user, roleName, hasRole))
+        {
+            statusMessage = "Error: You cannot remove the Admin role from your own account.";
+            return;
+        }
+
         isBusy = true;
 
         var result = hasRole
-            ? await IdentityAdministrationService.RemoveRoleAsync(user.UserId, roleName)
+            ? await IdentityAdministrationService.RemoveRoleAsync(user.UserId, roleName, currentUserId ?? string.Empty)
             : await IdentityAdministrationService.AddRoleAsync(user.UserId, roleName);
 
         statusMessage = result.Succeeded
@@ -226,6 +243,23 @@
         await LoadUsersAsync();
         isBusy = false;
     }
+
+    private bool BlocksSelfAdminRemoval(ManagedUserSummary user, string roleName, bool hasRole) =>
+        hasRole
+        && roleName == ApplicationRoles.Admin
+        && string.Equals(currentUserId, user.UserId, StringComparison.Ordinal);
+
+    private static string GetRoleActionLabel(string roleName, bool hasRole, bool blocksSelfAdminRemoval) =>
+        blocksSelfAdminRemoval
+            ? "Keep Admin"
+            : hasRole
+                ? $"Remove {roleName}"
+                : $"Add {roleName}";
+
+    private static string? GetRoleActionTitle(bool blocksSelfAdminRemoval) =>
+        blocksSelfAdminRemoval
+            ? "You cannot remove the Admin role from your own account."
+            : null;
 
     private sealed class CreateUserInputModel
     {

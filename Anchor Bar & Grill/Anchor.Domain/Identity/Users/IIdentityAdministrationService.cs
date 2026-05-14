@@ -10,7 +10,7 @@ public interface IIdentityAdministrationService
 
     Task<IdentityOperationResult> AddRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default);
 
-    Task<IdentityOperationResult> RemoveRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default);
+    Task<IdentityOperationResult> RemoveRoleAsync(string userId, string roleName, string actingUserId, CancellationToken cancellationToken = default);
 
     Task<IdentityOperationResult> SetEmailConfirmedAsync(string userId, bool emailConfirmed, CancellationToken cancellationToken = default);
 }

@@ -1,4 +1,5 @@
 using Anchor.Domain.Identity;
+using Anchor.Domain.Identity.Users;
 using Anchor.Web.Components.Layout;
 using Anchor.Web.Components.Pages;
 using Anchor.Web.Components.Pages.Admin;
@@ -309,6 +310,38 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     }
 
     [Fact]
+    public void UserManagementPage_DisablesRemovingAdminFromSignedInAdmin()
+    {
+        authStateProvider.SetUser(CreateUser("user-1", ApplicationRoles.Admin));
+        Services.AddSingleton<IIdentityAdministrationService>(new FakeIdentityAdministrationService
+        {
+            Users =
+            [
+                new ManagedUserSummary("user-1", "admin@anchor.test", true, false, false, [ApplicationRoles.Admin]),
+                new ManagedUserSummary("user-2", "backup-admin@anchor.test", true, false, false, [ApplicationRoles.Admin])
+            ]
+        });
+
+        var cut = Render(builder =>
+        {
+            builder.OpenComponent<CascadingAuthenticationState>(0);
+            builder.AddAttribute(1, "ChildContent", (RenderFragment)(childBuilder =>
+            {
+                childBuilder.OpenComponent<Users>(0);
+                childBuilder.CloseComponent();
+            }));
+            builder.CloseComponent();
+        });
+
+        var keepAdminButton = cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Keep Admin", StringComparison.Ordinal));
+
+        Assert.True(keepAdminButton.HasAttribute("disabled"));
+        Assert.Contains("own account", keepAdminButton.GetAttribute("title"), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Remove Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void SystemToolsPage_RendersTechnicalPlaceholderGuidance()
     {
         var cut = Render<SystemTools>();
@@ -385,5 +418,28 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 
             return AuthorizationResult.Success();
         }
+    }
+
+    private sealed class FakeIdentityAdministrationService : IIdentityAdministrationService
+    {
+        public IReadOnlyList<ManagedUserSummary> Users { get; init; } = [];
+
+        public Task<IReadOnlyList<ManagedUserSummary>> GetUsersAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(Users);
+
+        public Task<BootstrapSecurityOverview> GetSecurityOverviewAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(new BootstrapSecurityOverview(1, 1, 1));
+
+        public Task<IdentityOperationResult> CreateUserAsync(CreateManagedUserRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(IdentityOperationResult.Success());
+
+        public Task<IdentityOperationResult> AddRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default) =>
+            Task.FromResult(IdentityOperationResult.Success());
+
+        public Task<IdentityOperationResult> RemoveRoleAsync(string userId, string roleName, string actingUserId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(IdentityOperationResult.Success());
+
+        public Task<IdentityOperationResult> SetEmailConfirmedAsync(string userId, bool emailConfirmed, CancellationToken cancellationToken = default) =>
+            Task.FromResult(IdentityOperationResult.Success());
     }
 }

@@ -40,6 +40,7 @@ This repository currently contains the first code-native website mockup for The 
 - `AnchorIdentity:RequireConfirmedAccount` in `appsettings.json` is the admin-editable fallback value
 - Admins can manually confirm or unconfirm users because email delivery is still implemented with the no-op sender
 - The app prevents removing the last `Admin` assignment or the last `IT` assignment
+- An admin cannot remove the `Admin` role from their own signed-in account
 
 ## Design Direction
 

@@ -77,10 +77,30 @@ public sealed class IdentityAdministrationServiceTests
         };
         var service = new IdentityAdministrationService(repository);
 
-        var result = await service.RemoveRoleAsync("user-1", ApplicationRoles.Admin);
+        var result = await service.RemoveRoleAsync("user-1", ApplicationRoles.Admin, "user-2");
 
         Assert.False(result.Succeeded);
         Assert.Contains("last Admin", result.Errors.Single(), StringComparison.Ordinal);
+        Assert.Null(repository.LastRemovedRole);
+    }
+
+    [Fact]
+    public async Task RemoveRoleAsync_blocks_admin_self_removal_even_when_other_admins_exist()
+    {
+        var repository = new FakeIdentityAdministrationRepository
+        {
+            AdminCount = 2,
+            Users =
+            [
+                new ManagedUserSummary("user-1", "admin@anchor.test", true, false, false, [ApplicationRoles.Admin])
+            ]
+        };
+        var service = new IdentityAdministrationService(repository);
+
+        var result = await service.RemoveRoleAsync("user-1", ApplicationRoles.Admin, "user-1");
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("own account", result.Errors.Single(), StringComparison.OrdinalIgnoreCase);
         Assert.Null(repository.LastRemovedRole);
     }
 
@@ -97,7 +117,7 @@ public sealed class IdentityAdministrationServiceTests
         };
         var service = new IdentityAdministrationService(repository);
 
-        var result = await service.RemoveRoleAsync("user-1", ApplicationRoles.It);
+        var result = await service.RemoveRoleAsync("user-1", ApplicationRoles.It, "user-2");
 
         Assert.False(result.Succeeded);
         Assert.Contains("last IT", result.Errors.Single(), StringComparison.Ordinal);
@@ -117,7 +137,7 @@ public sealed class IdentityAdministrationServiceTests
         };
         var service = new IdentityAdministrationService(repository);
 
-        var result = await service.RemoveRoleAsync("user-1", ApplicationRoles.Admin);
+        var result = await service.RemoveRoleAsync("user-1", ApplicationRoles.Admin, "user-2");
 
         Assert.True(result.Succeeded);
         Assert.Equal(ApplicationRoles.Admin, repository.LastRemovedRole);
