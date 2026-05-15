@@ -30,7 +30,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
             options.AddPolicy(ApplicationPolicies.AdminAccess, policy => policy.RequireRole(ApplicationRoles.Admin));
             options.AddPolicy(ApplicationPolicies.EventManagement, policy => policy.RequireRole(ApplicationRoles.Admin, ApplicationRoles.EventManager));
             options.AddPolicy(ApplicationPolicies.MenuManagement, policy => policy.RequireRole(ApplicationRoles.Admin, ApplicationRoles.MenuManager));
-            options.AddPolicy(ApplicationPolicies.ITAccess, policy => policy.RequireRole(ApplicationRoles.Admin, ApplicationRoles.It));
+            options.AddPolicy(ApplicationPolicies.ITAccess, policy => policy.RequireRole(ApplicationRoles.It));
         });
         Services.AddSingleton<IAuthorizationService, TestAuthorizationService>();
         authStateProvider = new TestAuthenticationStateProvider();
@@ -118,10 +118,33 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Contact Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("User Management", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Security", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("IT / System", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("IT / System", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Manage Account", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Log Out", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(">Register<", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void MainLayout_ShowsTechnicalToolsOnlyForItUsers()
+    {
+        authStateProvider.SetUser(CreateUser("it@anchor.test", ApplicationRoles.It));
+
+        var cut = Render(builder =>
+        {
+            builder.OpenComponent<CascadingAuthenticationState>(0);
+            builder.AddAttribute(1, "ChildContent", (RenderFragment)(childBuilder =>
+            {
+                childBuilder.OpenComponent<MainLayout>(0);
+                childBuilder.AddAttribute(1, "Body", (RenderFragment)(bodyBuilder => bodyBuilder.AddMarkupContent(0, "<section>Preview body</section>")));
+                childBuilder.CloseComponent();
+            }));
+            builder.CloseComponent();
+        });
+
+        Assert.Contains("Help", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("IT / System", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("User Management", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Security", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

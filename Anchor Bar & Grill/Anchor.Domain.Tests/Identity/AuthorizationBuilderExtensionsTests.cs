@@ -10,7 +10,7 @@ public sealed class AuthorizationBuilderExtensionsTests
     [InlineData(ApplicationPolicies.AdminAccess, ApplicationRoles.Admin, true)]
     [InlineData(ApplicationPolicies.EventManagement, ApplicationRoles.Admin, true)]
     [InlineData(ApplicationPolicies.MenuManagement, ApplicationRoles.Admin, true)]
-    [InlineData(ApplicationPolicies.ITAccess, ApplicationRoles.Admin, true)]
+    [InlineData(ApplicationPolicies.ITAccess, ApplicationRoles.Admin, false)]
     [InlineData(ApplicationPolicies.EventManagement, ApplicationRoles.EventManager, true)]
     [InlineData(ApplicationPolicies.MenuManagement, ApplicationRoles.MenuManager, true)]
     [InlineData(ApplicationPolicies.ITAccess, ApplicationRoles.It, true)]
@@ -18,6 +18,7 @@ public sealed class AuthorizationBuilderExtensionsTests
     [InlineData(ApplicationPolicies.MenuManagement, ApplicationRoles.EventManager, false)]
     [InlineData(ApplicationPolicies.EventManagement, ApplicationRoles.MenuManager, false)]
     [InlineData(ApplicationPolicies.AdminAccess, ApplicationRoles.It, false)]
+    [InlineData(ApplicationPolicies.ITAccess, ApplicationRoles.EventManager, false)]
     public async Task AddAnchorAuthorizationPolicies_applies_expected_role_access(
         string policyName,
         string roleName,

@@ -31,7 +31,7 @@ This repository currently contains the first code-native website mockup for The 
 
 - Staff accounts are created only by admins; public self-registration is disabled
 - Required application roles are `Admin`, `EventManager`, `MenuManager`, and `IT`
-- Authorization is policy-based, with `Admin` acting as the centralized override role
+- Authorization is policy-based, with `Admin` acting as the override for general admin, event, and menu management access, while the IT/system page still requires the `IT` role explicitly
 - The application seeds missing roles on startup
 - A bootstrap account is created only while the site does not yet have at least one `Admin` user and one `IT` user
 - The bootstrap account is seeded with both `Admin` and `IT`, is confirmed automatically for sign-in, and must change its password after first successful sign-in before broader access is allowed

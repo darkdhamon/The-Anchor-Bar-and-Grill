@@ -12,7 +12,7 @@ public static class AuthorizationBuilderExtensions
             .AddPolicy(ApplicationPolicies.AdminAccess, policy => policy.RequireRole(ApplicationRoles.Admin))
             .AddPolicy(ApplicationPolicies.EventManagement, policy => policy.RequireRole(ApplicationRoles.Admin, ApplicationRoles.EventManager))
             .AddPolicy(ApplicationPolicies.MenuManagement, policy => policy.RequireRole(ApplicationRoles.Admin, ApplicationRoles.MenuManager))
-            .AddPolicy(ApplicationPolicies.ITAccess, policy => policy.RequireRole(ApplicationRoles.Admin, ApplicationRoles.It));
+            .AddPolicy(ApplicationPolicies.ITAccess, policy => policy.RequireRole(ApplicationRoles.It));
 
         return builder;
     }
