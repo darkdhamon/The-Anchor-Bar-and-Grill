@@ -41,6 +41,7 @@ This repository currently contains the first code-native website mockup for The 
 - `AnchorIdentity:RequireConfirmedAccount` in `appsettings.json` is the admin-editable fallback value
 - Admins can manually confirm or unconfirm staff account access because email delivery is still implemented with the no-op sender
 - Staff account confirmation is stored separately from email verification, so an approved account can stay active even if the current email address has not been re-verified yet
+- Role and account-approval changes are rebuilt from the current database state on the next page refresh, so staff do not need to sign out and back in just to pick up updated access
 - Admins can set a new temporary password for an existing user who forgot the current password, and that user is forced back through the password-change flow after the next successful sign-in
 - Signed-in users can update their own first name, last name, and phone number from `Manage Account`, using the same validation rules as admin-managed profile updates
 - The app prevents removing the last `Admin` assignment or the last `IT` assignment

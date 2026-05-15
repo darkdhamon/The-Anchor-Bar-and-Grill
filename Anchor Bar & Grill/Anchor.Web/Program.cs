@@ -7,6 +7,7 @@ using Anchor.Web.Components;
 using Anchor.Web.Components.Account;
 using Anchor.Web.Configuration;
 using Anchor.Web.Data;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,7 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
+builder.Services.AddScoped<IClaimsTransformation, ApplicationUserClaimsRefreshTransformation>();
 
 builder.Services.AddAuthentication(options =>
     {
