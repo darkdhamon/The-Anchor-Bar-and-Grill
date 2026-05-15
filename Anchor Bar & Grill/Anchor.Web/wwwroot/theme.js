@@ -2,6 +2,8 @@
   const themeKey = "anchor-theme";
   const lightTheme = "light";
   const darkTheme = "dark";
+  const headerMenuSelector = ".site-header__nav-stack";
+  const menuSectionSelectors = [".site-navigation", ".preview-nav"];
 
   function getCookieTheme() {
     const match = document.cookie.match(/(?:^|; )anchor-theme=([^;]+)/);
@@ -95,13 +97,69 @@
     setTheme(Boolean(event.target.checked));
   }
 
+  function handleDocumentChange(event) {
+    if (event.target.matches(".switch input[type='checkbox'][data-anchor-theme-toggle='true']")) {
+      handleThemeToggle(event);
+    }
+  }
+
+  function getHeaderMenu(button) {
+    const targetId = button?.getAttribute("data-anchor-menu-target");
+
+    if (!targetId) {
+      return null;
+    }
+
+    return document.getElementById(targetId);
+  }
+
+  function syncHeaderMenu(button, isOpen) {
+    const menu = getHeaderMenu(button);
+
+    if (!menu) {
+      return;
+    }
+
+    menu.classList.toggle("is-open", isOpen);
+
+    menuSectionSelectors.forEach((selector) => {
+      menu.querySelectorAll(selector).forEach((element) => {
+        element.classList.toggle("is-open", isOpen);
+      });
+    });
+
+    button.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  }
+
+  function closeHeaderMenus() {
+    document.querySelectorAll("[data-anchor-menu-toggle='true']").forEach((button) => {
+      syncHeaderMenu(button, false);
+    });
+  }
+
+  function handleDocumentClick(event) {
+    const menuToggle = event.target.closest("[data-anchor-menu-toggle='true']");
+
+    if (menuToggle) {
+      event.preventDefault();
+      const isExpanded = menuToggle.getAttribute("aria-expanded") === "true";
+      syncHeaderMenu(menuToggle, !isExpanded);
+      return;
+    }
+
+    if (event.target.closest(`${headerMenuSelector} a, ${headerMenuSelector} button[type='submit']`)) {
+      closeHeaderMenus();
+      return;
+    }
+
+    if (!event.target.closest(".site-header")) {
+      closeHeaderMenus();
+    }
+  }
+
   function initialize() {
     applyTheme(resolveTheme());
-
-    document.querySelectorAll(".switch input[type='checkbox']").forEach((input) => {
-      input.removeEventListener("change", handleThemeToggle);
-      input.addEventListener("change", handleThemeToggle);
-    });
+    closeHeaderMenus();
   }
 
   window.anchorTheme = {
@@ -114,4 +172,9 @@
   } else {
     initialize();
   }
+
+  document.removeEventListener("change", handleDocumentChange);
+  document.addEventListener("change", handleDocumentChange);
+  document.removeEventListener("click", handleDocumentClick);
+  document.addEventListener("click", handleDocumentClick);
 })();

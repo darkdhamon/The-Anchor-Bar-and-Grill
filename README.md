@@ -64,6 +64,8 @@ This repository currently contains the first code-native website mockup for The 
 - Admins can update each staff member's first name, last name, and phone number from User Management without changing the sign-in email
 - Passkey requests now start only after the user clicks the passkey action instead of auto-starting on login-page load
 - Register, external-login completion, forced password change, access-denied, and register-confirmation screens now use the same branded account layout as the login page
+- Public mockup pages and the staff Help page now opt out of interactive routing so header links behave like normal full page loads from login, contact, and the rest of the guest-facing site
+- The shared header theme toggle and mobile menu now use browser-side JavaScript hooks instead of Blazor-only click handlers so they keep working on both static account routes and interactive admin routes
 - Startup bootstrap runs before the request pipeline so roles and the initial administrative account exist before the first login attempt
 - Non-editor elements such as navigation targets and post-navigation page headings suppress the default browser focus outline, while editor fields keep their normal editing focus behavior
 - Account pages continue to use the server-routed Identity flow, so auth navigation should bypass interactive routing when needed

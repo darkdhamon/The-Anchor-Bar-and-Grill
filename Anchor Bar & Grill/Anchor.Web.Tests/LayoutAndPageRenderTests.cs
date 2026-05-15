@@ -38,7 +38,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     }
 
     [Fact]
-    public void MainLayout_TogglesBetweenLightAndDarkThemes_ForGuests()
+    public void MainLayout_RendersStaticNavigationHooks_ForGuests()
     {
         authStateProvider.SetUser(new ClaimsPrincipal(new ClaimsIdentity()));
 
@@ -60,15 +60,11 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.DoesNotContain(">Register<", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Events Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("site-header__nav-stack is-open", cut.Markup, StringComparison.Ordinal);
-
-        cut.Find(".switch input").Change(true);
-
-        Assert.Contains("theme-dark", cut.Markup);
+        Assert.Contains("data-anchor-theme-toggle=\"true\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("data-anchor-menu-toggle=\"true\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("aria-expanded=\"false\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("data-enhance-nav=\"false\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Preview body", cut.Markup);
-
-        cut.Find(".menu-toggle").Click();
-
-        Assert.Contains("site-header__nav-stack is-open", cut.Markup, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -164,6 +160,27 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Sunday Pork Chop Dinner", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Thursday Trivia", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Summer Kickoff Patio Party", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void PublicFacingPages_ExcludeInteractiveRouting()
+    {
+        var pageTypes = new[]
+        {
+            typeof(Home),
+            typeof(Menu),
+            typeof(Events),
+            typeof(About),
+            typeof(Contact),
+            typeof(Help)
+        };
+
+        foreach (var pageType in pageTypes)
+        {
+            Assert.Contains(
+                pageType.GetCustomAttributes(inherit: true),
+                attribute => attribute is ExcludeFromInteractiveRoutingAttribute);
+        }
     }
 
     [Fact]
