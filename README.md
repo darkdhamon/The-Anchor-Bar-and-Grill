@@ -30,6 +30,7 @@ This repository currently contains the first code-native website mockup for The 
 ## Staff Access And Security
 
 - Staff accounts are created only by admins; public self-registration is disabled
+- Staff sign-in uses local credentials and optional passkeys only; external provider login scaffolding has been removed
 - Required application roles are `Admin`, `EventManager`, `MenuManager`, and `IT`
 - Authorization is policy-based, with `Admin` acting as the override for general admin, event, and menu management access, while the IT/system page still requires the `IT` role explicitly
 - The application seeds missing roles on startup
@@ -70,7 +71,7 @@ This repository currently contains the first code-native website mockup for The 
 - Signed-in users can update their own first name, last name, and phone number from Manage Account without waiting on an admin
 - Admins can reset an existing staff member's password to a new temporary password from User Management when the staff member forgets it
 - Passkey requests now start only after the user clicks the passkey action instead of auto-starting on login-page load
-- Register, external-login completion, forced password change, access-denied, and register-confirmation screens now use the same branded account layout as the login page
+- Register, forced password change, access-denied, and register-confirmation screens now use the same branded account layout as the login page
 - Public mockup pages and the staff Help page now opt out of interactive routing so header links behave like normal full page loads from login, contact, and the rest of the guest-facing site
 - The shared header theme toggle and mobile menu now use browser-side JavaScript hooks instead of Blazor-only click handlers so they keep working on both static account routes and interactive admin routes
 - Internal account and manage-page links now use rooted `/Account/...` routes with the same full-load navigation behavior, so moving between login, recovery, profile, and admin surfaces stays consistent from any page

@@ -1,4 +1,5 @@
 using Anchor.Domain.Identity;
+using Anchor.Web.Components.Account.Shared;
 using Anchor.Domain.Identity.Users;
 using Anchor.Web.Components.Layout;
 using Anchor.Web.Components.Pages;
@@ -337,6 +338,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 
         Assert.Contains("Admins create staff accounts, then assign roles.", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("creates each staff account", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("local sign-in and optional passkeys only", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("profile details", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("self-register", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
@@ -352,6 +354,39 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("href=\"/Account/Login\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("data-enhance-nav=\"false\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("type=\"submit\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ManageNavMenu_DoesNotRenderExternalLoginsEntry()
+    {
+        var cut = Render<ManageNavMenu>();
+
+        Assert.Contains("Profile", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Email", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Password", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("External logins", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void IdentityComponents_DoNotIncludeExternalProviderScaffolding()
+    {
+        var repositoryRoot = GetRepositoryRoot();
+        var loginPageFile = Path.Combine(repositoryRoot, "Anchor Bar & Grill", "Anchor.Web", "Components", "Account", "Pages", "Login.razor");
+        var routeBuilderFile = Path.Combine(repositoryRoot, "Anchor Bar & Grill", "Anchor.Web", "Components", "Account", "IdentityComponentsEndpointRouteBuilderExtensions.cs");
+        var externalLoginPageFile = Path.Combine(repositoryRoot, "Anchor Bar & Grill", "Anchor.Web", "Components", "Account", "Pages", "ExternalLogin.razor");
+        var externalLoginsManagePageFile = Path.Combine(repositoryRoot, "Anchor Bar & Grill", "Anchor.Web", "Components", "Account", "Pages", "Manage", "ExternalLogins.razor");
+        var externalLoginPickerFile = Path.Combine(repositoryRoot, "Anchor Bar & Grill", "Anchor.Web", "Components", "Account", "Shared", "ExternalLoginPicker.razor");
+
+        var loginPageMarkup = File.ReadAllText(loginPageFile);
+        var routeBuilderSource = File.ReadAllText(routeBuilderFile);
+
+        Assert.DoesNotContain("Use another service to log in.", loginPageMarkup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("ExternalLoginPicker", loginPageMarkup, StringComparison.Ordinal);
+        Assert.DoesNotContain("/PerformExternalLogin", routeBuilderSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("/LinkExternalLogin", routeBuilderSource, StringComparison.Ordinal);
+        Assert.False(File.Exists(externalLoginPageFile));
+        Assert.False(File.Exists(externalLoginsManagePageFile));
+        Assert.False(File.Exists(externalLoginPickerFile));
     }
 
     [Fact]

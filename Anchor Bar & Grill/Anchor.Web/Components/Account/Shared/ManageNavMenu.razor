@@ -1,8 +1,3 @@
-﻿@using Microsoft.AspNetCore.Identity
-@using Anchor.Web.Data
-
-@inject SignInManager<ApplicationUser> SignInManager
-
 <ul class="nav nav-pills flex-column">
     <li class="nav-item">
         <NavLink class="nav-link" href="/Account/Manage" Match="NavLinkMatch.All" data-enhance-nav="false">Profile</NavLink>
@@ -13,12 +8,6 @@
     <li class="nav-item">
         <NavLink class="nav-link" href="/Account/Manage/ChangePassword" data-enhance-nav="false">Password</NavLink>
     </li>
-    @if (hasExternalLogins)
-    {
-        <li class="nav-item">
-            <NavLink class="nav-link" href="/Account/Manage/ExternalLogins" data-enhance-nav="false">External logins</NavLink>
-        </li>
-    }
     <li class="nav-item">
         <NavLink class="nav-link" href="/Account/Manage/TwoFactorAuthentication" data-enhance-nav="false">Two-factor authentication</NavLink>
     </li>
@@ -29,12 +18,3 @@
         <NavLink class="nav-link" href="/Account/Manage/PersonalData" data-enhance-nav="false">Personal data</NavLink>
     </li>
 </ul>
-
-@code {
-    private bool hasExternalLogins;
-
-    protected override async Task OnInitializedAsync()
-    {
-        hasExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).Any();
-    }
-}

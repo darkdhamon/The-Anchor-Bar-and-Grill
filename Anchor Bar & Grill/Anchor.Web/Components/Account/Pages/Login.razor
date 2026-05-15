@@ -2,7 +2,6 @@
 
 @using System.ComponentModel.DataAnnotations
 @using Anchor.Domain.Identity.Configuration
-@using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
 @using Anchor.Web.Data
 
@@ -82,16 +81,6 @@
             </EditForm>
         </section>
 
-        <section class="admin-card account-panel">
-            <div class="admin-card__header">
-                <h2>Use another service to log in.</h2>
-                <span class="admin-card__badge">External Providers</span>
-            </div>
-
-            <div class="account-panel__body">
-                <ExternalLoginPicker />
-            </div>
-        </section>
     </div>
 </section>
 
@@ -99,26 +88,17 @@
     private string? errorMessage;
     private EditContext editContext = default!;
 
-    [CascadingParameter]
-    private HttpContext HttpContext { get; set; } = default!;
-
     [SupplyParameterFromForm]
     private InputModel Input { get; set; } = default!;
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         Input ??= new();
 
         editContext = new EditContext(Input);
-
-        if (HttpMethods.IsGet(HttpContext.Request.Method))
-        {
-            // Clear the existing external cookie to ensure a clean login process.
-            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
-        }
     }
 
     public async Task LoginUser()
