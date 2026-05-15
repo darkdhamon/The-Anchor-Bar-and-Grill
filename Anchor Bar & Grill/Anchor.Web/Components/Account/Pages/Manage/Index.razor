@@ -1,6 +1,7 @@
 @page "/Account/Manage"
 
 @using System.ComponentModel.DataAnnotations
+@using Anchor.Domain.Identity
 @using Anchor.Domain.Identity.Users
 @using Anchor.Web.Data
 @using Microsoft.AspNetCore.Identity
@@ -74,6 +75,35 @@
             </div>
 
             <div class="account-panel__body">
+                <div>
+                    <h3>Assigned roles</h3>
+
+                    @if (assignedRoles.Count == 0)
+                    {
+                        <p class="admin-field-note">No roles are currently assigned to your account.</p>
+                    }
+                    else
+                    {
+                        <div class="chip-list">
+                            @foreach (var role in assignedRoles)
+                            {
+                                <span class="chip chip--role">@role</span>
+                            }
+                        </div>
+
+                        <ul class="feature-list">
+                            @foreach (var role in assignedRoles)
+                            {
+                                <li>@GetRoleDescription(role)</li>
+                            }
+                        </ul>
+                    }
+
+                    <p class="admin-field-note">
+                        These roles are read only here. Ask an <strong>Admin</strong> if your access needs to change.
+                    </p>
+                </div>
+
                 <ul class="feature-list">
                     <li>Your first name, last name, and phone number stay aligned with the same profile details admins can manage for your account.</li>
                     <li>Keeping this information current helps staff coordination and future contact workflows stay accurate.</li>
@@ -85,9 +115,18 @@
 </section>
 
 @code {
+    private static readonly IReadOnlyDictionary<string, string> roleDescriptions = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        [ApplicationRoles.Admin] = "Admin access to help, publicity, contact, user management, and security tools.",
+        [ApplicationRoles.EventManager] = "Event editing access for event listings and schedules.",
+        [ApplicationRoles.MenuManager] = "Menu editing access for menu items, pricing, and recurring specials.",
+        [ApplicationRoles.It] = "Technical access for the IT / System area."
+    };
+
     private string? message;
     private ApplicationUser? user;
     private string? username;
+    private IReadOnlyList<string> assignedRoles = [];
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
@@ -107,6 +146,10 @@
         }
 
         username = await UserManager.GetUserNameAsync(user);
+        assignedRoles = (await UserManager.GetRolesAsync(user))
+            .OrderBy(GetRoleSortOrder)
+            .ThenBy(role => role, StringComparer.Ordinal)
+            .ToArray();
         Input.FirstName ??= user.FirstName ?? "";
         Input.LastName ??= user.LastName ?? "";
         Input.PhoneNumber ??= user.PhoneNumber ?? "";
@@ -155,4 +198,22 @@
         [RegularExpression(@"^$|^[0-9()+.\-\s]{7,25}$", ErrorMessage = "Enter a valid phone number.")]
         public string? PhoneNumber { get; set; }
     }
+
+    private static int GetRoleSortOrder(string roleName)
+    {
+        for (var index = 0; index < ApplicationRoles.All.Count; index++)
+        {
+            if (string.Equals(ApplicationRoles.All[index], roleName, StringComparison.Ordinal))
+            {
+                return index;
+            }
+        }
+
+        return int.MaxValue;
+    }
+
+    private static string GetRoleDescription(string roleName) =>
+        roleDescriptions.TryGetValue(roleName, out var description)
+            ? description
+            : "Access provided by this role is managed by an Admin.";
 }

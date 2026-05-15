@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Anchor.Domain.Identity;
 using Anchor.Domain.Identity.Users;
 using Anchor.Web.Components.Account.Pages.Manage;
 using Anchor.Web.Data;
@@ -21,7 +22,14 @@ public sealed class ManageProfilePageTests : BunitContext
     public async Task ManageProfile_renders_first_last_and_phone_fields()
     {
         await using var identityContext = await SqliteIdentityTestContext.CreateAsync();
-        var user = await CreateUserAsync(identityContext, "profile@anchor.test", "Profile", "Owner", "507-555-0100");
+        var user = await CreateUserAsync(
+            identityContext,
+            "profile@anchor.test",
+            "Profile",
+            "Owner",
+            "507-555-0100",
+            ApplicationRoles.MenuManager,
+            ApplicationRoles.It);
         RegisterCommonServices(identityContext);
 
         var cut = Render(BuildManageProfileHost(user));
@@ -34,6 +42,10 @@ public sealed class ManageProfilePageTests : BunitContext
             Assert.Contains("Phone number", cut.Markup, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("Email</a> page", cut.Markup, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("What this updates", cut.Markup, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Assigned roles", cut.Markup, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("MenuManager", cut.Markup, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("IT", cut.Markup, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("These roles are read only here", cut.Markup, StringComparison.OrdinalIgnoreCase);
         });
     }
 
@@ -142,7 +154,8 @@ public sealed class ManageProfilePageTests : BunitContext
         string email,
         string firstName,
         string lastName,
-        string phoneNumber)
+        string phoneNumber,
+        params string[] roles)
     {
         var user = new ApplicationUser
         {
@@ -157,6 +170,18 @@ public sealed class ManageProfilePageTests : BunitContext
 
         var result = await identityContext.UserManager.CreateAsync(user, "Password1!");
         Assert.True(result.Succeeded);
+
+        foreach (var role in roles)
+        {
+            var existingRole = await identityContext.RoleManager.FindByNameAsync(role);
+            if (existingRole is null)
+            {
+                Assert.True((await identityContext.RoleManager.CreateAsync(new IdentityRole(role))).Succeeded);
+            }
+
+            Assert.True((await identityContext.UserManager.AddToRoleAsync(user, role)).Succeeded);
+        }
+
         return user;
     }
 

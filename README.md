@@ -48,6 +48,7 @@ This repository currently contains the first code-native website mockup for The 
 - Role and account-approval changes are rebuilt from the current database state on the next page refresh, so staff do not need to sign out and back in just to pick up updated access
 - Admins can set a new temporary password for an existing user who forgot the current password, and that user is forced back through the password-change flow after the next successful sign-in
 - Signed-in users can update their own first name, last name, and phone number from `Manage Account`, using the same validation rules as admin-managed profile updates
+- `Manage Account` also shows each signed-in user a read-only list of the roles currently assigned to their account
 - The app prevents removing the last `Admin` assignment or the last `IT` assignment
 - An admin cannot remove the `Admin` role from their own signed-in account
 
