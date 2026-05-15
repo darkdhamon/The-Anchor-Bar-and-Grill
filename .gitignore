@@ -402,3 +402,6 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Local-only UAT credential notes
+docs/reference/uat-credentials.local.md

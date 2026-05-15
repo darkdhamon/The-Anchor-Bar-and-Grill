@@ -80,6 +80,29 @@ public sealed class IdentityAdministrationService(IIdentityAdministrationReposit
             cancellationToken);
     }
 
+    public Task<IdentityOperationResult> ResetUserPasswordAsync(ResetManagedUserPasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        var normalizedUserId = request.UserId.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedUserId))
+        {
+            return Task.FromResult(IdentityOperationResult.Failure("A user identifier is required."));
+        }
+
+        var normalizedTemporaryPassword = request.TemporaryPassword.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedTemporaryPassword))
+        {
+            return Task.FromResult(IdentityOperationResult.Failure("A temporary password is required."));
+        }
+
+        return repository.ResetUserPasswordAsync(
+            request with
+            {
+                UserId = normalizedUserId,
+                TemporaryPassword = normalizedTemporaryPassword
+            },
+            cancellationToken);
+    }
+
     public Task<IdentityOperationResult> AddRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default)
     {
         if (!Identity.ApplicationRoles.IsManagedRole(roleName))

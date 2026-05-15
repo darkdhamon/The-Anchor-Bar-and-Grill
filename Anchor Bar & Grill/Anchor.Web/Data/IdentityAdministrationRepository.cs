@@ -137,6 +137,39 @@ public sealed class IdentityAdministrationRepository(
             : IdentityOperationResult.Failure(result.Errors.Select(error => error.Description));
     }
 
+    public async Task<IdentityOperationResult> ResetUserPasswordAsync(ResetManagedUserPasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByIdAsync(request.UserId);
+        if (user is null)
+        {
+            return IdentityOperationResult.Failure("The selected user could not be found.");
+        }
+
+        var validationErrors = new List<IdentityError>();
+        foreach (var validator in userManager.PasswordValidators)
+        {
+            var validationResult = await validator.ValidateAsync(userManager, user, request.TemporaryPassword);
+            if (!validationResult.Succeeded)
+            {
+                validationErrors.AddRange(validationResult.Errors);
+            }
+        }
+
+        if (validationErrors.Count > 0)
+        {
+            return IdentityOperationResult.Failure(validationErrors.Select(error => error.Description));
+        }
+
+        user.PasswordHash = userManager.PasswordHasher.HashPassword(user, request.TemporaryPassword);
+        user.SecurityStamp = Guid.NewGuid().ToString("N");
+        user.MustChangePassword = true;
+        var updateResult = await userManager.UpdateAsync(user);
+
+        return updateResult.Succeeded
+            ? IdentityOperationResult.Success()
+            : IdentityOperationResult.Failure(updateResult.Errors.Select(error => error.Description));
+    }
+
     public Task<int> CountUsersInRoleAsync(string roleName, CancellationToken cancellationToken = default) =>
         CountDistinctUsersInRoleAsync(roleName, cancellationToken);
 

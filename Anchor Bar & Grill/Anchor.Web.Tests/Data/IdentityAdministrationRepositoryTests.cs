@@ -142,6 +142,62 @@ public sealed class IdentityAdministrationRepositoryTests
     }
 
     [Fact]
+    public async Task ResetUserPasswordAsync_replaces_existing_password_and_requires_rotation()
+    {
+        await using var identityContext = await SqliteIdentityTestContext.CreateAsync();
+        var repository = new IdentityAdministrationRepository(identityContext.DbContext, identityContext.UserManager);
+
+        var user = new ApplicationUser
+        {
+            UserName = "forgot@anchor.test",
+            Email = "forgot@anchor.test",
+            MustChangePassword = false
+        };
+        Assert.True((await identityContext.UserManager.CreateAsync(user, "OldPassword1!")).Succeeded);
+
+        var result = await repository.ResetUserPasswordAsync(
+            new Anchor.Domain.Identity.Users.ResetManagedUserPasswordRequest(
+                user.Id,
+                "NewPassword1!"));
+
+        var refreshedUser = await identityContext.UserManager.FindByIdAsync(user.Id);
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(refreshedUser);
+        Assert.True(await identityContext.UserManager.CheckPasswordAsync(refreshedUser, "NewPassword1!"));
+        Assert.False(await identityContext.UserManager.CheckPasswordAsync(refreshedUser, "OldPassword1!"));
+        Assert.True(refreshedUser.MustChangePassword);
+    }
+
+    [Fact]
+    public async Task ResetUserPasswordAsync_adds_password_for_user_without_one()
+    {
+        await using var identityContext = await SqliteIdentityTestContext.CreateAsync();
+        var repository = new IdentityAdministrationRepository(identityContext.DbContext, identityContext.UserManager);
+
+        var user = new ApplicationUser
+        {
+            UserName = "external@anchor.test",
+            Email = "external@anchor.test",
+            MustChangePassword = false
+        };
+        Assert.True((await identityContext.UserManager.CreateAsync(user)).Succeeded);
+
+        var result = await repository.ResetUserPasswordAsync(
+            new Anchor.Domain.Identity.Users.ResetManagedUserPasswordRequest(
+                user.Id,
+                "NewPassword1!"));
+
+        var refreshedUser = await identityContext.UserManager.FindByIdAsync(user.Id);
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(refreshedUser);
+        Assert.True(await identityContext.UserManager.HasPasswordAsync(refreshedUser));
+        Assert.True(await identityContext.UserManager.CheckPasswordAsync(refreshedUser, "NewPassword1!"));
+        Assert.True(refreshedUser.MustChangePassword);
+    }
+
+    [Fact]
     public async Task CreateUserAsync_creates_confirmed_user_that_must_rotate_password()
     {
         await using var identityContext = await SqliteIdentityTestContext.CreateAsync();

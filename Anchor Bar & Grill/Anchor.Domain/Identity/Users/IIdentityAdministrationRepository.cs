@@ -10,6 +10,8 @@ public interface IIdentityAdministrationRepository
 
     Task<IdentityOperationResult> UpdateUserProfileAsync(UpdateManagedUserProfileRequest request, CancellationToken cancellationToken = default);
 
+    Task<IdentityOperationResult> ResetUserPasswordAsync(ResetManagedUserPasswordRequest request, CancellationToken cancellationToken = default);
+
     Task<int> CountUsersInRoleAsync(string roleName, CancellationToken cancellationToken = default);
 
     Task<int> CountBootstrapUsersAsync(CancellationToken cancellationToken = default);

@@ -22,6 +22,7 @@ This repository currently contains the first code-native website mockup for The 
 - Events admin mockup with date/time inputs, richer recurring-event controls, optional images, descriptions, and combo-select promo badges
 - Signed-in-only Help page that explains staff onboarding, roles, bootstrap behavior, and security configuration
 - Admin-only User Management page for maintaining staff profile details, confirming staff accounts, and assigning or removing `Admin`, `EventManager`, `MenuManager`, and `IT`
+- Admin-only User Management page for maintaining staff profile details, setting new temporary passwords for existing users, confirming staff accounts, and assigning or removing `Admin`, `EventManager`, `MenuManager`, and `IT`
 - Admin-only Security page for reviewing bootstrap coverage and changing the fallback confirmed-account setting in `appsettings.json`
 - IT-only placeholder system page that reserves a dedicated technical surface for future diagnostics and tooling
 - Shared light and dark themes using the menu-inspired nautical palette
@@ -39,6 +40,7 @@ This repository currently contains the first code-native website mockup for The 
 - `AnchorIdentity__RequireConfirmedAccount` acts as the environment-variable override
 - `AnchorIdentity:RequireConfirmedAccount` in `appsettings.json` is the admin-editable fallback value
 - Admins can manually confirm or unconfirm users because email delivery is still implemented with the no-op sender
+- Admins can set a new temporary password for an existing user who forgot the current password, and that user is forced back through the password-change flow after the next successful sign-in
 - The app prevents removing the last `Admin` assignment or the last `IT` assignment
 - An admin cannot remove the `Admin` role from their own signed-in account
 
@@ -62,6 +64,7 @@ This repository currently contains the first code-native website mockup for The 
 - The login page now uses the same branded themed form treatment as the rest of the site instead of the stock floating-label scaffold
 - The public register entry points are disabled, and admins now create staff accounts directly from User Management with a temporary password
 - Admins can update each staff member's first name, last name, and phone number from User Management without changing the sign-in email
+- Admins can reset an existing staff member's password to a new temporary password from User Management when the staff member forgets it
 - Passkey requests now start only after the user clicks the passkey action instead of auto-starting on login-page load
 - Register, external-login completion, forced password change, access-denied, and register-confirmation screens now use the same branded account layout as the login page
 - Public mockup pages and the staff Help page now opt out of interactive routing so header links behave like normal full page loads from login, contact, and the rest of the guest-facing site

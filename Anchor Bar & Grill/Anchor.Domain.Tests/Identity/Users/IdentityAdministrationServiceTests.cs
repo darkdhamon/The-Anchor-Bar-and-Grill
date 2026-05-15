@@ -96,6 +96,46 @@ public sealed class IdentityAdministrationServiceTests
     }
 
     [Fact]
+    public async Task ResetUserPasswordAsync_rejects_blank_user_identifier()
+    {
+        var repository = new FakeIdentityAdministrationRepository();
+        var service = new IdentityAdministrationService(repository);
+
+        var result = await service.ResetUserPasswordAsync(new ResetManagedUserPasswordRequest("   ", "Password1!"));
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("user identifier is required", result.Errors.Single(), StringComparison.OrdinalIgnoreCase);
+        Assert.Null(repository.LastPasswordReset);
+    }
+
+    [Fact]
+    public async Task ResetUserPasswordAsync_rejects_blank_temporary_password()
+    {
+        var repository = new FakeIdentityAdministrationRepository();
+        var service = new IdentityAdministrationService(repository);
+
+        var result = await service.ResetUserPasswordAsync(new ResetManagedUserPasswordRequest("user-1", "   "));
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("temporary password is required", result.Errors.Single(), StringComparison.OrdinalIgnoreCase);
+        Assert.Null(repository.LastPasswordReset);
+    }
+
+    [Fact]
+    public async Task ResetUserPasswordAsync_trims_values_before_persisting()
+    {
+        var repository = new FakeIdentityAdministrationRepository();
+        var service = new IdentityAdministrationService(repository);
+
+        var result = await service.ResetUserPasswordAsync(new ResetManagedUserPasswordRequest(" user-1 ", " Password1! "));
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(repository.LastPasswordReset);
+        Assert.Equal("user-1", repository.LastPasswordReset.UserId);
+        Assert.Equal("Password1!", repository.LastPasswordReset.TemporaryPassword);
+    }
+
+    [Fact]
     public async Task RemoveRoleAsync_blocks_removal_of_the_last_admin()
     {
         var repository = new FakeIdentityAdministrationRepository
@@ -190,6 +230,8 @@ public sealed class IdentityAdministrationServiceTests
 
         public UpdateManagedUserProfileRequest? LastUpdatedProfile { get; private set; }
 
+        public ResetManagedUserPasswordRequest? LastPasswordReset { get; private set; }
+
         public string? LastRemovedRole { get; private set; }
 
         public Task<IReadOnlyList<ManagedUserSummary>> GetUsersAsync(CancellationToken cancellationToken = default) =>
@@ -207,6 +249,12 @@ public sealed class IdentityAdministrationServiceTests
         public Task<IdentityOperationResult> UpdateUserProfileAsync(UpdateManagedUserProfileRequest request, CancellationToken cancellationToken = default)
         {
             LastUpdatedProfile = request;
+            return Task.FromResult(IdentityOperationResult.Success());
+        }
+
+        public Task<IdentityOperationResult> ResetUserPasswordAsync(ResetManagedUserPasswordRequest request, CancellationToken cancellationToken = default)
+        {
+            LastPasswordReset = request;
             return Task.FromResult(IdentityOperationResult.Success());
         }
 

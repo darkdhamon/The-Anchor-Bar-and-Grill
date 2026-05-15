@@ -30,6 +30,7 @@
             <ul class="feature-list">
                 <li>Create every staff account here. Public self-registration is disabled, so admins own onboarding.</li>
                 <li>Share the temporary password with the employee, then let them change it after first sign-in.</li>
+                <li>If a staff member forgets a password, set a new temporary password on that user's card and share it directly with them.</li>
                 <li>Confirm an account here if confirmed-account enforcement is on and a new staff member is waiting for access.</li>
                 <li>Use the profile editor on each staff card to keep the employee's first name, last name, and phone number current.</li>
                 <li>Assign <strong>EventManager</strong>, <strong>MenuManager</strong>, and <strong>IT</strong> only when the user needs that responsibility.</li>
@@ -163,6 +164,7 @@
                                         </button>
                                     }
                                 </div>
+                                <ManagedUserTemporaryPasswordEditor User="user" IsBusy="isBusy" OnSave="ResetTemporaryPasswordAsync" />
                                 <ManagedUserProfileEditor User="user" IsBusy="isBusy" OnSave="UpdateProfileAsync" />
                             </article>
                         }
@@ -227,6 +229,22 @@
 
         statusMessage = result.Succeeded
             ? $"Profile details were updated for the selected user."
+            : $"Error: {string.Join(" ", result.Errors)}";
+
+        await LoadUsersAsync();
+        isBusy = false;
+    }
+
+    private async Task ResetTemporaryPasswordAsync(ResetManagedUserPasswordRequest request)
+    {
+        isBusy = true;
+
+        var result = await IdentityAdministrationService.ResetUserPasswordAsync(request);
+        var affectedUser = users?.FirstOrDefault(user => string.Equals(user.UserId, request.UserId, StringComparison.Ordinal));
+        var affectedEmail = affectedUser?.Email ?? "The selected user";
+
+        statusMessage = result.Succeeded
+            ? $"{affectedEmail} now has a new temporary password and will be required to change it after the next successful sign-in."
             : $"Error: {string.Join(" ", result.Errors)}";
 
         await LoadUsersAsync();

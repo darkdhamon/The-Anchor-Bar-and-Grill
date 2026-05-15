@@ -389,6 +389,8 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Remove Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Profile details", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Phone on file: 507-555-1000", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Reset temporary password", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Save new temporary password", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Save profile details", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -502,6 +504,9 @@ public sealed class LayoutAndPageRenderTests : BunitContext
             Task.FromResult(IdentityOperationResult.Success());
 
         public Task<IdentityOperationResult> UpdateUserProfileAsync(UpdateManagedUserProfileRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(IdentityOperationResult.Success());
+
+        public Task<IdentityOperationResult> ResetUserPasswordAsync(ResetManagedUserPasswordRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(IdentityOperationResult.Success());
 
         public Task<IdentityOperationResult> AddRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default) =>
