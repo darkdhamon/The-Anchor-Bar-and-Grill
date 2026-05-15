@@ -365,8 +365,8 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         {
             Users =
             [
-                new ManagedUserSummary("user-1", "admin@anchor.test", "Admin", "User", "507-555-1000", true, false, false, [ApplicationRoles.Admin]),
-                new ManagedUserSummary("user-2", "backup-admin@anchor.test", "Backup", "Admin", null, true, false, false, [ApplicationRoles.Admin])
+                new ManagedUserSummary("user-1", "admin@anchor.test", "Admin", "User", "507-555-1000", true, false, false, false, [ApplicationRoles.Admin]),
+                new ManagedUserSummary("user-2", "backup-admin@anchor.test", "Backup", "Admin", null, true, true, false, false, [ApplicationRoles.Admin])
             ]
         });
 
@@ -389,6 +389,9 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Remove Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Profile details", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Phone on file: 507-555-1000", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Account confirmed", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Email unverified", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Email verified", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Reset temporary password", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Save new temporary password", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Save profile details", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -515,7 +518,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         public Task<IdentityOperationResult> RemoveRoleAsync(string userId, string roleName, string actingUserId, CancellationToken cancellationToken = default) =>
             Task.FromResult(IdentityOperationResult.Success());
 
-        public Task<IdentityOperationResult> SetEmailConfirmedAsync(string userId, bool emailConfirmed, CancellationToken cancellationToken = default) =>
+        public Task<IdentityOperationResult> SetAccountConfirmedAsync(string userId, bool accountConfirmed, CancellationToken cancellationToken = default) =>
             Task.FromResult(IdentityOperationResult.Success());
     }
 }

@@ -20,5 +20,5 @@ public interface IIdentityAdministrationRepository
 
     Task<IdentityOperationResult> RemoveRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default);
 
-    Task<IdentityOperationResult> SetEmailConfirmedAsync(string userId, bool emailConfirmed, CancellationToken cancellationToken = default);
+    Task<IdentityOperationResult> SetAccountConfirmedAsync(string userId, bool accountConfirmed, CancellationToken cancellationToken = default);
 }

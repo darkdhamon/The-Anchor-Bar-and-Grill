@@ -161,8 +161,8 @@ public sealed class IdentityAdministrationService(IIdentityAdministrationReposit
         return await repository.RemoveRoleAsync(userId, roleName, cancellationToken);
     }
 
-    public Task<IdentityOperationResult> SetEmailConfirmedAsync(string userId, bool emailConfirmed, CancellationToken cancellationToken = default) =>
-        repository.SetEmailConfirmedAsync(userId, emailConfirmed, cancellationToken);
+    public Task<IdentityOperationResult> SetAccountConfirmedAsync(string userId, bool accountConfirmed, CancellationToken cancellationToken = default) =>
+        repository.SetAccountConfirmedAsync(userId, accountConfirmed, cancellationToken);
 
     private static string? NormalizeOptionalValue(string? value) =>
         string.IsNullOrWhiteSpace(value)

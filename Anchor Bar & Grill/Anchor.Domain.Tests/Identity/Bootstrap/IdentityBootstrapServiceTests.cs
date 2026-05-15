@@ -30,6 +30,7 @@ public sealed class IdentityBootstrapServiceTests
         Assert.NotNull(repository.Seed);
         Assert.Equal("owner@anchor.test", repository.Seed!.Email);
         Assert.Equal("Configured123!", repository.Seed.Password);
+        Assert.True(repository.Seed.AccountConfirmed);
         Assert.True(repository.Seed.EmailConfirmed);
         Assert.True(repository.Seed.MustChangePassword);
         Assert.True(repository.Seed.IsBootstrapAccount);

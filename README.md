@@ -21,7 +21,7 @@ This repository currently contains the first code-native website mockup for The 
 - Contact admin mockup supports adding, editing, and deleting multiple social media profiles for the public contact page
 - Events admin mockup with date/time inputs, richer recurring-event controls, optional images, descriptions, and combo-select promo badges
 - Signed-in-only Help page that explains staff onboarding, roles, bootstrap behavior, and security configuration
-- Admin-only User Management page for maintaining staff profile details, setting new temporary passwords for existing users, confirming staff accounts, and assigning or removing `Admin`, `EventManager`, `MenuManager`, and `IT`
+- Admin-only User Management page for maintaining staff profile details, setting new temporary passwords for existing users, confirming staff account access, reviewing email-verification status, and assigning or removing `Admin`, `EventManager`, `MenuManager`, and `IT`
 - Admin-only Security page for reviewing bootstrap coverage and changing the fallback confirmed-account setting in `appsettings.json`
 - Self-service Manage Account profile page where each signed-in user can update their own first name, last name, and phone number
 - IT-only placeholder system page that reserves a dedicated technical surface for future diagnostics and tooling
@@ -34,12 +34,13 @@ This repository currently contains the first code-native website mockup for The 
 - Authorization is policy-based, with `Admin` acting as the centralized override role
 - The application seeds missing roles on startup
 - A bootstrap account is created only while the site does not yet have at least one `Admin` user and one `IT` user
-- The bootstrap account is seeded with both `Admin` and `IT`, is confirmed automatically, and must change its password after first successful sign-in before broader access is allowed
+- The bootstrap account is seeded with both `Admin` and `IT`, is confirmed automatically for sign-in, and must change its password after first successful sign-in before broader access is allowed
 - The confirmed-account requirement defaults to `false`
 - The confirmed-account rule is controlled by configuration rather than the database
 - `AnchorIdentity__RequireConfirmedAccount` acts as the environment-variable override
 - `AnchorIdentity:RequireConfirmedAccount` in `appsettings.json` is the admin-editable fallback value
-- Admins can manually confirm or unconfirm users because email delivery is still implemented with the no-op sender
+- Admins can manually confirm or unconfirm staff account access because email delivery is still implemented with the no-op sender
+- Staff account confirmation is stored separately from email verification, so an approved account can stay active even if the current email address has not been re-verified yet
 - Admins can set a new temporary password for an existing user who forgot the current password, and that user is forced back through the password-change flow after the next successful sign-in
 - Signed-in users can update their own first name, last name, and phone number from `Manage Account`, using the same validation rules as admin-managed profile updates
 - The app prevents removing the last `Admin` assignment or the last `IT` assignment

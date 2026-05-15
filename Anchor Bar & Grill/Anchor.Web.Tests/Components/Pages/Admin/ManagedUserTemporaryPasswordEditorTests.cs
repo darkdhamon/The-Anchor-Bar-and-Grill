@@ -42,6 +42,7 @@ public sealed class ManagedUserTemporaryPasswordEditorTests : BunitContext
             FirstName: null,
             LastName: null,
             PhoneNumber: null,
+            AccountConfirmed: true,
             EmailConfirmed: true,
             MustChangePassword: false,
             IsBootstrapAccount: false,

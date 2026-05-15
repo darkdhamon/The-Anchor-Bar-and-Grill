@@ -31,6 +31,7 @@
             <h2>How to use this page</h2>
             <ul class="feature-list">
                 <li>Change the fallback confirmed-account value here when you want the site to become stricter or more open without storing duplicate state in the database.</li>
+                <li>This setting checks whether the account has been approved for sign-in. It does not require the current email address to already be verified.</li>
                 <li>If an environment override is active, the effective setting will keep following that override until the environment changes and the app restarts.</li>
                 <li>Bootstrap coverage is healthy once the system has at least one <strong>Admin</strong> user and one <strong>IT</strong> user.</li>
             </ul>
@@ -126,7 +127,7 @@
                     </dl>
 
                     <p class="admin-field-note">
-                        The seeded account is confirmed automatically, receives <strong>Admin</strong> and <strong>IT</strong>,
+                        The seeded account is confirmed automatically for sign-in, receives <strong>Admin</strong> and <strong>IT</strong>,
                         and is blocked from the rest of the site until its password is changed after first sign-in.
                     </p>
                 </section>

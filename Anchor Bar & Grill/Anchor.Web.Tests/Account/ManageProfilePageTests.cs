@@ -148,6 +148,7 @@ public sealed class ManageProfilePageTests : BunitContext
         {
             UserName = email,
             Email = email,
+            AccountConfirmed = true,
             EmailConfirmed = true,
             FirstName = firstName,
             LastName = lastName,
@@ -189,7 +190,7 @@ public sealed class ManageProfilePageTests : BunitContext
         public Task<IdentityOperationResult> RemoveRoleAsync(string userId, string roleName, string actingUserId, CancellationToken cancellationToken = default) =>
             Task.FromResult(IdentityOperationResult.Success());
 
-        public Task<IdentityOperationResult> SetEmailConfirmedAsync(string userId, bool emailConfirmed, CancellationToken cancellationToken = default) =>
+        public Task<IdentityOperationResult> SetAccountConfirmedAsync(string userId, bool accountConfirmed, CancellationToken cancellationToken = default) =>
             Task.FromResult(IdentityOperationResult.Success());
     }
 

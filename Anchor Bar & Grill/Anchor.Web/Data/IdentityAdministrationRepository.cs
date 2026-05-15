@@ -20,6 +20,7 @@ public sealed class IdentityAdministrationRepository(
                 user.FirstName,
                 user.LastName,
                 user.PhoneNumber,
+                user.AccountConfirmed,
                 user.EmailConfirmed,
                 user.MustChangePassword,
                 user.IsBootstrapAccount
@@ -35,6 +36,7 @@ public sealed class IdentityAdministrationRepository(
                 FirstName: user.FirstName,
                 LastName: user.LastName,
                 PhoneNumber: user.PhoneNumber,
+                AccountConfirmed: user.AccountConfirmed,
                 EmailConfirmed: user.EmailConfirmed,
                 MustChangePassword: user.MustChangePassword,
                 IsBootstrapAccount: user.IsBootstrapAccount,
@@ -54,6 +56,7 @@ public sealed class IdentityAdministrationRepository(
                 candidate.FirstName,
                 candidate.LastName,
                 candidate.PhoneNumber,
+                candidate.AccountConfirmed,
                 candidate.EmailConfirmed,
                 candidate.MustChangePassword,
                 candidate.IsBootstrapAccount
@@ -73,6 +76,7 @@ public sealed class IdentityAdministrationRepository(
             FirstName: user.FirstName,
             LastName: user.LastName,
             PhoneNumber: user.PhoneNumber,
+            AccountConfirmed: user.AccountConfirmed,
             EmailConfirmed: user.EmailConfirmed,
             MustChangePassword: user.MustChangePassword,
             IsBootstrapAccount: user.IsBootstrapAccount,
@@ -85,7 +89,8 @@ public sealed class IdentityAdministrationRepository(
         {
             UserName = request.Email,
             Email = request.Email,
-            EmailConfirmed = request.EmailConfirmed,
+            AccountConfirmed = request.AccountConfirmed,
+            EmailConfirmed = false,
             MustChangePassword = true
         };
 
@@ -214,7 +219,7 @@ public sealed class IdentityAdministrationRepository(
             : IdentityOperationResult.Failure(result.Errors.Select(error => error.Description));
     }
 
-    public async Task<IdentityOperationResult> SetEmailConfirmedAsync(string userId, bool emailConfirmed, CancellationToken cancellationToken = default)
+    public async Task<IdentityOperationResult> SetAccountConfirmedAsync(string userId, bool accountConfirmed, CancellationToken cancellationToken = default)
     {
         var user = await userManager.FindByIdAsync(userId);
         if (user is null)
@@ -222,12 +227,12 @@ public sealed class IdentityAdministrationRepository(
             return IdentityOperationResult.Failure("The selected user could not be found.");
         }
 
-        if (user.EmailConfirmed == emailConfirmed)
+        if (user.AccountConfirmed == accountConfirmed)
         {
             return IdentityOperationResult.Success();
         }
 
-        user.EmailConfirmed = emailConfirmed;
+        user.AccountConfirmed = accountConfirmed;
         var result = await userManager.UpdateAsync(user);
 
         return result.Succeeded

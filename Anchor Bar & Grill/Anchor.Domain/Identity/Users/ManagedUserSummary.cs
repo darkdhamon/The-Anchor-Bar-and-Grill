@@ -6,6 +6,7 @@ public sealed record ManagedUserSummary(
     string? FirstName,
     string? LastName,
     string? PhoneNumber,
+    bool AccountConfirmed,
     bool EmailConfirmed,
     bool MustChangePassword,
     bool IsBootstrapAccount,

@@ -19,6 +19,7 @@ public sealed class IdentityBootstrapRepositoryTests
         var result = await repository.EnsureBootstrapUserAsync(new BootstrapUserSeed(
             Email: "admin@anchor.test",
             Password: "ChangeMe123!",
+            AccountConfirmed: true,
             EmailConfirmed: true,
             MustChangePassword: true,
             IsBootstrapAccount: true,
@@ -28,6 +29,7 @@ public sealed class IdentityBootstrapRepositoryTests
 
         Assert.True(result.Succeeded);
         Assert.NotNull(user);
+        Assert.True(user.AccountConfirmed);
         Assert.True(user.EmailConfirmed);
         Assert.True(user.MustChangePassword);
         Assert.True(user.IsBootstrapAccount);
@@ -47,6 +49,7 @@ public sealed class IdentityBootstrapRepositoryTests
         var seed = new BootstrapUserSeed(
             Email: "admin@anchor.test",
             Password: "ChangeMe123!",
+            AccountConfirmed: true,
             EmailConfirmed: true,
             MustChangePassword: true,
             IsBootstrapAccount: true,

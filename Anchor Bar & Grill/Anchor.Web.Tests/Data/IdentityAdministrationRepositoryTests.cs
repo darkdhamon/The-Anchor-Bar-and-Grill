@@ -24,6 +24,7 @@ public sealed class IdentityAdministrationRepositoryTests
             FirstName = "Alpha",
             LastName = "Captain",
             PhoneNumber = "507-555-0001",
+            AccountConfirmed = true,
             EmailConfirmed = true,
             IsBootstrapAccount = true,
             MustChangePassword = true
@@ -32,6 +33,7 @@ public sealed class IdentityAdministrationRepositoryTests
         {
             UserName = "beta@anchor.test",
             Email = "beta@anchor.test",
+            AccountConfirmed = false,
             EmailConfirmed = false
         };
 
@@ -49,6 +51,7 @@ public sealed class IdentityAdministrationRepositoryTests
                 Assert.Equal("Alpha", first.FirstName);
                 Assert.Equal("Captain", first.LastName);
                 Assert.Equal("507-555-0001", first.PhoneNumber);
+                Assert.True(first.AccountConfirmed);
                 Assert.True(first.EmailConfirmed);
                 Assert.True(first.IsBootstrapAccount);
                 Assert.True(first.MustChangePassword);
@@ -60,6 +63,7 @@ public sealed class IdentityAdministrationRepositoryTests
                 Assert.Null(second.FirstName);
                 Assert.Null(second.LastName);
                 Assert.Null(second.PhoneNumber);
+                Assert.False(second.AccountConfirmed);
                 Assert.False(second.EmailConfirmed);
                 Assert.Empty(second.Roles);
             });
@@ -88,7 +92,7 @@ public sealed class IdentityAdministrationRepositoryTests
     }
 
     [Fact]
-    public async Task SetEmailConfirmedAsync_updates_confirmation_state()
+    public async Task SetAccountConfirmedAsync_updates_confirmation_state()
     {
         await using var identityContext = await SqliteIdentityTestContext.CreateAsync();
         var repository = new IdentityAdministrationRepository(identityContext.DbContext, identityContext.UserManager);
@@ -97,16 +101,18 @@ public sealed class IdentityAdministrationRepositoryTests
         {
             UserName = "pending@anchor.test",
             Email = "pending@anchor.test",
+            AccountConfirmed = false,
             EmailConfirmed = false
         };
         Assert.True((await identityContext.UserManager.CreateAsync(user, "Password1!")).Succeeded);
 
-        var result = await repository.SetEmailConfirmedAsync(user.Id, true);
+        var result = await repository.SetAccountConfirmedAsync(user.Id, true);
         var refreshedUser = await identityContext.UserManager.FindByIdAsync(user.Id);
 
         Assert.True(result.Succeeded);
         Assert.NotNull(refreshedUser);
-        Assert.True(refreshedUser.EmailConfirmed);
+        Assert.True(refreshedUser.AccountConfirmed);
+        Assert.False(refreshedUser.EmailConfirmed);
     }
 
     [Fact]
@@ -213,7 +219,8 @@ public sealed class IdentityAdministrationRepositoryTests
 
         Assert.True(result.Succeeded);
         Assert.NotNull(createdUser);
-        Assert.True(createdUser.EmailConfirmed);
+        Assert.True(createdUser.AccountConfirmed);
+        Assert.False(createdUser.EmailConfirmed);
         Assert.True(createdUser.MustChangePassword);
         Assert.False(createdUser.IsBootstrapAccount);
     }

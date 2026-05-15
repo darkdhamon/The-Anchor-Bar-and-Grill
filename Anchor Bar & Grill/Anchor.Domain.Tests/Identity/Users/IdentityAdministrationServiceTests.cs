@@ -61,7 +61,7 @@ public sealed class IdentityAdministrationServiceTests
         Assert.NotNull(repository.LastCreatedUser);
         Assert.Equal("staff@anchor.test", repository.LastCreatedUser.Email);
         Assert.Equal("Password1!", repository.LastCreatedUser.TemporaryPassword);
-        Assert.True(repository.LastCreatedUser.EmailConfirmed);
+        Assert.True(repository.LastCreatedUser.AccountConfirmed);
     }
 
     [Fact]
@@ -143,7 +143,7 @@ public sealed class IdentityAdministrationServiceTests
             AdminCount = 1,
             Users =
             [
-                new ManagedUserSummary("user-1", "admin@anchor.test", null, null, null, true, false, false, [ApplicationRoles.Admin])
+                new ManagedUserSummary("user-1", "admin@anchor.test", null, null, null, true, true, false, false, [ApplicationRoles.Admin])
             ]
         };
         var service = new IdentityAdministrationService(repository);
@@ -163,7 +163,7 @@ public sealed class IdentityAdministrationServiceTests
             AdminCount = 2,
             Users =
             [
-                new ManagedUserSummary("user-1", "admin@anchor.test", null, null, null, true, false, false, [ApplicationRoles.Admin])
+                new ManagedUserSummary("user-1", "admin@anchor.test", null, null, null, true, true, false, false, [ApplicationRoles.Admin])
             ]
         };
         var service = new IdentityAdministrationService(repository);
@@ -183,7 +183,7 @@ public sealed class IdentityAdministrationServiceTests
             ItCount = 1,
             Users =
             [
-                new ManagedUserSummary("user-1", "it@anchor.test", null, null, null, true, false, false, [ApplicationRoles.It])
+                new ManagedUserSummary("user-1", "it@anchor.test", null, null, null, true, true, false, false, [ApplicationRoles.It])
             ]
         };
         var service = new IdentityAdministrationService(repository);
@@ -203,7 +203,7 @@ public sealed class IdentityAdministrationServiceTests
             AdminCount = 2,
             Users =
             [
-                new ManagedUserSummary("user-1", "admin@anchor.test", null, null, null, true, false, false, [ApplicationRoles.Admin])
+                new ManagedUserSummary("user-1", "admin@anchor.test", null, null, null, true, true, false, false, [ApplicationRoles.Admin])
             ]
         };
         var service = new IdentityAdministrationService(repository);
@@ -281,7 +281,7 @@ public sealed class IdentityAdministrationServiceTests
             return Task.FromResult(IdentityOperationResult.Success());
         }
 
-        public Task<IdentityOperationResult> SetEmailConfirmedAsync(string userId, bool emailConfirmed, CancellationToken cancellationToken = default) =>
+        public Task<IdentityOperationResult> SetAccountConfirmedAsync(string userId, bool accountConfirmed, CancellationToken cancellationToken = default) =>
             Task.FromResult(IdentityOperationResult.Success());
     }
 }

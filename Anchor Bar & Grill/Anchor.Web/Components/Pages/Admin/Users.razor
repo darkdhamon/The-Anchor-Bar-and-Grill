@@ -19,7 +19,7 @@
         <p class="page-hero__eyebrow">Admin Access</p>
         <h1>User management</h1>
         <p class="page-hero__lead">
-            Create staff accounts, confirm them when needed, and assign only the operational or technical access
+            Create staff accounts, confirm their access when needed, and assign only the operational or technical access
             each employee should have.
         </p>
     </div>
@@ -31,7 +31,7 @@
                 <li>Create every staff account here. Public self-registration is disabled, so admins own onboarding.</li>
                 <li>Share the temporary password with the employee, then let them change it after first sign-in.</li>
                 <li>If a staff member forgets a password, set a new temporary password on that user's card and share it directly with them.</li>
-                <li>Confirm an account here if confirmed-account enforcement is on and a new staff member is waiting for access.</li>
+                <li>Confirm account access here if confirmed-account enforcement is on and a new staff member is waiting for sign-in approval.</li>
                 <li>Use the profile editor on each staff card to keep the employee's first name, last name, and phone number current.</li>
                 <li>Assign <strong>EventManager</strong>, <strong>MenuManager</strong>, and <strong>IT</strong> only when the user needs that responsibility.</li>
                 <li>Do not remove the final <strong>Admin</strong> or final <strong>IT</strong> assignment, and do not remove <strong>Admin</strong> from your own signed-in account.</li>
@@ -63,10 +63,10 @@
                             <ValidationMessage For="() => createUserInput.TemporaryPassword" class="validation-message" />
                         </label>
                         <label class="editor-form__toggle">
-                            <span>Confirm account now</span>
+                            <span>Confirm account access now</span>
                             <div class="editor-form__toggle-row">
-                                <InputCheckbox @bind-Value="createUserInput.EmailConfirmed" />
-                                <small>Turn this on if the account should be able to sign in immediately when confirmed-account enforcement is enabled.</small>
+                                <InputCheckbox @bind-Value="createUserInput.AccountConfirmed" />
+                                <small>Turn this on if the user should be approved to sign in immediately when confirmed-account enforcement is enabled. This does not verify the email address.</small>
                             </div>
                         </label>
                     </div>
@@ -131,8 +131,11 @@
                                     </div>
 
                                     <div class="chip-list">
-                                        <span class="chip @(user.EmailConfirmed ? "chip--success" : "chip--warning")">
-                                            @(user.EmailConfirmed ? "Confirmed" : "Pending confirmation")
+                                        <span class="chip @(user.AccountConfirmed ? "chip--success" : "chip--warning")">
+                                            @(user.AccountConfirmed ? "Account confirmed" : "Account pending")
+                                        </span>
+                                        <span class="chip @(user.EmailConfirmed ? "chip--info" : "chip--neutral")">
+                                            @(user.EmailConfirmed ? "Email verified" : "Email unverified")
                                         </span>
                                         @if (user.IsBootstrapAccount)
                                         {
@@ -146,10 +149,10 @@
                                 </div>
 
                                 <div class="action-row action-row--wrap">
-                                    <button class="action-button @(user.EmailConfirmed ? "action-button--secondary" : "action-button--success")"
-                                            @onclick="() => SetConfirmationAsync(user, !user.EmailConfirmed)"
+                                    <button class="action-button @(user.AccountConfirmed ? "action-button--secondary" : "action-button--success")"
+                                            @onclick="() => SetAccountConfirmationAsync(user, !user.AccountConfirmed)"
                                             disabled="@isBusy">
-                                        @(user.EmailConfirmed ? "Mark unconfirmed" : "Confirm account")
+                                        @(user.AccountConfirmed ? "Mark account pending" : "Confirm account")
                                     </button>
 
                                     @foreach (var roleName in ApplicationRoles.All)
@@ -206,7 +209,7 @@
             new CreateManagedUserRequest(
                 createUserInput.Email,
                 createUserInput.TemporaryPassword,
-                createUserInput.EmailConfirmed));
+                createUserInput.AccountConfirmed));
 
         statusMessage = result.Succeeded
             ? $"{createUserInput.Email} was created and will be prompted to change the temporary password after the first successful sign-in."
@@ -251,13 +254,15 @@
         isBusy = false;
     }
 
-    private async Task SetConfirmationAsync(ManagedUserSummary user, bool confirmed)
+    private async Task SetAccountConfirmationAsync(ManagedUserSummary user, bool confirmed)
     {
         isBusy = true;
 
-        var result = await IdentityAdministrationService.SetEmailConfirmedAsync(user.UserId, confirmed);
+        var result = await IdentityAdministrationService.SetAccountConfirmedAsync(user.UserId, confirmed);
         statusMessage = result.Succeeded
-            ? $"{user.Email} is now {(confirmed ? "confirmed" : "unconfirmed")}."
+            ? confirmed
+                ? $"{user.Email} can now sign in when confirmed-account enforcement is enabled."
+                : $"{user.Email} now requires admin confirmation before sign-in when confirmed-account enforcement is enabled."
             : $"Error: {string.Join(" ", result.Errors)}";
 
         await LoadUsersAsync();
@@ -318,6 +323,6 @@
         [StringLength(100, ErrorMessage = "The temporary password must be at least {2} and at most {1} characters long.", MinimumLength = 6)]
         public string TemporaryPassword { get; set; } = "";
 
-        public bool EmailConfirmed { get; set; }
+        public bool AccountConfirmed { get; set; }
     }
 }

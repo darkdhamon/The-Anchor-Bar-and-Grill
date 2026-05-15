@@ -35,6 +35,7 @@ public sealed class IdentityBootstrapService(
             new BootstrapUserSeed(
                 Email: bootstrapEmail,
                 Password: bootstrapPassword,
+                AccountConfirmed: true,
                 EmailConfirmed: true,
                 MustChangePassword: true,
                 IsBootstrapAccount: true,

@@ -9,6 +9,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddAnchorDomainServices(this IServiceCollection services)
     {
+        services.AddScoped<IConfirmedAccountAccessService, ConfirmedAccountAccessService>();
         services.AddScoped<IConfirmedAccountConfigurationService, ConfirmedAccountConfigurationService>();
         services.AddScoped<IIdentityAdministrationService, IdentityAdministrationService>();
         services.AddScoped<IIdentityBootstrapService, IdentityBootstrapService>();

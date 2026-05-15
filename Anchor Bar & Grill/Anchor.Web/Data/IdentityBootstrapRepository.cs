@@ -43,6 +43,7 @@ public sealed class IdentityBootstrapRepository(
             {
                 UserName = seed.Email,
                 Email = seed.Email,
+                AccountConfirmed = seed.AccountConfirmed,
                 EmailConfirmed = seed.EmailConfirmed,
                 MustChangePassword = seed.MustChangePassword,
                 IsBootstrapAccount = seed.IsBootstrapAccount
@@ -69,6 +70,12 @@ public sealed class IdentityBootstrapRepository(
             if (!string.Equals(user.UserName, seed.Email, StringComparison.OrdinalIgnoreCase))
             {
                 user.UserName = seed.Email;
+                requiresUpdate = true;
+            }
+
+            if (!user.AccountConfirmed && seed.AccountConfirmed)
+            {
+                user.AccountConfirmed = true;
                 requiresUpdate = true;
             }
 

@@ -5,7 +5,7 @@
 @using Anchor.Web.Data
 @using Microsoft.AspNetCore.Identity
 
-@inject IConfirmedAccountConfigurationService ConfirmedAccountConfigurationService
+@inject IConfirmedAccountAccessService ConfirmedAccountAccessService
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
 @inject IdentityRedirectManager RedirectManager
@@ -49,7 +49,7 @@
 
             <div class="account-panel__body">
                 <ul class="feature-list">
-                    <li>If confirmed accounts are currently required, you may still need an <strong>Admin</strong> to confirm the linked account.</li>
+                    <li>If confirmed accounts are currently required, you may still need an <strong>Admin</strong> to approve the linked account for sign-in.</li>
                     <li>After sign-in, an <strong>Admin</strong> can add any operational or technical roles you need.</li>
                     <li>If you were seeded as the bootstrap admin, the site will require an immediate password change before broader access is allowed.</li>
                 </ul>
@@ -115,9 +115,8 @@
         }
 
         var linkedUser = await UserManager.FindByLoginAsync(externalLoginInfo.LoginProvider, externalLoginInfo.ProviderKey);
-        if (linkedUser is not null &&
-            await ConfirmedAccountConfigurationService.IsConfirmationRequiredAsync() &&
-            !linkedUser.EmailConfirmed)
+        var accessDecision = await ConfirmedAccountAccessService.EvaluateAsync(linkedUser?.AccountConfirmed == true);
+        if (linkedUser is not null && !accessDecision.IsAccessAllowed)
         {
             RedirectManager.RedirectToWithStatus(
                 "Account/Login",
