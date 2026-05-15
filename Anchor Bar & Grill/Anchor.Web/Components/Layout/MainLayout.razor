@@ -1,5 +1,7 @@
 @inherits LayoutComponentBase
 @using Anchor.Domain.Identity
+@using System.Globalization
+@using System.Security.Claims
 @inject IHttpContextAccessor HttpContextAccessor
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
@@ -109,6 +111,10 @@
                                 Manage Account
                             </a>
 
+                            <span class="preview-nav__greeting">
+                                @GetGreeting(layoutAuthState.User)
+                            </span>
+
                             <form class="preview-nav__logout" action="/Account/Logout" method="post">
                                 <AntiforgeryToken />
                                 <input type="hidden" name="returnUrl" value="@LogoutReturnUrl" />
@@ -205,5 +211,45 @@
         {
             await JSRuntime.InvokeVoidAsync("anchorTheme.initialize");
         }
+    }
+
+    private static string GetGreeting(ClaimsPrincipal user)
+    {
+        var givenName = user.FindFirstValue(ClaimTypes.GivenName)?.Trim();
+        var surname = user.FindFirstValue(ClaimTypes.Surname)?.Trim();
+
+        var displayName = string.Join(
+            " ",
+            new[] { givenName, surname }
+                .Where(value => !string.IsNullOrWhiteSpace(value)));
+
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            displayName = ToFriendlyName(user.FindFirstValue(ClaimTypes.Name));
+        }
+
+        return $"Hi, {displayName}";
+    }
+
+    private static string ToFriendlyName(string? rawName)
+    {
+        if (string.IsNullOrWhiteSpace(rawName))
+        {
+            return "there";
+        }
+
+        var baseName = rawName.Split('@', 2, StringSplitOptions.TrimEntries)[0];
+        var normalized = baseName
+            .Replace('.', ' ')
+            .Replace('_', ' ')
+            .Replace('-', ' ')
+            .Trim();
+
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return "there";
+        }
+
+        return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(normalized.ToLowerInvariant());
     }
 }

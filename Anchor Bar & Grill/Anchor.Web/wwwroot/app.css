@@ -415,6 +415,14 @@ html.anchor-theme-dark .site-shell {
     background: rgba(48, 154, 221, 0.18);
 }
 
+.preview-nav__greeting {
+    color: rgba(247, 247, 244, 0.9);
+    font-family: "Patrick Hand", "Segoe UI", cursive;
+    font-size: 1rem;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
 .preview-nav__logout {
     margin: 0;
     display: inline-flex;
@@ -1762,6 +1770,11 @@ html.anchor-theme-dark .site-shell {
     .preview-nav__label {
         display: block;
         width: 100%;
+    }
+
+    .preview-nav__greeting {
+        width: 100%;
+        white-space: normal;
     }
 
     .site-navigation__link,

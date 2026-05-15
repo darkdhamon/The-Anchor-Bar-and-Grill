@@ -97,7 +97,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     [Fact]
     public void MainLayout_ShowsRoleScopedStaffLinksForAdminUsers()
     {
-        authStateProvider.SetUser(CreateUser("admin@anchor.test", ApplicationRoles.Admin));
+        authStateProvider.SetUser(CreateUserWithName("admin@anchor.test", "Harbor", "Captain", ApplicationRoles.Admin));
 
         var cut = Render(builder =>
         {
@@ -121,6 +121,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Security", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("IT / System", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Manage Account", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Hi, Harbor Captain", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Log Out", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(">Register<", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
@@ -148,6 +149,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.DoesNotContain("Security", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Publicity Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Contact Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Hi, It", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -500,13 +502,30 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Technical dashboards", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static ClaimsPrincipal CreateUser(string userName, params string[] roles)
+    private static ClaimsPrincipal CreateUser(string userName, params string[] roles) =>
+        CreateUserWithName(userName, firstName: null, lastName: null, roles);
+
+    private static ClaimsPrincipal CreateUserWithName(
+        string userName,
+        string? firstName,
+        string? lastName,
+        params string[] roles)
     {
         var claims = new List<Claim>
         {
             new(ClaimTypes.Name, userName),
             new(ClaimTypes.NameIdentifier, userName)
         };
+
+        if (!string.IsNullOrWhiteSpace(firstName))
+        {
+            claims.Add(new Claim(ClaimTypes.GivenName, firstName));
+        }
+
+        if (!string.IsNullOrWhiteSpace(lastName))
+        {
+            claims.Add(new Claim(ClaimTypes.Surname, lastName));
+        }
 
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 

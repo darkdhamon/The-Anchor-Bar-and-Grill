@@ -42,6 +42,8 @@ public sealed class ApplicationUserClaimsRefreshTransformationTests
         {
             UserName = "refresh@anchor.test",
             Email = "refresh@anchor.test",
+            FirstName = "Refresh",
+            LastName = "Captain",
             MustChangePassword = true
         };
 
@@ -62,6 +64,14 @@ public sealed class ApplicationUserClaimsRefreshTransformationTests
         Assert.True(transformed.Identity?.IsAuthenticated);
         Assert.True(transformed.IsInRole(ApplicationRoles.Admin));
         Assert.False(transformed.IsInRole(ApplicationRoles.MenuManager));
+        Assert.Contains(
+            transformed.Claims,
+            claim => claim.Type == ClaimTypes.GivenName
+                && string.Equals(claim.Value, "Refresh", StringComparison.Ordinal));
+        Assert.Contains(
+            transformed.Claims,
+            claim => claim.Type == ClaimTypes.Surname
+                && string.Equals(claim.Value, "Captain", StringComparison.Ordinal));
         Assert.Contains(
             transformed.Claims,
             claim => claim.Type == ApplicationClaimTypes.MustChangePassword
