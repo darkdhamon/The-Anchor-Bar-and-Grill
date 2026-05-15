@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 
 namespace Anchor.Web.Tests;
 
@@ -160,6 +161,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Sunday Pork Chop Dinner", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Thursday Trivia", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Summer Kickoff Patio Party", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("data-enhance-nav=\"false\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -324,7 +326,35 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Account creation is handled by an admin.", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Public self-registration is disabled.", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Go to login", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("href=\"/Account/Login\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("data-enhance-nav=\"false\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("type=\"submit\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void RazorComponents_DoNotUseRootlessInternalHrefOrActionValues()
+    {
+        var componentsRoot = Path.Combine(GetRepositoryRoot(), "Anchor Bar & Grill", "Anchor.Web", "Components");
+        var invalidNavigationAttributes = new List<string>();
+        var pattern = new Regex("(?:href|action)=\"(?!/|https?://|#|mailto:|@|\\.)([^\"]+)\"", RegexOptions.Compiled);
+
+        foreach (var file in Directory.GetFiles(componentsRoot, "*.razor", SearchOption.AllDirectories))
+        {
+            if (string.Equals(Path.GetFileName(file), "App.razor", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var content = File.ReadAllText(file);
+            var matches = pattern.Matches(content);
+
+            foreach (Match match in matches)
+            {
+                invalidNavigationAttributes.Add($"{Path.GetFileName(file)}: {match.Value}");
+            }
+        }
+
+        Assert.Empty(invalidNavigationAttributes);
     }
 
     [Fact]
@@ -383,6 +413,23 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
         return new ClaimsPrincipal(new ClaimsIdentity(claims, authenticationType: "TestAuth"));
+    }
+
+    private static string GetRepositoryRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+
+        while (directory is not null)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "README.md")))
+            {
+                return directory.FullName;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new InvalidOperationException("Could not locate repository root from test output directory.");
     }
 
     private sealed class TestAuthenticationStateProvider : AuthenticationStateProvider
