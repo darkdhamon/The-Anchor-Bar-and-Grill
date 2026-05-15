@@ -11,16 +11,16 @@ This repository currently contains the first code-native website mockup for The 
 - Weekly recurring specials on the menu mockup for day-of-week traditions like burger nights and dinner specials
 - Optional menu-item image support in the menu mockup and menu admin mockup
 - Optional offer start/end dates for menu items, including mockup states for seasonal, limited time, and coming soon items
-- Native date-picker inputs in the menu admin mockup for offer start and end dates
-- Menu admin recurring-specials editor mockup for defining weekly specials separately from one-off offer windows
-- Menu admin section assignment mockup that lets staff choose an existing section or type a new one from the same combo-box field
+- Native date-picker inputs in the menu editor mockup for offer start and end dates
+- Menu editor recurring-specials mockup for defining weekly specials separately from one-off offer windows
+- Menu editor section assignment mockup that lets staff choose an existing section or type a new one from the same combo-box field
 - Events mockup page that lists all upcoming events, including recurring schedules, optional event images, and richer cadence examples such as every other week or the third Friday of the month
 - About mockup page for the restaurant story and guest experience
 - Contact mockup page for location, phone, hours, dynamic social media links, and guest inquiry layout
-- Role-gated admin mockup pages for managing events, menu items, about content, and contact details
-- Contact admin mockup supports adding, editing, and deleting multiple social media profiles for the public contact page
-- Events admin mockup with date/time inputs, richer recurring-event controls, optional images, descriptions, and combo-select promo badges
-- Signed-in-only Help page that explains staff onboarding, roles, bootstrap behavior, and security configuration
+- Role-gated editor mockup pages for managing events, menu items, publicity content, and contact details
+- Contact editor mockup supports adding, editing, and deleting multiple social media profiles for the public contact page
+- Event editor mockup with date/time inputs, richer recurring-event controls, optional images, descriptions, and combo-select promo badges
+- Admin-only Help page organized by subject and role type for staff onboarding, editor ownership, bootstrap behavior, and security configuration
 - Admin-only User Management page for maintaining staff profile details, setting new temporary passwords for existing users, confirming staff account access, reviewing email-verification status, and assigning or removing `Admin`, `EventManager`, `MenuManager`, and `IT`
 - Admin-only Security page for reviewing bootstrap coverage and changing the fallback confirmed-account setting in `appsettings.json`
 - Self-service Manage Account profile page where each signed-in user can update their own first name, last name, and phone number
@@ -32,7 +32,10 @@ This repository currently contains the first code-native website mockup for The 
 - Staff accounts are created only by admins; public self-registration is disabled
 - Staff sign-in uses local credentials and optional passkeys only; external provider login scaffolding has been removed
 - Required application roles are `Admin`, `EventManager`, `MenuManager`, and `IT`
-- Authorization is policy-based, with `Admin` acting as the override for general admin, event, and menu management access, while the IT/system page still requires the `IT` role explicitly
+- Authorization is policy-based, with `Admin` owning Help, User Management, Security, Publicity Editor, and Contact Editor
+- `EventManager` alone can access `Event Editor`
+- `MenuManager` alone can access `Menu Editor`
+- `IT` alone can access the `IT / System` page
 - The application seeds missing roles on startup
 - A bootstrap account is created only while the site does not yet have at least one `Admin` user and one `IT` user
 - The bootstrap account is seeded with both `Admin` and `IT`, is confirmed automatically for sign-in, and must change its password after first successful sign-in before broader access is allowed
@@ -72,7 +75,7 @@ This repository currently contains the first code-native website mockup for The 
 - Admins can reset an existing staff member's password to a new temporary password from User Management when the staff member forgets it
 - Passkey requests now start only after the user clicks the passkey action instead of auto-starting on login-page load
 - Register, forced password change, access-denied, and register-confirmation screens now use the same branded account layout as the login page
-- Public mockup pages and the staff Help page now opt out of interactive routing so header links behave like normal full page loads from login, contact, and the rest of the guest-facing site
+- Public mockup pages and the admin Help page now opt out of interactive routing so header links behave like normal full page loads from login, contact, and the rest of the guest-facing site
 - The shared header theme toggle and mobile menu now use browser-side JavaScript hooks instead of Blazor-only click handlers so they keep working on both static account routes and interactive admin routes
 - Internal account and manage-page links now use rooted `/Account/...` routes with the same full-load navigation behavior, so moving between login, recovery, profile, and admin surfaces stays consistent from any page
 - Startup bootstrap runs before the request pipeline so roles and the initial administrative account exist before the first login attempt

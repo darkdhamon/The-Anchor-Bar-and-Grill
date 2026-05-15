@@ -8,8 +8,8 @@ public sealed class AuthorizationBuilderExtensionsTests
 {
     [Theory]
     [InlineData(ApplicationPolicies.AdminAccess, ApplicationRoles.Admin, true)]
-    [InlineData(ApplicationPolicies.EventManagement, ApplicationRoles.Admin, true)]
-    [InlineData(ApplicationPolicies.MenuManagement, ApplicationRoles.Admin, true)]
+    [InlineData(ApplicationPolicies.EventManagement, ApplicationRoles.Admin, false)]
+    [InlineData(ApplicationPolicies.MenuManagement, ApplicationRoles.Admin, false)]
     [InlineData(ApplicationPolicies.ITAccess, ApplicationRoles.Admin, false)]
     [InlineData(ApplicationPolicies.EventManagement, ApplicationRoles.EventManager, true)]
     [InlineData(ApplicationPolicies.MenuManagement, ApplicationRoles.MenuManager, true)]

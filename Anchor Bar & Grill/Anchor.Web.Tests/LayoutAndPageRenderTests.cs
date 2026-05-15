@@ -29,8 +29,8 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Services.AddAuthorizationCore(options =>
         {
             options.AddPolicy(ApplicationPolicies.AdminAccess, policy => policy.RequireRole(ApplicationRoles.Admin));
-            options.AddPolicy(ApplicationPolicies.EventManagement, policy => policy.RequireRole(ApplicationRoles.Admin, ApplicationRoles.EventManager));
-            options.AddPolicy(ApplicationPolicies.MenuManagement, policy => policy.RequireRole(ApplicationRoles.Admin, ApplicationRoles.MenuManager));
+            options.AddPolicy(ApplicationPolicies.EventManagement, policy => policy.RequireRole(ApplicationRoles.EventManager));
+            options.AddPolicy(ApplicationPolicies.MenuManagement, policy => policy.RequireRole(ApplicationRoles.MenuManager));
             options.AddPolicy(ApplicationPolicies.ITAccess, policy => policy.RequireRole(ApplicationRoles.It));
         });
         Services.AddSingleton<IAuthorizationService, TestAuthorizationService>();
@@ -60,7 +60,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Staff Access", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Log In", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(">Register<", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Events Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Event Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("site-header__nav-stack is-open", cut.Markup, StringComparison.Ordinal);
         Assert.Contains("data-anchor-theme-toggle=\"true\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("data-anchor-menu-toggle=\"true\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -113,10 +113,10 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 
         Assert.Contains("Staff Tools", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Help", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Events Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Menu Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("About Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Contact Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Event Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Menu Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Publicity Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Contact Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("User Management", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Security", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("IT / System", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -142,10 +142,12 @@ public sealed class LayoutAndPageRenderTests : BunitContext
             builder.CloseComponent();
         });
 
-        Assert.Contains("Help", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Help", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("IT / System", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("User Management", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Security", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Publicity Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Contact Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -165,12 +167,41 @@ public sealed class LayoutAndPageRenderTests : BunitContext
             builder.CloseComponent();
         });
 
-        Assert.Contains("Help", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Events Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Menu Admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Help", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Event Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Menu Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("User Management", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Security", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("IT / System", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Publicity Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Contact Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void MainLayout_ShowsOnlyMenuToolsForMenuManagers()
+    {
+        authStateProvider.SetUser(CreateUser("menu@anchor.test", ApplicationRoles.MenuManager));
+
+        var cut = Render(builder =>
+        {
+            builder.OpenComponent<CascadingAuthenticationState>(0);
+            builder.AddAttribute(1, "ChildContent", (RenderFragment)(childBuilder =>
+            {
+                childBuilder.OpenComponent<MainLayout>(0);
+                childBuilder.AddAttribute(1, "Body", (RenderFragment)(bodyBuilder => bodyBuilder.AddMarkupContent(0, "<section>Preview body</section>")));
+                childBuilder.CloseComponent();
+            }));
+            builder.CloseComponent();
+        });
+
+        Assert.DoesNotContain("Help", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Menu Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Event Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("User Management", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Security", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("IT / System", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Publicity Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Contact Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -271,7 +302,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     {
         var cut = Render<EventsAdmin>();
 
-        Assert.Contains("Events admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Event editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("How this page should work", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Event image (optional)", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Recurring event?", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -292,7 +323,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     {
         var cut = Render<MenuAdmin>();
 
-        Assert.Contains("Menu admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Menu editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Item editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Section preview", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Menu image (optional)", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -312,9 +343,10 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     {
         var cut = Render<AboutAdmin>();
 
-        Assert.Contains("About admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Publicity editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Publicity content editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Content Blocks", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Current about sections", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Current publicity sections", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -322,7 +354,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     {
         var cut = Render<ContactAdmin>();
 
-        Assert.Contains("Contact admin", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Contact editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Contact details form", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Hours preview", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Social profiles", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -336,10 +368,13 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     {
         var cut = Render<Help>();
 
+        Assert.Contains("Browse by subject", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Browse by role type", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Admins create staff accounts, then assign roles.", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("creates each staff account", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("local sign-in and optional passkeys only", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("profile details", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Publicity Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Contact Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("EventManager", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("self-register", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
