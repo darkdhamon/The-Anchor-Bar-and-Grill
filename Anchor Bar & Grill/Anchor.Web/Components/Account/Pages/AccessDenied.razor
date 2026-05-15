@@ -1,8 +1,31 @@
-﻿@page "/Account/AccessDenied"
+@page "/Account/AccessDenied"
 
 <PageTitle>Access denied</PageTitle>
 
-<header>
-    <h1 class="text-danger">Access denied</h1>
-    <p class="text-danger">You do not have access to this resource.</p>
-</header>
+<section class="account-page">
+    <div class="page-hero page-hero--section account-page__hero">
+        <p class="page-hero__eyebrow">Authorization</p>
+        <h1>Access denied</h1>
+        <p class="page-hero__lead">
+            You are signed in, but your account does not currently have the role required to open this area.
+        </p>
+    </div>
+
+    <section class="admin-card account-panel">
+        <div class="admin-card__header">
+            <h2>What to do next</h2>
+            <span class="admin-card__badge">Role check</span>
+        </div>
+
+        <div class="account-panel__body">
+            <p>
+                If you believe you should have access, contact an <strong>Admin</strong> so they can confirm your account
+                and assign the correct role for this part of the site.
+            </p>
+            <div class="action-row">
+                <a class="action-button action-button--secondary" href="/" data-enhance-nav="false">Return home</a>
+                <a class="action-button action-button--primary" href="/help" data-enhance-nav="false">Open help</a>
+            </div>
+        </div>
+    </section>
+</section>

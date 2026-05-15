@@ -1,9 +1,18 @@
-﻿@using Anchor.Web.Components.Account.Shared
+@using Anchor.Web.Components.Account.Pages
+@using Anchor.Web.Components.Account.Shared
 <Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
     <Found Context="routeData">
+        <ForcePasswordChangeRedirect RouteData="routeData" />
         <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
             <NotAuthorized>
-                <RedirectToLogin />
+                <AuthorizeView Context="routeAuthState">
+                    <Authorized Context="authorizedState">
+                        <AccessDenied />
+                    </Authorized>
+                    <NotAuthorized Context="unauthorizedState">
+                        <RedirectToLogin />
+                    </NotAuthorized>
+                </AuthorizeView>
             </NotAuthorized>
         </AuthorizeRouteView>
         <FocusOnNavigate RouteData="routeData" Selector="h1" />

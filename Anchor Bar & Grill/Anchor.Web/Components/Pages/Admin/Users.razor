@@ -1,0 +1,329 @@
+@page "/admin/users"
+@rendermode InteractiveServer
+
+@using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
+@using Anchor.Domain.Identity
+@using Anchor.Domain.Identity.Users
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+
+@attribute [Authorize(Policy = ApplicationPolicies.AdminAccess)]
+
+@inject IIdentityAdministrationService IdentityAdministrationService
+
+<PageTitle>User Management</PageTitle>
+
+<section class="admin-page">
+    <div class="page-hero page-hero--section">
+        <p class="page-hero__eyebrow">Admin Access</p>
+        <h1>User management</h1>
+        <p class="page-hero__lead">
+            Create staff accounts, confirm their access when needed, and assign only the operational or technical access
+            each employee should have.
+        </p>
+    </div>
+
+    <div class="admin-grid">
+        <aside class="admin-help">
+            <h2>How to use this page</h2>
+            <ul class="feature-list">
+                <li>Create every staff account here. Public self-registration is disabled, so admins own onboarding.</li>
+                <li>Share the temporary password with the employee, then let them change it after first sign-in.</li>
+                <li>If a staff member forgets a password, set a new temporary password on that user's card and share it directly with them.</li>
+                <li>Confirm account access here if confirmed-account enforcement is on and a new staff member is waiting for sign-in approval.</li>
+                <li>Use the profile editor on each staff card to keep the employee's first name, last name, and phone number current.</li>
+                <li>Role and approval changes show up for that staff member after the next page refresh, so they do not need to sign out and back in.</li>
+                <li>Assign <strong>EventManager</strong>, <strong>MenuManager</strong>, and <strong>IT</strong> only when the user needs that responsibility.</li>
+                <li>Do not remove the final <strong>Admin</strong> or final <strong>IT</strong> assignment, and do not remove <strong>Admin</strong> from your own signed-in account.</li>
+            </ul>
+        </aside>
+
+        <div class="admin-stack">
+            <StatusMessage Message="@statusMessage" />
+
+            <section class="admin-card">
+                <div class="admin-card__header">
+                    <h2>Create a staff account</h2>
+                    <span class="admin-card__badge">Admin only</span>
+                </div>
+
+                <EditForm Model="createUserInput" OnValidSubmit="CreateUserAsync" FormName="CreateStaffAccount" class="editor-form account-form">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="validation-message account-form__validation" role="alert" />
+
+                    <div class="editor-form__grid">
+                        <label>
+                            Email
+                            <InputText @bind-Value="createUserInput.Email" id="CreateUser.Email" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                            <ValidationMessage For="() => createUserInput.Email" class="validation-message" />
+                        </label>
+                        <label>
+                            Temporary password
+                            <InputText type="password" @bind-Value="createUserInput.TemporaryPassword" id="CreateUser.TemporaryPassword" autocomplete="new-password" aria-required="true" placeholder="Create a temporary password" />
+                            <ValidationMessage For="() => createUserInput.TemporaryPassword" class="validation-message" />
+                        </label>
+                        <label class="editor-form__toggle">
+                            <span>Confirm account access now</span>
+                            <div class="editor-form__toggle-row">
+                                <InputCheckbox @bind-Value="createUserInput.AccountConfirmed" />
+                                <small>Turn this on if the user should be approved to sign in immediately when confirmed-account enforcement is enabled. This does not verify the email address.</small>
+                            </div>
+                        </label>
+                    </div>
+
+                    <p class="admin-field-note">
+                        New accounts are created without any staff roles and are forced to change the temporary password after the first successful sign-in.
+                    </p>
+
+                    <div class="action-row">
+                        <button type="submit" class="action-button action-button--primary" disabled="@isBusy">Create staff account</button>
+                    </div>
+                </EditForm>
+            </section>
+
+            @if (users is null)
+            {
+                <section class="admin-card">
+                    <div class="admin-card__header">
+                        <h2>Current staff accounts</h2>
+                        <span class="admin-card__badge">Loading</span>
+                    </div>
+                    <p class="admin-field-note">Gathering the current registration and role state now.</p>
+                </section>
+            }
+            else
+            {
+                <section class="admin-card">
+                    <div class="admin-card__header">
+                        <h2>Current staff accounts</h2>
+                        <span class="admin-card__badge">@users.Count user@(users.Count == 1 ? string.Empty : "s")</span>
+                    </div>
+
+                    <div class="admin-list">
+                        @foreach (var user in users)
+                        {
+                            <article class="admin-list__item user-admin-list__item">
+                                <div class="user-admin-list__summary">
+                                    <div class="user-admin-list__heading">
+                                        <h3>@GetUserHeading(user)</h3>
+                                        @if (!string.Equals(GetUserHeading(user), user.Email, StringComparison.Ordinal))
+                                        {
+                                            <p class="admin-field-note">@user.Email</p>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(user.PhoneNumber))
+                                        {
+                                            <p class="admin-field-note">Phone on file: @user.PhoneNumber</p>
+                                        }
+                                    </div>
+
+                                    <div class="chip-list">
+                                        @if (user.Roles.Count == 0)
+                                        {
+                                            <span class="chip chip--neutral">No roles assigned</span>
+                                        }
+                                        else
+                                        {
+                                            @foreach (var role in user.Roles)
+                                            {
+                                                <span class="chip chip--role">@role</span>
+                                            }
+                                        }
+                                    </div>
+
+                                    <div class="chip-list">
+                                        <span class="chip @(user.AccountConfirmed ? "chip--success" : "chip--warning")">
+                                            @(user.AccountConfirmed ? "Account confirmed" : "Account pending")
+                                        </span>
+                                        <span class="chip @(user.EmailConfirmed ? "chip--info" : "chip--neutral")">
+                                            @(user.EmailConfirmed ? "Email verified" : "Email unverified")
+                                        </span>
+                                        @if (user.IsBootstrapAccount)
+                                        {
+                                            <span class="chip chip--info">Bootstrap account</span>
+                                        }
+                                        @if (user.MustChangePassword)
+                                        {
+                                            <span class="chip chip--danger">Password change required</span>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="action-row action-row--wrap">
+                                    <button class="action-button @(user.AccountConfirmed ? "action-button--secondary" : "action-button--success")"
+                                            @onclick="() => SetAccountConfirmationAsync(user, !user.AccountConfirmed)"
+                                            disabled="@isBusy">
+                                        @(user.AccountConfirmed ? "Mark account pending" : "Confirm account")
+                                    </button>
+
+                                    @foreach (var roleName in ApplicationRoles.All)
+                                    {
+                                        var hasRole = user.Roles.Contains(roleName, StringComparer.Ordinal);
+                                        var blocksSelfAdminRemoval = BlocksSelfAdminRemoval(user, roleName, hasRole);
+                                        <button class="action-button @(hasRole ? "action-button--danger" : "action-button--primary")"
+                                                @onclick="() => ToggleRoleAsync(user, roleName, hasRole)"
+                                                disabled="@(isBusy || blocksSelfAdminRemoval)"
+                                                title="@GetRoleActionTitle(blocksSelfAdminRemoval)">
+                                            @GetRoleActionLabel(roleName, hasRole, blocksSelfAdminRemoval)
+                                        </button>
+                                    }
+                                </div>
+                                <ManagedUserTemporaryPasswordEditor User="user" IsBusy="isBusy" OnSave="ResetTemporaryPasswordAsync" />
+                                <ManagedUserProfileEditor User="user" IsBusy="isBusy" OnSave="UpdateProfileAsync" />
+                            </article>
+                        }
+                    </div>
+                </section>
+            }
+        </div>
+    </div>
+</section>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    private bool isBusy;
+    private string? currentUserId;
+    private string? statusMessage;
+    private CreateUserInputModel createUserInput = new();
+    private IReadOnlyList<ManagedUserSummary>? users;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authenticationState = await AuthenticationStateTask;
+        currentUserId = authenticationState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        await LoadUsersAsync();
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        users = await IdentityAdministrationService.GetUsersAsync();
+    }
+
+    private async Task CreateUserAsync()
+    {
+        isBusy = true;
+
+        var result = await IdentityAdministrationService.CreateUserAsync(
+            new CreateManagedUserRequest(
+                createUserInput.Email,
+                createUserInput.TemporaryPassword,
+                createUserInput.AccountConfirmed));
+
+        statusMessage = result.Succeeded
+            ? $"{createUserInput.Email} was created and will be prompted to change the temporary password after the first successful sign-in."
+            : $"Error: {string.Join(" ", result.Errors)}";
+
+        if (result.Succeeded)
+        {
+            createUserInput = new();
+        }
+
+        await LoadUsersAsync();
+        isBusy = false;
+    }
+
+    private async Task UpdateProfileAsync(UpdateManagedUserProfileRequest request)
+    {
+        isBusy = true;
+
+        var result = await IdentityAdministrationService.UpdateUserProfileAsync(request);
+
+        statusMessage = result.Succeeded
+            ? $"Profile details were updated for the selected user."
+            : $"Error: {string.Join(" ", result.Errors)}";
+
+        await LoadUsersAsync();
+        isBusy = false;
+    }
+
+    private async Task ResetTemporaryPasswordAsync(ResetManagedUserPasswordRequest request)
+    {
+        isBusy = true;
+
+        var result = await IdentityAdministrationService.ResetUserPasswordAsync(request);
+        var affectedUser = users?.FirstOrDefault(user => string.Equals(user.UserId, request.UserId, StringComparison.Ordinal));
+        var affectedEmail = affectedUser?.Email ?? "The selected user";
+
+        statusMessage = result.Succeeded
+            ? $"{affectedEmail} now has a new temporary password and will be required to change it after the next successful sign-in."
+            : $"Error: {string.Join(" ", result.Errors)}";
+
+        await LoadUsersAsync();
+        isBusy = false;
+    }
+
+    private async Task SetAccountConfirmationAsync(ManagedUserSummary user, bool confirmed)
+    {
+        isBusy = true;
+
+        var result = await IdentityAdministrationService.SetAccountConfirmedAsync(user.UserId, confirmed);
+        statusMessage = result.Succeeded
+            ? confirmed
+                ? $"{user.Email} can now sign in when confirmed-account enforcement is enabled."
+                : $"{user.Email} now requires admin confirmation before sign-in when confirmed-account enforcement is enabled."
+            : $"Error: {string.Join(" ", result.Errors)}";
+
+        await LoadUsersAsync();
+        isBusy = false;
+    }
+
+    private async Task ToggleRoleAsync(ManagedUserSummary user, string roleName, bool hasRole)
+    {
+        if (hasRole && BlocksSelfAdminRemoval(user, roleName, hasRole))
+        {
+            statusMessage = "Error: You cannot remove the Admin role from your own account.";
+            return;
+        }
+
+        isBusy = true;
+
+        var result = hasRole
+            ? await IdentityAdministrationService.RemoveRoleAsync(user.UserId, roleName, currentUserId ?? string.Empty)
+            : await IdentityAdministrationService.AddRoleAsync(user.UserId, roleName);
+
+        statusMessage = result.Succeeded
+            ? $"{roleName} was {(hasRole ? "removed from" : "added to")} {user.Email}."
+            : $"Error: {string.Join(" ", result.Errors)}";
+
+        await LoadUsersAsync();
+        isBusy = false;
+    }
+
+    private bool BlocksSelfAdminRemoval(ManagedUserSummary user, string roleName, bool hasRole) =>
+        hasRole
+        && roleName == ApplicationRoles.Admin
+        && string.Equals(currentUserId, user.UserId, StringComparison.Ordinal);
+
+    private static string GetRoleActionLabel(string roleName, bool hasRole, bool blocksSelfAdminRemoval) =>
+        blocksSelfAdminRemoval
+            ? "Keep Admin"
+            : hasRole
+                ? $"Remove {roleName}"
+                : $"Add {roleName}";
+
+    private static string? GetRoleActionTitle(bool blocksSelfAdminRemoval) =>
+        blocksSelfAdminRemoval
+            ? "You cannot remove the Admin role from your own account."
+            : null;
+
+    private static string GetUserHeading(ManagedUserSummary user) =>
+        string.IsNullOrWhiteSpace(user.DisplayName)
+            ? user.Email
+            : user.DisplayName;
+
+    private sealed class CreateUserInputModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [StringLength(100, ErrorMessage = "The temporary password must be at least {2} and at most {1} characters long.", MinimumLength = 6)]
+        public string TemporaryPassword { get; set; } = "";
+
+        public bool AccountConfirmed { get; set; }
+    }
+}

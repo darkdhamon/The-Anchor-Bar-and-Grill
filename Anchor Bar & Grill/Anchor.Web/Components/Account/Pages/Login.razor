@@ -1,14 +1,14 @@
-﻿@page "/Account/Login"
+@page "/Account/Login"
 
 @using System.ComponentModel.DataAnnotations
-@using Microsoft.AspNetCore.Authentication
+@using Anchor.Domain.Identity.Configuration
 @using Microsoft.AspNetCore.Identity
 @using Anchor.Web.Data
 
+@inject IConfirmedAccountAccessService ConfirmedAccountAccessService
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject ILogger<Login> Logger
-@inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 
 <PageTitle>Log in</PageTitle>
@@ -69,28 +69,18 @@
 
                 <div class="account-links">
                     <p>
-                        <a href="Account/ForgotPassword">Forgot your password?</a>
+                        <a href="/Account/ForgotPassword" data-enhance-nav="false">Forgot your password?</a>
                     </p>
                     <p>
-                        <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Register as a new user</a>
+                        New staff accounts must be created by an <strong>Admin</strong>.
                     </p>
                     <p>
-                        <a href="Account/ResendEmailConfirmation">Resend email confirmation</a>
+                        <a href="/Account/ResendEmailConfirmation" data-enhance-nav="false">Resend email confirmation</a>
                     </p>
                 </div>
             </EditForm>
         </section>
 
-        <section class="admin-card account-panel">
-            <div class="admin-card__header">
-                <h2>Use another service to log in.</h2>
-                <span class="admin-card__badge">External Providers</span>
-            </div>
-
-            <div class="account-panel__body">
-                <ExternalLoginPicker />
-            </div>
-        </section>
     </div>
 </section>
 
@@ -98,26 +88,17 @@
     private string? errorMessage;
     private EditContext editContext = default!;
 
-    [CascadingParameter]
-    private HttpContext HttpContext { get; set; } = default!;
-
     [SupplyParameterFromForm]
     private InputModel Input { get; set; } = default!;
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         Input ??= new();
 
         editContext = new EditContext(Input);
-
-        if (HttpMethods.IsGet(HttpContext.Request.Method))
-        {
-            // Clear the existing external cookie to ensure a clean login process
-            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
-        }
     }
 
     public async Task LoginUser()
@@ -129,27 +110,73 @@
         }
 
         SignInResult result;
+        ApplicationUser? resolvedUser = null;
+
         if (!string.IsNullOrEmpty(Input.Passkey?.CredentialJson))
         {
+            if (!string.IsNullOrWhiteSpace(Input.Email))
+            {
+                resolvedUser = await UserManager.FindByEmailAsync(Input.Email);
+            }
+
+            var accessDecision = await ConfirmedAccountAccessService.EvaluateAsync(resolvedUser?.AccountConfirmed == true);
+            if (accessDecision.IsConfirmationRequired)
+            {
+                if (string.IsNullOrWhiteSpace(Input.Email))
+                {
+                    errorMessage = "Error: Enter your email address before using a passkey while confirmed-account access is enabled.";
+                    return;
+                }
+
+                if (!accessDecision.IsAccessAllowed)
+                {
+                    errorMessage = "Error: Your account must be confirmed by an administrator before you can sign in.";
+                    return;
+                }
+            }
+
             // When performing passkey sign-in, don't perform form validation.
             result = await SignInManager.PasskeySignInAsync(Input.Passkey.CredentialJson);
         }
         else
         {
-            // If doing a password sign-in, validate the form.
             if (!editContext.Validate())
             {
                 return;
             }
 
-            // This doesn't count login failures towards account lockout
-            // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-            result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+            resolvedUser = await UserManager.FindByEmailAsync(Input.Email);
+            if (resolvedUser is null)
+            {
+                errorMessage = "Error: Invalid login attempt.";
+                return;
+            }
+
+            result = await SignInManager.CheckPasswordSignInAsync(resolvedUser, Input.Password, lockoutOnFailure: false);
+
+            if (result.Succeeded)
+            {
+                var accessDecision = await ConfirmedAccountAccessService.EvaluateAsync(resolvedUser.AccountConfirmed);
+                if (!accessDecision.IsAccessAllowed)
+                {
+                    errorMessage = "Error: Your account must be confirmed by an administrator before you can sign in.";
+                    return;
+                }
+
+                await SignInManager.SignInAsync(resolvedUser, isPersistent: Input.RememberMe);
+            }
         }
 
         if (result.Succeeded)
         {
             Logger.LogInformation("User logged in.");
+
+            if (resolvedUser?.MustChangePassword == true)
+            {
+                RedirectManager.RedirectTo("Account/Manage/ChangePassword", new() { ["forced"] = true });
+                return;
+            }
+
             RedirectManager.RedirectTo(ReturnUrl);
         }
         else if (result.RequiresTwoFactor)

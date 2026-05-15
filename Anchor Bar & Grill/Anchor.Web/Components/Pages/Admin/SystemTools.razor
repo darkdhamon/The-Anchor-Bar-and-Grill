@@ -1,0 +1,43 @@
+@page "/admin/system"
+
+@using Anchor.Domain.Identity
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Policy = ApplicationPolicies.ITAccess)]
+
+<PageTitle>IT / System</PageTitle>
+
+<section class="admin-page">
+    <div class="page-hero page-hero--section">
+        <p class="page-hero__eyebrow">IT Access</p>
+        <h1>IT / System</h1>
+        <p class="page-hero__lead">
+            This protected placeholder keeps technical workflows separate from food and event operations while
+            proving the dedicated <strong>IT</strong> policy path is wired correctly.
+        </p>
+    </div>
+
+    <div class="admin-grid">
+        <aside class="admin-help">
+            <h2>What belongs here</h2>
+            <ul class="feature-list">
+                <li>Technical dashboards, diagnostics, and system-health reporting.</li>
+                <li>Log visibility and other operational support tooling.</li>
+                <li>Workflows that should stay out of menu, event, and general admin content editing.</li>
+            </ul>
+        </aside>
+
+        <div class="admin-stack">
+            <section class="admin-card">
+                <div class="admin-card__header">
+                    <h2>Reserved technical surface</h2>
+                    <span class="admin-card__badge">Future tooling</span>
+                </div>
+                <p class="admin-field-note">
+                    This area is intentionally simple for now so the role wiring can be reviewed before real system
+                    tools such as diagnostics, logs, or maintenance screens are added.
+                </p>
+            </section>
+        </div>
+    </div>
+</section>

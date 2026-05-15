@@ -1,4 +1,5 @@
 @page "/"
+@attribute [ExcludeFromInteractiveRouting]
 
 <PageTitle>Home</PageTitle>
 
@@ -14,7 +15,9 @@
         <div class="hero-actions">
             @foreach (var action in MockupContent.HomeActions)
             {
-                <a class="hero-actions__link @(action.IsPrimary ? "hero-actions__link--primary" : "hero-actions__link--secondary")" href="@action.Href">
+                <a class="hero-actions__link @(action.IsPrimary ? "hero-actions__link--primary" : "hero-actions__link--secondary")"
+                   href="@action.Href"
+                   data-enhance-nav="false">
                     @action.Label
                 </a>
             }

@@ -1,13 +1,17 @@
 @page "/admin/menu"
+@using Anchor.Domain.Identity
+@using Microsoft.AspNetCore.Authorization
 
-<PageTitle>Menu Admin</PageTitle>
+@attribute [Authorize(Policy = ApplicationPolicies.MenuManagement)]
+
+<PageTitle>Menu Editor</PageTitle>
 
 <section class="admin-page">
     <div class="page-hero page-hero--section">
-        <p class="page-hero__eyebrow">Admin Mockup</p>
-        <h1>Menu admin</h1>
+        <p class="page-hero__eyebrow">Menu Manager Mockup</p>
+        <h1>Menu editor</h1>
         <p class="page-hero__lead">
-            Menu management needs a clean workflow for adding new items, updating descriptions, and removing entries without making the page feel overwhelming.
+            Menu management needs a clean workflow for adding new items, updating descriptions, and removing entries without making the page feel overwhelming for the Menu Manager using it.
         </p>
     </div>
 
@@ -15,7 +19,7 @@
         <aside class="admin-help">
             <h2>How this page should work</h2>
             <ul>
-                <li>Let admins choose an existing section or type a new one from the same combo box, then create or edit items inside it.</li>
+                <li>Let Menu Managers choose an existing section or type a new one from the same combo box, then create or edit items inside it.</li>
                 <li>Keep guest-facing descriptions short and readable.</li>
                 <li>Allow menu images when available, but never require them for an item to be published.</li>
                 <li>Manage recurring weekly specials separately from seasonal offer dates so day-of-week traditions stay easy to maintain.</li>

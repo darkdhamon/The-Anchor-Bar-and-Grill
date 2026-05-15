@@ -15,4 +15,8 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.5" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\\Anchor.Domain\\Anchor.Domain.csproj" />
+  </ItemGroup>
+
 </Project>

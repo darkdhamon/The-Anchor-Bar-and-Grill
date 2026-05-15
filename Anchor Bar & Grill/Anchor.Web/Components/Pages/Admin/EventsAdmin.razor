@@ -1,13 +1,17 @@
 @page "/admin/events"
+@using Anchor.Domain.Identity
+@using Microsoft.AspNetCore.Authorization
 
-<PageTitle>Events Admin</PageTitle>
+@attribute [Authorize(Policy = ApplicationPolicies.EventManagement)]
+
+<PageTitle>Event Editor</PageTitle>
 
 <section class="admin-page">
     <div class="page-hero page-hero--section">
-        <p class="page-hero__eyebrow">Admin Mockup</p>
-        <h1>Events admin</h1>
+        <p class="page-hero__eyebrow">Event Manager Mockup</p>
+        <h1>Event editor</h1>
         <p class="page-hero__lead">
-            This mockup shows how an admin page could support adding, editing, and deleting events without assuming the user already knows the workflow.
+            This mockup shows how the event editor could support adding, editing, and deleting events without assuming the Event Manager already knows the workflow.
         </p>
     </div>
 
@@ -16,7 +20,7 @@
             <h2>How this page should work</h2>
             <ul>
                 <li>Create upcoming events from a guided form with title, image, date, time, badge, and description fields.</li>
-                <li>Let admins choose an existing promo badge or type a new one from the same combo box when a fresh badge is needed.</li>
+                <li>Let Event Managers choose an existing promo badge or type a new one from the same combo box when a fresh badge is needed.</li>
                 <li>Support recurring events with schedules like every week, every other week, or the third Friday of the month.</li>
                 <li>Use clear delete confirmations so outdated events are removed intentionally.</li>
             </ul>

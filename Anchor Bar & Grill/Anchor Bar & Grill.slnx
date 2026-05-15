@@ -1,4 +1,6 @@
 <Solution>
+  <Project Path="Anchor.Domain.Tests/Anchor.Domain.Tests.csproj" />
+  <Project Path="Anchor.Domain/Anchor.Domain.csproj" />
   <Project Path="Anchor.Web.Migrations.Tests/Anchor.Web.Migrations.Tests.csproj" />
   <Project Path="Anchor.Web.Tests/Anchor.Web.Tests.csproj" />
   <Project Path="Anchor.Web/Anchor.Web.csproj" />

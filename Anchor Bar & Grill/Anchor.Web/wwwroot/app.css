@@ -415,6 +415,25 @@ html.anchor-theme-dark .site-shell {
     background: rgba(48, 154, 221, 0.18);
 }
 
+.preview-nav__greeting {
+    color: rgba(247, 247, 244, 0.9);
+    font-family: "Patrick Hand", "Segoe UI", cursive;
+    font-size: 1rem;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.preview-nav__logout {
+    margin: 0;
+    display: inline-flex;
+}
+
+.preview-nav__link--button {
+    appearance: none;
+    background: rgba(48, 154, 221, 0.18);
+    cursor: pointer;
+}
+
 .site-main {
     padding: 2rem 0 3rem;
 }
@@ -681,6 +700,19 @@ html.anchor-theme-dark .site-shell {
 .story-list {
     display: grid;
     gap: 0.9rem;
+}
+
+.feature-list {
+    margin: 0;
+    padding-left: 1rem;
+    display: grid;
+    gap: 0.7rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+}
+
+.feature-list strong {
+    color: var(--text-primary);
 }
 
 .contact-stack dt {
@@ -1248,6 +1280,172 @@ html.anchor-theme-dark .site-shell {
     line-height: 1.45;
 }
 
+.detail-list {
+    margin: 0;
+    display: grid;
+    gap: 0.85rem;
+}
+
+.detail-list div {
+    display: grid;
+    gap: 0.2rem;
+}
+
+.detail-list dt {
+    font-family: "Bebas Neue", "Impact", sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 0.05em;
+}
+
+.detail-list dd {
+    margin: 0;
+    color: var(--text-secondary);
+    line-height: 1.45;
+}
+
+.chip-list,
+.action-row {
+    display: flex;
+    gap: 0.55rem;
+}
+
+.chip-list {
+    flex-wrap: wrap;
+}
+
+.action-row {
+    align-items: center;
+}
+
+.action-row--wrap {
+    flex-wrap: wrap;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.35rem 0.72rem;
+    border: 1px solid transparent;
+    font-size: 0.84rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.chip--neutral {
+    background: rgba(247, 247, 244, 0.12);
+    border-color: var(--outline);
+    color: var(--text-secondary);
+}
+
+.chip--role,
+.chip--info {
+    background: rgba(89, 175, 226, 0.14);
+    border-color: rgba(89, 175, 226, 0.3);
+    color: var(--accent-readable);
+}
+
+.chip--success {
+    background: rgba(121, 194, 95, 0.16);
+    border-color: rgba(121, 194, 95, 0.34);
+    color: var(--anchor-green);
+}
+
+.chip--warning {
+    background: rgba(213, 202, 85, 0.16);
+    border-color: rgba(213, 202, 85, 0.34);
+    color: var(--anchor-gold);
+}
+
+.chip--danger {
+    background: rgba(210, 88, 152, 0.16);
+    border-color: rgba(210, 88, 152, 0.34);
+    color: var(--anchor-magenta);
+}
+
+.status-banner {
+    margin: 0 0 1rem;
+    padding: 0.85rem 1rem;
+    border-radius: 1rem;
+    border: 1px solid transparent;
+    line-height: 1.45;
+}
+
+.status-banner code {
+    color: inherit;
+}
+
+.status-banner--warning {
+    background: rgba(213, 202, 85, 0.14);
+    border-color: rgba(213, 202, 85, 0.34);
+    color: var(--anchor-gold);
+}
+
+.status-banner--info {
+    background: rgba(89, 175, 226, 0.14);
+    border-color: rgba(89, 175, 226, 0.3);
+    color: var(--accent-readable);
+}
+
+.action-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    border-radius: 999px;
+    padding: 0.7rem 1rem;
+    border: 1px solid var(--outline);
+    background: var(--surface-strong);
+    color: var(--text-primary);
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.action-button:hover,
+.action-button:focus-visible {
+    transform: translateY(-1px);
+}
+
+.action-button:disabled {
+    opacity: 0.58;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.action-button--primary {
+    background: var(--surface-blue);
+    border-color: transparent;
+    color: var(--anchor-white);
+}
+
+.action-button--secondary {
+    background: transparent;
+    border-color: var(--outline);
+    color: var(--text-primary);
+}
+
+.action-button--success {
+    background: rgba(121, 194, 95, 0.16);
+    border-color: rgba(121, 194, 95, 0.34);
+    color: var(--anchor-green);
+}
+
+.action-button--danger {
+    background: rgba(210, 88, 152, 0.16);
+    border-color: rgba(210, 88, 152, 0.34);
+    color: var(--anchor-magenta);
+}
+
+.user-admin-list__item {
+    display: grid;
+    gap: 1rem;
+}
+
+.user-admin-list__summary,
+.user-admin-list__heading {
+    display: grid;
+    gap: 0.65rem;
+}
+
 .account-page {
     display: grid;
     gap: 1.5rem;
@@ -1266,6 +1464,11 @@ html.anchor-theme-dark .site-shell {
 
 .account-panel {
     padding: 1.25rem;
+}
+
+.account-panel-stack {
+    display: grid;
+    gap: 1.5rem;
 }
 
 .account-panel__body {
@@ -1344,6 +1547,11 @@ html.anchor-theme-dark .site-shell {
 .account-links a:focus-visible,
 .account-panel__body a:focus-visible {
     color: var(--anchor-white);
+}
+
+.account-provider-list {
+    display: grid;
+    gap: 0.75rem;
 }
 
 .alert {
@@ -1562,6 +1770,11 @@ html.anchor-theme-dark .site-shell {
     .preview-nav__label {
         display: block;
         width: 100%;
+    }
+
+    .preview-nav__greeting {
+        width: 100%;
+        white-space: normal;
     }
 
     .site-navigation__link,

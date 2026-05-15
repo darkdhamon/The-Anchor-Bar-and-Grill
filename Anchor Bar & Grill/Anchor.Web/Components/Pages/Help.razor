@@ -1,0 +1,120 @@
+@page "/help"
+@attribute [ExcludeFromInteractiveRouting]
+
+@using Anchor.Domain.Identity
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Policy = ApplicationPolicies.AdminAccess)]
+
+<PageTitle>Help</PageTitle>
+
+<section class="admin-page">
+    <div class="page-hero page-hero--section">
+        <p class="page-hero__eyebrow">Admin Help</p>
+        <h1>Help</h1>
+        <p class="page-hero__lead">
+            This guide is available to Admin accounts and is organized by subject and role type so staff setup,
+            editor ownership, and security responsibilities stay easy to review.
+        </p>
+    </div>
+
+    <StatusMessage />
+
+    <section class="admin-card">
+        <div class="admin-card__header">
+            <h2>Browse by subject</h2>
+            <span class="admin-card__badge">Admin reference</span>
+        </div>
+
+        <div class="feature-grid">
+            <article class="feature-card feature-card--tight">
+                <p class="feature-card__eyebrow">Subject</p>
+                <h3>Staff onboarding</h3>
+                <ul class="feature-list">
+                    <li>Admins create staff accounts, then assign roles.</li>
+                    <li>An <strong>Admin</strong> creates each staff account and shares the temporary password with that employee directly.</li>
+                    <li>The site uses local sign-in and optional passkeys only. External provider sign-in is not part of this setup.</li>
+                    <li>After the account exists, an <strong>Admin</strong> assigns only the operational or technical roles that person actually needs.</li>
+                </ul>
+            </article>
+
+            <article class="feature-card feature-card--tight">
+                <p class="feature-card__eyebrow">Subject</p>
+                <h3>Passwords and profile upkeep</h3>
+                <ul class="feature-list">
+                    <li>If a staff member forgets the current password, an <strong>Admin</strong> can set a fresh temporary password from <strong>User Management</strong>.</li>
+                    <li><strong>User Management</strong> keeps each employee's first name, last name, and phone number current.</li>
+                    <li><strong>Manage Account</strong> lets each signed-in user update the same first name, last name, and phone number details for their own account.</li>
+                    <li>When an <strong>Admin</strong> changes someone else's role or sign-in approval, that staff member only needs to refresh the page to pick up the new access.</li>
+                </ul>
+            </article>
+
+            <article class="feature-card feature-card--tight">
+                <p class="feature-card__eyebrow">Subject</p>
+                <h3>Account approval and security</h3>
+                <ul class="feature-list">
+                    <li>If confirmed-account enforcement is enabled, an <strong>Admin</strong> can confirm or unconfirm sign-in access from <strong>User Management</strong> without changing email verification.</li>
+                    <li>The fallback confirmed-account value lives in <code>appsettings.json</code>, and an environment variable can still override the live behavior.</li>
+                    <li><strong>Security</strong> shows both the effective value and the fallback file value.</li>
+                    <li>Do not remove the final <strong>Admin</strong> or final <strong>IT</strong> assignment, and do not remove <strong>Admin</strong> from your own signed-in account.</li>
+                </ul>
+            </article>
+
+            <article class="feature-card feature-card--tight">
+                <p class="feature-card__eyebrow">Subject</p>
+                <h3>Bootstrap safety</h3>
+                <ul class="feature-list">
+                    <li>The app seeds required roles automatically on startup.</li>
+                    <li>The bootstrap user stops seeding once the system has at least one <strong>Admin</strong> and one <strong>IT</strong> user.</li>
+                    <li>The seeded password must be changed before that account can open the rest of the site.</li>
+                </ul>
+            </article>
+        </div>
+    </section>
+
+    <section class="admin-card">
+        <div class="admin-card__header">
+            <h2>Browse by role type</h2>
+            <span class="admin-card__badge">Responsibility map</span>
+        </div>
+
+        <div class="feature-grid">
+            <article class="feature-card feature-card--tight">
+                <p class="feature-card__eyebrow">Role Type</p>
+                <h3>Admin</h3>
+                <ul class="feature-list">
+                    <li>Own <strong>User Management</strong>, <strong>Security</strong>, <strong>Publicity Editor</strong>, and <strong>Contact Editor</strong>.</li>
+                    <li>Help is available to Admin accounts so onboarding, role assignment, and security rules stay easy to review.</li>
+                    <li>Admins do not use <strong>Event Editor</strong> or <strong>Menu Editor</strong> unless those roles are assigned separately in a future change.</li>
+                </ul>
+            </article>
+
+            <article class="feature-card feature-card--tight">
+                <p class="feature-card__eyebrow">Role Type</p>
+                <h3>EventManager</h3>
+                <ul class="feature-list">
+                    <li>Use <strong>Event Editor</strong> to add, update, and remove event listings.</li>
+                    <li>This role does not automatically grant menu, publicity, contact, security, or user-management access.</li>
+                </ul>
+            </article>
+
+            <article class="feature-card feature-card--tight">
+                <p class="feature-card__eyebrow">Role Type</p>
+                <h3>MenuManager</h3>
+                <ul class="feature-list">
+                    <li>Use <strong>Menu Editor</strong> to maintain menu items, pricing, sections, and recurring specials.</li>
+                    <li>This role does not automatically grant event, publicity, contact, security, or user-management access.</li>
+                </ul>
+            </article>
+
+            <article class="feature-card feature-card--tight">
+                <p class="feature-card__eyebrow">Role Type</p>
+                <h3>IT</h3>
+                <ul class="feature-list">
+                    <li>Use <strong>IT / System</strong> for technical and future diagnostic work.</li>
+                    <li>The <strong>IT</strong> role still does not grant Admin-only security or user-management access by itself.</li>
+                </ul>
+            </article>
+        </div>
+    </section>
+</section>

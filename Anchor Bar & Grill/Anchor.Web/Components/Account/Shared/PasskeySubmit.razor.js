@@ -48,6 +48,7 @@ customElements.define('passkey-submit', class extends HTMLElement {
             operation: this.getAttribute('operation'),
             name: this.getAttribute('name'),
             emailName: this.getAttribute('email-name'),
+            autoRequest: this.getAttribute('auto-request') === 'true',
             requestTokenName: this.getAttribute('request-token-name'),
             requestTokenValue: this.getAttribute('request-token-value'),
         };
@@ -59,7 +60,9 @@ customElements.define('passkey-submit', class extends HTMLElement {
             }
         });
 
-        this.tryAutofillPasskey();
+        if (this.attrs.autoRequest) {
+            this.tryAutofillPasskey();
+        }
     }
 
     disconnectedCallback() {
