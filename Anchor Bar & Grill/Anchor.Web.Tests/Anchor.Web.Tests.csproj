@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Anchor.Web\Anchor.Web.csproj" />
+    <ProjectReference Include="..\Anchor.Infrastructure\Anchor.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

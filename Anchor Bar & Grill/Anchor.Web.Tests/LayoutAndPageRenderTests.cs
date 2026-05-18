@@ -350,20 +350,15 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 
         Assert.NotNull(cut.Find(".menu-admin-page"));
         Assert.Contains("Menu editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Section editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Item editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Recurring specials editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Menu hours editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Price variants", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Menu image path or URL", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Use archive as the safe removal path", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Offer start date", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(2, cut.FindAll("input[type='date']").Count);
-        Assert.Contains("Breakfast, Lunch, Dinner, and Drinks", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Day of week", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Food workspace", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Food browser", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Meal filter", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Add section", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Archive is the safe removal path", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Monday Night Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Seasonal item?", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Closes next day", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Delete section", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Breakfast", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Drinks", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

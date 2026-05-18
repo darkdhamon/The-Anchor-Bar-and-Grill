@@ -1,4 +1,4 @@
-using Anchor.Web.Data;
+using Anchor.Infrastructure.Data;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
 
@@ -53,3 +53,4 @@ namespace Anchor.Web.Components.Account
             => RedirectToWithStatus("Account/InvalidUser", $"Error: Unable to load user with ID '{userManager.GetUserId(context.User)}'.", context);
     }
 }
+

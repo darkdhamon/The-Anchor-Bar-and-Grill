@@ -1,5 +1,7 @@
 @page "/"
+@using Anchor.Domain.Menu
 @attribute [ExcludeFromInteractiveRouting]
+@inject IMenuQueryService MenuQueryService
 
 <PageTitle>Home</PageTitle>
 
@@ -75,22 +77,22 @@
     </div>
 
     <div class="recurring-specials-grid">
-        @foreach (var special in MockupContent.RecurringSpecials)
+        @foreach (var special in homeRecurringSpecials)
         {
-            <article class="feature-card recurring-special @(special.IsToday(today) ? "recurring-special--today" : string.Empty)">
+            <article class="feature-card recurring-special @(special.IsToday ? "recurring-special--today" : string.Empty)">
                 <div class="recurring-special__header">
                     <div>
                         <p class="feature-card__eyebrow">@special.DayLabel</p>
                         <h3>@special.Title</h3>
                     </div>
 
-                    @if (special.IsToday(today))
+                    @if (special.IsToday)
                     {
                         <span class="status-pill status-pill--today">Today</span>
                     }
                 </div>
 
-                <p class="event-card__meta">@special.TimeLabel</p>
+                <p class="event-card__meta">@special.TimeNote</p>
                 <p>@special.Description</p>
 
                 <div class="recurring-special__footer">
@@ -164,5 +166,11 @@
 
 @code {
     private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+    private IReadOnlyList<PublicRecurringSpecialView> homeRecurringSpecials = [];
     private IReadOnlyList<UpcomingEventOccurrence> homeUpcomingEvents => MockupContent.GetUpcomingEvents(today, 30);
+
+    protected override async Task OnInitializedAsync()
+    {
+        homeRecurringSpecials = await MenuQueryService.GetHomeRecurringSpecialsAsync(today);
+    }
 }

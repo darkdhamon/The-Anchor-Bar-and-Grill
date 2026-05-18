@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="en" class="anchor-theme-dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Anchor Time Input Patterns</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Bebas+Neue&family=Patrick+Hand&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../app.css" />
+    <style>
+        body {
+            background:
+                radial-gradient(circle at top right, rgba(89, 175, 226, 0.18), transparent 24%),
+                linear-gradient(180deg, rgba(40, 44, 68, 0.96), rgba(31, 36, 58, 1));
+        }
+
+        .time-lab-shell {
+            min-height: 100vh;
+        }
+
+        .time-lab-main {
+            display: grid;
+            gap: 1.5rem;
+            padding: 2rem 0 4rem;
+        }
+
+        .time-lab-hero,
+        .pattern-card,
+        .time-lab-summary-card {
+            background: var(--surface);
+            border: 1px solid var(--outline);
+            border-radius: 1.5rem;
+            box-shadow: var(--anchor-shadow);
+        }
+
+        .time-lab-hero {
+            padding: 1.5rem;
+            display: grid;
+            gap: 1rem;
+        }
+
+        .time-lab-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .time-lab-title-group {
+            display: grid;
+            gap: 0.55rem;
+        }
+
+        .time-lab-title-group h1 {
+            font-size: clamp(3rem, 7vw, 5rem);
+        }
+
+        .time-lab-lead {
+            max-width: 64rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            font-size: 1.1rem;
+        }
+
+        .time-lab-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+
+        .time-lab-summary-card {
+            padding: 1rem 1.1rem;
+            display: grid;
+            gap: 0.6rem;
+        }
+
+        .time-lab-summary-card h2 {
+            font-size: 1.8rem;
+        }
+
+        .time-lab-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+            gap: 1rem;
+        }
+
+        .pattern-card {
+            padding: 1.1rem;
+            display: grid;
+            gap: 0.9rem;
+            align-content: start;
+        }
+
+        .pattern-card--wide {
+            grid-column: span 2;
+        }
+
+        .pattern-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.8rem;
+        }
+
+        .pattern-title-group {
+            display: grid;
+            gap: 0.2rem;
+        }
+
+        .pattern-title-group h3 {
+            font-size: 2rem;
+        }
+
+        .pattern-number {
+            width: 2.3rem;
+            height: 2.3rem;
+            border-radius: 999px;
+            display: inline-grid;
+            place-items: center;
+            background: var(--surface-blue);
+            color: var(--anchor-white);
+            font-family: "Bebas Neue", "Impact", sans-serif;
+            font-size: 1.2rem;
+            letter-spacing: 0.06em;
+            flex-shrink: 0;
+        }
+
+        .pattern-demo.editor-form {
+            margin-top: 0;
+            padding: 1rem;
+            border: 1px solid var(--outline);
+            border-radius: 1.1rem;
+        }
+
+        .pattern-demo .editor-form__grid {
+            margin: 0;
+        }
+
+        .pattern-demo .editor-form__grid--single {
+            grid-template-columns: 1fr;
+        }
+
+        .pattern-demo .editor-form__grid--triple {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .pattern-demo .editor-form__grid--four {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .pattern-demo .editor-form__grid--range {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .pattern-output {
+            padding: 0.8rem 0.95rem;
+            border-radius: 1rem;
+            border: 1px dashed var(--outline);
+            background: var(--surface-muted);
+            color: var(--text-secondary);
+            line-height: 1.45;
+        }
+
+        .pattern-output strong {
+            color: var(--text-primary);
+        }
+
+        .pattern-note {
+            color: var(--text-secondary);
+            line-height: 1.45;
+        }
+
+        .inline-affix {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 0.6rem;
+            align-items: end;
+        }
+
+        .inline-affix__suffix {
+            min-height: 3rem;
+            padding: 0.75rem 1rem;
+            border-radius: 1rem;
+            border: 1px solid var(--outline);
+            background: rgba(89, 175, 226, 0.14);
+            color: var(--text-primary);
+            display: inline-flex;
+            align-items: center;
+            white-space: nowrap;
+        }
+
+        .preset-row,
+        .segmented-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.55rem;
+        }
+
+        .preset-button,
+        .segmented-button,
+        .timeline-button,
+        .stepper-button {
+            border: 1px solid var(--outline);
+            border-radius: 999px;
+            background: var(--surface-strong);
+            color: var(--text-primary);
+            padding: 0.55rem 0.85rem;
+            line-height: 1;
+        }
+
+        .preset-button:hover,
+        .preset-button:focus-visible,
+        .segmented-button:hover,
+        .segmented-button:focus-visible,
+        .timeline-button:hover,
+        .timeline-button:focus-visible,
+        .stepper-button:hover,
+        .stepper-button:focus-visible {
+            border-color: rgba(89, 175, 226, 0.55);
+            box-shadow: 0 0 0 0.2rem rgba(89, 175, 226, 0.12);
+            outline: none;
+        }
+
+        .preset-button.is-selected,
+        .segmented-button.is-selected,
+        .timeline-button.is-selected {
+            background: var(--surface-blue);
+            color: var(--anchor-white);
+            border-color: transparent;
+        }
+
+        .timeline-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.55rem;
+        }
+
+        .stepper {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            gap: 0.6rem;
+            align-items: end;
+        }
+
+        .stepper-button {
+            min-height: 3rem;
+            min-width: 3rem;
+            font-size: 1.2rem;
+        }
+
+        .compact-row {
+            display: grid;
+            grid-template-columns: minmax(110px, 0.85fr) auto repeat(2, minmax(0, 1fr)) auto;
+            gap: 0.75rem;
+            align-items: end;
+        }
+
+        .compact-row__day {
+            font-family: "Bebas Neue", "Impact", sans-serif;
+            font-size: 1.35rem;
+            letter-spacing: 0.04em;
+        }
+
+        .combo-field {
+            display: grid;
+            gap: 0.45rem;
+        }
+
+        .combo-field__input-wrap {
+            position: relative;
+        }
+
+        .combo-field__input {
+            padding-right: 2.5rem;
+        }
+
+        .smart-combobox {
+            position: relative;
+        }
+
+        .smart-combobox__frame {
+            position: relative;
+        }
+
+        .smart-combobox__toggle {
+            position: absolute;
+            top: 50%;
+            right: 0.45rem;
+            transform: translateY(-50%);
+            width: 2.25rem;
+            height: 2.25rem;
+            border: 0;
+            border-radius: 999px;
+            background: transparent;
+            color: var(--text-secondary);
+            display: inline-grid;
+            place-items: center;
+            cursor: pointer;
+        }
+
+        .smart-combobox__toggle:hover,
+        .smart-combobox__toggle:focus-visible {
+            background: rgba(89, 175, 226, 0.14);
+            color: var(--text-primary);
+            outline: none;
+        }
+
+        .smart-combobox__toggle-icon {
+            width: 0.8rem;
+            height: 0.8rem;
+            border-right: 0.14rem solid currentColor;
+            border-bottom: 0.14rem solid currentColor;
+            transform: rotate(45deg) translateY(-0.08rem);
+        }
+
+        .smart-combobox__menu {
+            position: absolute;
+            top: calc(100% + 0.45rem);
+            left: 0;
+            right: 0;
+            z-index: 30;
+            display: none;
+            max-height: 15rem;
+            overflow-y: auto;
+            padding: 0.4rem;
+            border: 1px solid var(--outline);
+            border-radius: 1rem;
+            background: var(--surface-strong);
+            box-shadow: var(--anchor-shadow);
+        }
+
+        .smart-combobox.is-open .smart-combobox__menu {
+            display: grid;
+            gap: 0.2rem;
+        }
+
+        .smart-combobox__option {
+            border-radius: 0.8rem;
+            padding: 0.7rem 0.85rem;
+            text-align: left;
+        }
+
+        .smart-combobox__option {
+            border: 0;
+            background: transparent;
+            color: var(--text-primary);
+            cursor: pointer;
+            font: inherit;
+        }
+
+        .smart-combobox__option:hover,
+        .smart-combobox__option:focus-visible,
+        .smart-combobox__option.is-active {
+            background: rgba(89, 175, 226, 0.14);
+            outline: none;
+        }
+
+        .smart-combobox__option.is-nearest {
+            background: rgba(89, 175, 226, 0.08);
+            box-shadow: inset 0 0 0 1px rgba(89, 175, 226, 0.18);
+        }
+
+        .state-block {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .state-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.55rem;
+        }
+
+        .mobile-stack {
+            display: grid;
+            gap: 0.85rem;
+        }
+
+        .mobile-stack__day {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .mini-label {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .monospace {
+            font-family: "Cascadia Code", "Consolas", monospace;
+        }
+
+        .hidden-checkbox {
+            accent-color: var(--anchor-blue-300);
+        }
+
+        .recommendation-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.55rem;
+        }
+
+        @media (max-width: 980px) {
+            .pattern-card--wide {
+                grid-column: span 1;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .compact-row {
+                grid-template-columns: 1fr;
+            }
+
+            .timeline-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="site-shell theme-dark time-lab-shell">
+        <main class="shell-container time-lab-main">
+            <section class="time-lab-hero">
+                <div class="time-lab-toolbar">
+                    <div class="time-lab-title-group">
+                        <p class="page-hero__eyebrow">Design Lab</p>
+                        <h1>20 Time Input Patterns</h1>
+                        <p class="time-lab-lead">
+                            Styled to sit next to the existing Anchor admin editors instead of fighting them.
+                            All smart typing examples below accept shorthand like <span class="monospace">1300</span>,
+                            <span class="monospace">930</span>, <span class="monospace">17</span>, or
+                            <span class="monospace">1pm</span> and normalize on blur.
+                        </p>
+                    </div>
+
+                    <label class="theme-toggle">
+                        <span class="theme-toggle__label">Theme</span>
+                        <span class="switch">
+                            <input type="checkbox" checked data-anchor-theme-toggle="true" />
+                            <span class="slider"></span>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="recommendation-bar chip-list">
+                    <span class="chip chip--success">Top pick to test: Hybrid row</span>
+                    <span class="chip chip--info">Typing-friendly: Smart single field</span>
+                    <span class="chip chip--neutral">Safest for staff: Quarter-hour dropdown</span>
+                    <span class="chip chip--warning">Good compromise: Smart range pair</span>
+                </div>
+
+                <div class="time-lab-summary">
+                    <article class="time-lab-summary-card">
+                        <h2>Normalization</h2>
+                        <p class="admin-field-note">
+                            Examples: <span class="monospace">1300 -> 1:00 PM</span>,
+                            <span class="monospace">0830 -> 8:30 AM</span>,
+                            <span class="monospace">17 -> 5:00 PM</span>.
+                        </p>
+                    </article>
+                    <article class="time-lab-summary-card">
+                        <h2>Style Goal</h2>
+                        <p class="admin-field-note">
+                            No white browser-default blocks. Every prototype uses the same editor surfaces,
+                            border radius, focus ring, and button language as the rest of the site.
+                        </p>
+                    </article>
+                    <article class="time-lab-summary-card">
+                        <h2>Decision Lens</h2>
+                        <p class="admin-field-note">
+                            We are comparing typing speed, readability, mobile fit, overnight clarity,
+                            and how hard each pattern is to break in day-to-day admin use.
+                        </p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="time-lab-grid">
+                <article class="pattern-card">
+                    <div class="pattern-header">
+                        <div class="pattern-title-group">
+                            <span class="pattern-number">1</span>
+                            <h3>Smart Single Field</h3>
+                        </div>
+                        <span class="chip chip--info">Typing</span>
+                    </div>
+                    <p class="pattern-note">Fastest free-form option. Good if staff already think in shorthand.</p>
+                    <div class="pattern-demo editor-form">
+                        <div class="editor-form__grid editor-form__grid--single">
+                            <label>
+                                Time
+                                <input type="text" value="1300" data-normalize-time data-preview-id="preview-1" placeholder="Type 1300, 1pm, or 930" />
+                                <small>Blurs to a clean 12-hour label.</small>
+                            </label>
+                        </div>
+                        <div class="pattern-output" id="preview-1"></div>
+                    </div>
+                </article>
+
+                <article class="pattern-card">
+                    <div class="pattern-header">
+                        <div class="pattern-title-group">
+                            <span class="pattern-number">2</span>
+                            <h3>Smart 24-Hour Field</h3>
+                        </div>
+                        <span class="chip chip--neutral">Kitchen style</span>
+                    </div>
+                    <p class="pattern-note">Useful if the editor stores 24-hour values but still previews 12-hour meaning.</p>
+                    <div class="pattern-demo editor-form">
+                        <div class="editor-form__grid editor-form__grid--single">
+                            <label>
+                                Time
+                                <input type="text" value="1730" data-normalize-time data-display="24" data-preview-id="preview-2" placeholder="Type 1730 or 530p" />
+                                <small>Leaves the field in 24-hour format while showing a human-friendly preview.</small>
+                            </label>
+                        </div>
+                        <div class="pattern-output" id="preview-2"></div>
+                    </div>
+                </article>
+
+                <article class="pattern-card">
+                    <div class="pattern-header">
+                        <div class="pattern-title-group">
+                            <span class="pattern-number">3</span>
+                            <h3>Input With Live Suffix</h3>
+                        </div>
+                        <span class="chip chip--warning">Compact</span>
+                    </div>
+                    <p class="pattern-note">Keeps the field narrow while confirming the interpreted period.</p>
+                    <div class="pattern-demo editor-form">
+                        <div class="editor-form__grid editor-form__grid--single">
+                            <label>
+                                Open
+                                <div class="inline-affix">
+                                    <input type="text" value="745" data-normalize-time data-preview-id="preview-3" placeholder="745" />
+                                    <span class="inline-affix__suffix" id="preview-3">7:45 AM</span>
+                                </div>
+                                <small>The suffix changes once the input normalizes.</small>
+                            </label>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="pattern-card">
+                    <div class="pattern-header">
+                        <div class="pattern-title-group">
+                            <span class="pattern-number">4</span>
+                            <h3>Smart Range Pair</h3>
+                        </div>
+                        <span class="chip chip--success">Strong candidate</span>
+                    </div>
+                    <p class="pattern-note">Closest to the current editor, but with shorthand-friendly entry.</p>
+                    <div class="pattern-demo editor-form">
+                        <div class="editor-form__grid editor-form__grid--range">
+                            <label>
+                                Open
+                                <input type="text" value="1000" data-normalize-time placeholder="1000" />
+                            </label>
+                            <label>
+                                Close
+                                <input type="text" value="1300" data-normalize-time placeholder="1300" />
+                            </label>
+                        </div>
+                        <div class="pattern-output">
+                            <strong>Why it works:</strong> familiar open/close structure, consistent styling, and no browser-native white controls.
+                        </div>
+                    </div>
+                </article>
+
+                <article class="pattern-card">
+                    <div class="pattern-header">
+                        <div class="pattern-title-group">
+                            <span class="pattern-number">5</span>
+                            <h3>Datalist Smart Field</h3>
+                        </div>
+                        <span class="chip chip--info">Suggestive</span>
+                    </div>
+                    <p class="pattern-note">Typing stays available, but staff also get visible suggestions.</p>
+                    <div class="pattern-demo editor-form">
+                        <div class="editor-form__grid editor-form__grid--single">
+                            <label>
+                                Time
+                                <input type="text" value="5" list="time-suggestions" data-normalize-time data-preview-id="preview-5" placeholder="Start typing..." />
+                                <small>Best if you want a suggestion layer without forcing a dropdown.</small>
+                            </label>
+                        </div>
+                        <div class="pattern-output" id="preview-5"></div>
+                    </div>
+                </article>
+
+                <article class="pattern-card">
+                    <div class="pattern-header">
+                        <div class="pattern-title-group">
+                            <span class="pattern-number">6</span>
+                            <h3>Smart Field With Quick Chips</h3>
+                        </div>
+                        <span class="chip chip--role">Fast edits</span>
+                    </div>
+                    <p class="pattern-note">Lets staff type anything, but common values remain one click away.</p>
+                    <div class="pattern-demo editor-form">
+                        <div class="editor-form__grid editor-form__grid--single">
+                            <label>
+                                Time
+                                <input id="chip-target-6" type="text" value="11" data-normalize-time data-preview-id="preview-6" placeholder="11, 1130, 1pm..." />
+                            </label>
+                        </div>
+                        <div class="preset-row">
+                            <button type="button" class="preset-button" data-fill-target="chip-target-6" data-fill-value="1000">10:00 AM</button>
+                            <button type="button" class="preset-button" data-fill-target="chip-target-6" data-fill-value="1100">11:00 AM</button>
+                            <button type="button" class="preset-button" data-fill-target="chip-target-6" data-fill-value="1300">1:00 PM</button>
+                            <button type="button" class="preset-button" data-fill-target="chip-target-6" data-fill-value="1700">5:00 PM</button>
+                        </div>
+                        <div class="pattern-output" id="preview-6"></div>
+                    </div>
+                </article>
+
+                <article class="pattern-card">
+                    <div class="pattern-header">
+                        <div class="pattern-title-group">
+                            <span class="pattern-number">7</span>
+                            <h3>Quarter-Hour Dropdown</h3>
+                        </div>
+                        <span class="chip chip--success">Safest</span>
+                    </div>
+                    <p class="pattern-note">High reliability. Great when you want to prevent malformed entry entirely.</p>
+                    <div class="pattern-demo editor-form">
+                        <div class="editor-form__grid editor-form__grid--single">
+                            <label>
+                                Time
+                                <select data-time-select data-value="13:00" data-increment="15"></select>
+                                <small>Good balance of precision and simplicity.</small>
+                            </label>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="pattern-card">
+                    <div class="pattern-header">
+                        <div class="pattern-title-group">
+                            <span class="pattern-number">8</span>
+                            <h3>Half-Hour Dropdown</h3>
+                        </div>
+                        <span class="chip chip--neutral">Less noise</span>
+                    </div>
+                    <p class="pattern-note">Cleaner than 15-minute lists if the business rarely uses odd times.</p>
+                    <div class="pattern-demo editor-form">
+                        <div class="editor-form__grid editor-form__grid--single">
+                            <label>
+                                Time
+                                <select data-time-select data-value="11:30" data-increment="30"></select>
+                                <small>Visually lighter, but less flexible.</small>
+                            </label>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="pattern-card">
+                    <div class="pattern-header">
+                        <div class="pattern-title-group">
+                            <span class="pattern-number">9</span>
+                            <h3>Dropdown Range Pair</h3>
+                        </div>
+                        <span class="chip chip--warning">Verbose</span>
+                    </div>
+                    <p class="pattern-note">Very safe, but can feel heavy if editors change times often.</p>
+                    <div class="pattern-demo editor-form">
+                        <div class="editor-form__grid editor-form__grid--range">
+                            <label>
+                                Open
+                                <select data-time-select data-value="10:00" data-increment="15"></select>
+                            </label>
+                            <label>
+                                Close
+                                <select data-time-select data-value="13:00" data-increment="15"></select>
+                            </label>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="pattern-card">
+                    <div class="pattern-header">
+                        <div class="pattern-title-group">
+                            <span class="pattern-number">10</span>
+                            <h3>Split Hour / Minute / AM-PM</h3>
+                        </div>
+                        <span class="chip chip--info">Explicit</span>
+                    </div>
+                    <p class="pattern-note">Hard to misunderstand, but it adds more moving parts to the row.</p>
+                    <div class="pattern-demo editor-form">
+                        <div class="editor-form__grid editor-form__grid--triple">
+                            <label>
+                                Hour
+                                <select data-hour-select data-value="1"></select>
+                            </label>
+                            <label>
+                                Minute
+                                <select data-minute-select data-value="00"></select>
+                            </label>
+                            <label>
+                                Period
+                                <select>
+                                    <option>AM</option>
+                                    <option selected>PM</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="pattern-card">
+                    <div class="pattern-header">
+                        <div class="pattern-title-group">
+                            <span class="pattern-number">11</span>
+                            <h3>Closed Toggle + Hours</h3>
+                        </div>
+                        <span class="chip chip--success">Practical</span>
+                    </div>
+                    <p class="pattern-note">Makes “closed” a first-class choice instead of an implied empty state.</p>
+                    <div class="pattern-demo editor-form">
+                        <div class="editor-form__grid editor-form__grid--single">
+                            <label class="editor-form__toggle-row">
+                                <input class="hidden-checkbox" type="checkbox" checked />
+                                <span>Available on this day</span>
+                            </label>
+                        </div>
+                        <div class="editor-form__grid editor-form__grid--range">
+                            <label>
+                                Open
+                                <select data-time-select data-value="11:00" data-increment="15"></select>
+                            </label>
+                            <label>
+                                Close
+                                <select data-time-select data-value="16:00" data-increment="15"></select>
+                            </label>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="pattern-card">
+                    <div class="pattern-header">
+                        <div class="pattern-title-group">
+                            <span class="pattern-number">12</span>
+                            <h3>Overnight Row</h3>
+                        </div>
+                        <span class="chip chip--warning">Drinks-friendly</span>
+                    </div>
+                    <p class="pattern-note">Keeps the next-day concept visible when a shift runs past midnight.</p>
+                    <div class="pattern-demo editor-form">
+                        <div class="editor-form__grid editor-form__grid--range">
+                            <label>
+                                Open
+                                <select data-time-select data-value="17:00" data-increment="15"></select>
+                            </label>
+                            <label>
+                                Close
+                                <select data-time-select data-value="00:00" data-increment="15"></select>
+                            </label>
+                        </div>
+                        <div class="editor-form__grid editor-form__grid--single">
+                            <label class="editor-form__toggle-row">
+                                <input class="hidden-checkbox" type="checkbox" checked />
+                                <span>Closes next day</span>
+                            </label>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="pattern-card">
+                    <div class="pattern-header">
+                        <div class="pattern-title-group">
+                            <span class="pattern-number">13</span>
+                            <h3>Closed / All Day / Timed</h3>
+                        </div>
+                        <span class="chip chip--role">State first</span>
+                    </div>
+                    <p class="pattern-note">Great when the restaurant frequently marks tabs closed or all-day.</p>
+                    <div class="pattern-demo editor-form">
+                        <div class="state-block">
+                            <div class="state-row">
+                                <button type="button" class="segmented-button is-selected">Timed</button>
+                                <button type="button" class="segmented-button">Closed</button>
+                                <button type="button" class="segmented-button">All day</button>
+                            </div>
+                            <div class="editor-form__grid editor-form__grid--range">
+                                <label>
+                                    Open
+                                    <select data-time-select data-value="10:00" data-increment="15"></select>
+                                </label>
+                                <label>
+                                    Close
+                                    <select data-time-select data-value="13:00" data-increment="15"></select>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="pattern-card">
+                    <div class="pattern-header">
+                        <div class="pattern-title-group">
+                            <span class="pattern-number">14</span>
+                            <h3>Start Time + Duration</h3>
+                        </div>
+                        <span class="chip chip--neutral">Less math</span>
+                    </div>
+                    <p class="pattern-note">Staff chooses when a tab starts and how long it runs.</p>
+                    <div class="pattern-demo editor-form">
+                        <div class="editor-form__grid editor-form__grid--range">
+                            <label>
+                                Starts at
+                                <select data-time-select data-value="11:00" data-increment="15"></select>
+                            </label>
+                            <label>
+                                Runs for
+                                <select>
+                                    <option>2 hours</option>
+                                    <option selected>5 hours</option>
+                                    <option>8 hours</option>
+                                    <option>Until close</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="pattern-card">
+                    <div class="pattern-header">
+                        <div class="pattern-title-group">
+                            <span class="pattern-number">15</span>
+                            <h3>Open Time + Close After</h3>
+                        </div>
+                        <span class="chip chip--info">Operational</span>
+                    </div>
+                    <p class="pattern-note">Feels natural when meal periods are usually predictable blocks.</p>
+                    <div class="pattern-demo editor-form">
+                        <div class="editor-form__grid editor-form__grid--range">
+                            <label>
+                                Opens
+                                <input type="text" value="1100" data-normalize-time placeholder="1100" />
+                            </label>
+                            <label>
+                                Closes after
+                                <select>
+                                    <option>3 hours</option>
+                                    <option selected>5 hours</option>
+                                    <option>6 hours</option>
+                                    <option>8 hours</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="pattern-card">
+                    <div class="pattern-header">
+                        <div class="pattern-title-group">
+                            <span class="pattern-number">16</span>
+                            <h3>Compact Inline Row</h3>
+                        </div>
+                        <span class="chip chip--warning">Dense</span>
+                    </div>
+                    <p class="pattern-note">Looks closest to the current table layout, just fully themed.</p>
+                    <div class="pattern-demo editor-form">
+                        <div class="compact-row">
+                            <div class="compact-row__day">Saturday</div>
+                            <label class="editor-form__toggle-row">
+                                <input class="hidden-checkbox" type="checkbox" checked />
+                                <span class="mini-label">Available</span>
+                            </label>
+                            <label>
+                                Open
+                                <input type="text" value="1000" data-normalize-time />
+                            </label>
+                            <label>
+                                Close
+                                <input type="text" value="1300" data-normalize-time />
+                            </label>
+                            <label class="editor-form__toggle-row">
+                                <input class="hidden-checkbox" type="checkbox" />
+                                <span class="mini-label">Next day</span>
+                            </label>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="pattern-card">
+                    <div class="pattern-header">
+                        <div class="pattern-title-group">
+                            <span class="pattern-number">17</span>
+                            <h3>Mobile Stacked Row</h3>
+                        </div>
+                        <span class="chip chip--success">Readable</span>
+                    </div>
+                    <p class="pattern-note">Better if the editor is eventually split into smaller mobile-safe subpages.</p>
+                    <div class="pattern-demo editor-form">
+                        <div class="mobile-stack">
+                            <div class="mobile-stack__day">
+                                <div class="compact-row__day">Tuesday</div>
+                                <label class="editor-form__toggle-row">
+                                    <input class="hidden-checkbox" type="checkbox" checked />
+                                    <span class="mini-label">Available</span>
+                                </label>
+                            </div>
+                            <div class="editor-form__grid editor-form__grid--range">
+                                <label>
+                                    Open
+                                    <select data-time-select data-value="11:00" data-increment="15"></select>
+                                </label>
+                                <label>
+                                    Close
+                                    <select data-time-select data-value="16:00" data-increment="15"></select>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="pattern-card">
+                    <div class="pattern-header">
+                        <div class="pattern-title-group">
+                            <span class="pattern-number">18</span>
+                            <h3>Timeline Slot Buttons</h3>
+                        </div>
+                        <span class="chip chip--role">Visual</span>
+                    </div>
+                    <p class="pattern-note">Works if most menu periods follow a few known start times.</p>
+                    <div class="pattern-demo editor-form">
+                        <div class="timeline-grid">
+                            <button type="button" class="timeline-button">8:00 AM</button>
+                            <button type="button" class="timeline-button">9:00 AM</button>
+                            <button type="button" class="timeline-button is-selected">10:00 AM</button>
+                            <button type="button" class="timeline-button">11:00 AM</button>
+                            <button type="button" class="timeline-button">12:00 PM</button>
+                            <button type="button" class="timeline-button">1:00 PM</button>
+                            <button type="button" class="timeline-button">4:00 PM</button>
+                            <button type="button" class="timeline-button">5:00 PM</button>
+                        </div>
+                        <div class="pattern-output">
+                            <strong>Tradeoff:</strong> fast to tap, but rigid if staff often need unusual values.
+                        </div>
+                    </div>
+                </article>
+
+                <article class="pattern-card">
+                    <div class="pattern-header">
+                        <div class="pattern-title-group">
+                            <span class="pattern-number">19</span>
+                            <h3>Stepper Field</h3>
+                        </div>
+                        <span class="chip chip--neutral">Touch-friendly</span>
+                    </div>
+                    <p class="pattern-note">Good for nudging values in 15-minute jumps without reopening a dropdown.</p>
+                    <div class="pattern-demo editor-form">
+                        <div class="stepper">
+                            <button type="button" class="stepper-button" data-step-target="stepper-19" data-step-minutes="-15">-</button>
+                            <label>
+                                Time
+                                <input id="stepper-19" type="text" value="1300" data-normalize-time data-preview-id="preview-19" />
+                            </label>
+                            <button type="button" class="stepper-button" data-step-target="stepper-19" data-step-minutes="15">+</button>
+                        </div>
+                        <div class="pattern-output" id="preview-19"></div>
+                    </div>
+                </article>
+
+                <article class="pattern-card pattern-card--wide">
+                    <div class="pattern-header">
+                        <div class="pattern-title-group">
+                            <span class="pattern-number">20</span>
+                            <h3>Smart Combo Box Row</h3>
+                        </div>
+                        <span class="chip chip--success">Best overall</span>
+                    </div>
+                    <p class="pattern-note">
+                        This combines option 1 and option 8: staff can type shorthand naturally, or open a full
+                        half-hour list that jumps near the relevant time instead of burying it at the top.
+                    </p>
+                    <div class="pattern-demo editor-form">
+                        <div class="compact-row">
+                            <div class="compact-row__day">Lunch</div>
+                            <label class="editor-form__toggle-row">
+                                <input class="hidden-checkbox" type="checkbox" checked />
+                                <span class="mini-label">Available</span>
+                            </label>
+                            <label class="combo-field">
+                                Open
+                                <div class="smart-combobox" data-smart-combobox data-increment="30">
+                                    <div class="smart-combobox__frame combo-field__input-wrap">
+                                        <input id="hybrid-open" class="combo-field__input smart-combobox__input" type="text" value="1100" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="hybrid-open-menu" autocomplete="off" data-normalize-time data-preview-id="preview-20-open" placeholder="Type 1100 or pick 11:00 AM" />
+                                        <button type="button" class="smart-combobox__toggle" data-combobox-toggle aria-label="Show open time options">
+                                            <span class="smart-combobox__toggle-icon" aria-hidden="true"></span>
+                                        </button>
+                                    </div>
+                                    <div id="hybrid-open-menu" class="smart-combobox__menu" role="listbox" data-combobox-menu></div>
+                                </div>
+                            </label>
+                            <label class="combo-field">
+                                Close
+                                <div class="smart-combobox" data-smart-combobox data-increment="30">
+                                    <div class="smart-combobox__frame combo-field__input-wrap">
+                                        <input id="hybrid-close" class="combo-field__input smart-combobox__input" type="text" value="1300" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="hybrid-close-menu" autocomplete="off" data-normalize-time data-preview-id="preview-20-close" placeholder="Type 1300 or pick 1:00 PM" />
+                                        <button type="button" class="smart-combobox__toggle" data-combobox-toggle aria-label="Show close time options">
+                                            <span class="smart-combobox__toggle-icon" aria-hidden="true"></span>
+                                        </button>
+                                    </div>
+                                    <div id="hybrid-close-menu" class="smart-combobox__menu" role="listbox" data-combobox-menu></div>
+                                </div>
+                            </label>
+                            <label class="editor-form__toggle-row">
+                                <input class="hidden-checkbox" type="checkbox" />
+                                <span class="mini-label">Next day</span>
+                            </label>
+                        </div>
+                        <div class="pattern-output">
+                            <strong>How it behaves:</strong> Type <span class="monospace">1300</span> or
+                            <span class="monospace">1pm</span>, or use the inline arrow to open the full half-hour list already scrolled to the nearest matching time.<br />
+                            <strong>Normalized open:</strong> <span id="preview-20-open">11:00 AM</span><br />
+                            <strong>Normalized close:</strong> <span id="preview-20-close">1:00 PM</span>
+                        </div>
+                    </div>
+                </article>
+            </section>
+        </main>
+    </div>
+
+    <datalist id="time-suggestions">
+        <option value="8:00 AM"></option>
+        <option value="9:00 AM"></option>
+        <option value="10:00 AM"></option>
+        <option value="11:00 AM"></option>
+        <option value="12:00 PM"></option>
+        <option value="1:00 PM"></option>
+        <option value="4:00 PM"></option>
+        <option value="5:00 PM"></option>
+    </datalist>
+
+    <script src="../theme.js"></script>
+    <script>
+        function pad(value) {
+            return String(value).padStart(2, "0");
+        }
+
+        function formatTwelveHour(hours24, minutes) {
+            const meridiem = hours24 >= 12 ? "PM" : "AM";
+            const normalizedHour = hours24 % 12 || 12;
+            return normalizedHour + ":" + pad(minutes) + " " + meridiem;
+        }
+
+        function formatTwentyFourHour(hours24, minutes) {
+            return pad(hours24) + ":" + pad(minutes);
+        }
+
+        function getTimeOptions(increment) {
+            const options = [];
+
+            for (let totalMinutes = 0; totalMinutes < 24 * 60; totalMinutes += increment) {
+                const hours24 = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                options.push({
+                    value: formatTwentyFourHour(hours24, minutes),
+                    label: formatTwelveHour(hours24, minutes)
+                });
+            }
+
+            return options;
+        }
+
+        function parseFlexibleTime(rawValue) {
+            const raw = (rawValue || "").trim().toLowerCase().replace(/\./g, "");
+
+            if (!raw) {
+                return null;
+            }
+
+            const meridiemMatch = raw.match(/(am|pm|a|p)$/);
+            const meridiem = meridiemMatch ? meridiemMatch[1] : null;
+            const valueWithoutMeridiem = meridiem ? raw.slice(0, -meridiem.length) : raw;
+            const cleaned = valueWithoutMeridiem.replace(/\s+/g, "");
+
+            let hours;
+            let minutes;
+
+            if (cleaned.includes(":")) {
+                const parts = cleaned.split(":");
+                if (parts.length !== 2 || !parts[0] || !parts[1]) {
+                    return null;
+                }
+
+                hours = Number(parts[0]);
+                minutes = Number(parts[1]);
+            }
+            else if (/^\d+$/.test(cleaned)) {
+                if (cleaned.length <= 2) {
+                    hours = Number(cleaned);
+                    minutes = 0;
+                }
+                else if (cleaned.length === 3) {
+                    hours = Number(cleaned.slice(0, 1));
+                    minutes = Number(cleaned.slice(1));
+                }
+                else if (cleaned.length === 4) {
+                    hours = Number(cleaned.slice(0, 2));
+                    minutes = Number(cleaned.slice(2));
+                }
+                else {
+                    return null;
+                }
+            }
+            else {
+                return null;
+            }
+
+            if (Number.isNaN(hours) || Number.isNaN(minutes) || minutes < 0 || minutes > 59) {
+                return null;
+            }
+
+            if (meridiem) {
+                if (hours < 1 || hours > 12) {
+                    return null;
+                }
+
+                const wantsPm = meridiem.startsWith("p");
+                if (wantsPm && hours < 12) {
+                    hours += 12;
+                }
+
+                if (!wantsPm && hours === 12) {
+                    hours = 0;
+                }
+            }
+            else if (hours < 0 || hours > 23) {
+                return null;
+            }
+
+            return {
+                hours24: hours,
+                minutes: minutes,
+                label12: formatTwelveHour(hours, minutes),
+                label24: formatTwentyFourHour(hours, minutes)
+            };
+        }
+
+        function updateSmartPreview(input, parsed) {
+            const previewId = input.dataset.previewId;
+            if (!previewId) {
+                return;
+            }
+
+            const preview = document.getElementById(previewId);
+            if (!preview) {
+                return;
+            }
+
+            if (!input.value.trim()) {
+                preview.textContent = "Try a shorthand like 1300 or 930.";
+                return;
+            }
+
+            if (!parsed) {
+                preview.innerHTML = "<strong>Could not parse that value.</strong> Try 1300, 1pm, or 9:30.";
+                return;
+            }
+
+            const fieldMode = input.dataset.display === "24" ? parsed.label24 : parsed.label12;
+            preview.innerHTML = "<strong>Field value:</strong> " + fieldMode + "<br /><strong>Human preview:</strong> " + parsed.label12;
+        }
+
+        function normalizeTimeInput(input) {
+            const parsed = parseFlexibleTime(input.value);
+
+            if (parsed) {
+                input.value = input.dataset.display === "24" ? parsed.label24 : parsed.label12;
+            }
+
+            updateSmartPreview(input, parsed);
+        }
+
+        function buildTimeOptions(select) {
+            const increment = Number(select.dataset.increment || "15");
+            const placeholder = document.createElement("option");
+            placeholder.value = "";
+            placeholder.textContent = "Choose a time";
+            select.appendChild(placeholder);
+
+            getTimeOptions(increment).forEach((timeOption) => {
+                const option = document.createElement("option");
+                option.value = timeOption.value;
+                option.textContent = timeOption.label;
+                select.appendChild(option);
+            });
+
+            if (select.dataset.value) {
+                select.value = select.dataset.value;
+            }
+        }
+
+        function buildHourOptions(select) {
+            const placeholder = document.createElement("option");
+            placeholder.value = "";
+            placeholder.textContent = "Hour";
+            select.appendChild(placeholder);
+
+            for (let hour = 1; hour <= 12; hour += 1) {
+                const option = document.createElement("option");
+                option.value = String(hour);
+                option.textContent = String(hour);
+                select.appendChild(option);
+            }
+
+            if (select.dataset.value) {
+                select.value = select.dataset.value;
+            }
+        }
+
+        function buildMinuteOptions(select) {
+            const placeholder = document.createElement("option");
+            placeholder.value = "";
+            placeholder.textContent = "Minute";
+            select.appendChild(placeholder);
+
+            ["00", "15", "30", "45"].forEach((minute) => {
+                const option = document.createElement("option");
+                option.value = minute;
+                option.textContent = minute;
+                select.appendChild(option);
+            });
+
+            if (select.dataset.value) {
+                select.value = select.dataset.value;
+            }
+        }
+
+        function fillTargetInput(button) {
+            const target = document.getElementById(button.dataset.fillTarget);
+            if (!target) {
+                return;
+            }
+
+            target.value = button.dataset.fillValue || "";
+            normalizeTimeInput(target);
+            target.focus();
+        }
+
+        function stepTime(button) {
+            const target = document.getElementById(button.dataset.stepTarget);
+            if (!target) {
+                return;
+            }
+
+            const parsed = parseFlexibleTime(target.value) || { hours24: 12, minutes: 0 };
+            const delta = Number(button.dataset.stepMinutes || "15");
+            const totalMinutes = ((parsed.hours24 * 60) + parsed.minutes + delta + (24 * 60)) % (24 * 60);
+            const hours24 = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            target.value = formatTwentyFourHour(hours24, minutes);
+            normalizeTimeInput(target);
+        }
+
+        function getComboboxState(root) {
+            if (!root._comboboxState) {
+                root._comboboxState = {
+                    options: getTimeOptions(Number(root.dataset.increment || "30"))
+                };
+            }
+
+            return root._comboboxState;
+        }
+
+        function setComboboxExpanded(root, expanded) {
+            const input = root.querySelector(".smart-combobox__input");
+            if (!input) {
+                return;
+            }
+
+            input.setAttribute("aria-expanded", expanded ? "true" : "false");
+        }
+
+        function closeSmartCombobox(root) {
+            root.classList.remove("is-open");
+            setComboboxExpanded(root, false);
+        }
+
+        function openSmartCombobox(root) {
+            root.classList.add("is-open");
+            setComboboxExpanded(root, true);
+        }
+
+        function getClosestComboboxValue(options, inputValue) {
+            const parsed = parseFlexibleTime(inputValue);
+            if (!parsed) {
+                return null;
+            }
+
+            const requestedMinutes = (parsed.hours24 * 60) + parsed.minutes;
+            let closestOption = null;
+            let closestDistance = Number.POSITIVE_INFINITY;
+
+            options.forEach((option) => {
+                const [hoursPart, minutesPart] = option.value.split(":");
+                const optionMinutes = (Number(hoursPart) * 60) + Number(minutesPart);
+                const distance = Math.abs(optionMinutes - requestedMinutes);
+
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestOption = option;
+                }
+            });
+
+            return closestOption ? closestOption.value : null;
+        }
+
+        function scrollComboboxToRelevantOption(root) {
+            const menu = root.querySelector("[data-combobox-menu]");
+            const target = menu ? menu.querySelector(".smart-combobox__option.is-active, .smart-combobox__option.is-nearest") : null;
+            if (!menu || !target) {
+                return;
+            }
+
+            const targetTop = target.offsetTop - ((menu.clientHeight - target.clientHeight) / 2);
+            menu.scrollTop = Math.max(0, targetTop);
+        }
+
+        function renderSmartComboboxOptions(root) {
+            const state = getComboboxState(root);
+            const input = root.querySelector(".smart-combobox__input");
+            const menu = root.querySelector("[data-combobox-menu]");
+            const parsed = parseFlexibleTime(input.value);
+            const activeValue = parsed ? parsed.label24 : null;
+            const nearestValue = getClosestComboboxValue(state.options, input.value);
+
+            menu.innerHTML = "";
+
+            state.options.forEach((option) => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "smart-combobox__option";
+                if (option.value === activeValue) {
+                    button.classList.add("is-active");
+                }
+                else if (option.value === nearestValue) {
+                    button.classList.add("is-nearest");
+                }
+
+                button.textContent = option.label;
+                button.dataset.optionValue = option.value;
+                button.dataset.optionLabel = option.label;
+                button.addEventListener("mousedown", (event) => {
+                    event.preventDefault();
+                    input.value = option.label;
+                    normalizeTimeInput(input);
+                    closeSmartCombobox(root);
+                    input.focus();
+                });
+                menu.appendChild(button);
+            });
+        }
+
+        function buildSmartCombobox(root) {
+            const input = root.querySelector(".smart-combobox__input");
+            const toggle = root.querySelector("[data-combobox-toggle]");
+
+            if (!input || !toggle) {
+                return;
+            }
+
+            renderSmartComboboxOptions(root);
+
+            input.addEventListener("focus", () => {
+                renderSmartComboboxOptions(root);
+                openSmartCombobox(root);
+                scrollComboboxToRelevantOption(root);
+            });
+
+            input.addEventListener("input", () => {
+                renderSmartComboboxOptions(root);
+                openSmartCombobox(root);
+                scrollComboboxToRelevantOption(root);
+            });
+
+            input.addEventListener("blur", () => {
+                window.setTimeout(() => {
+                    renderSmartComboboxOptions(root);
+                    closeSmartCombobox(root);
+                }, 120);
+            });
+
+            toggle.addEventListener("mousedown", (event) => {
+                event.preventDefault();
+            });
+
+            toggle.addEventListener("click", () => {
+                if (root.classList.contains("is-open")) {
+                    closeSmartCombobox(root);
+                    return;
+                }
+
+                renderSmartComboboxOptions(root);
+                openSmartCombobox(root);
+                scrollComboboxToRelevantOption(root);
+                input.focus();
+            });
+        }
+
+        document.querySelectorAll("[data-time-select]").forEach(buildTimeOptions);
+        document.querySelectorAll("[data-hour-select]").forEach(buildHourOptions);
+        document.querySelectorAll("[data-minute-select]").forEach(buildMinuteOptions);
+        document.querySelectorAll("[data-smart-combobox]").forEach(buildSmartCombobox);
+
+        document.querySelectorAll("[data-normalize-time]").forEach((input) => {
+            normalizeTimeInput(input);
+            input.addEventListener("blur", () => normalizeTimeInput(input));
+            input.addEventListener("keydown", (event) => {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    input.blur();
+                }
+            });
+        });
+
+        document.querySelectorAll("[data-fill-target]").forEach((button) => {
+            button.addEventListener("click", () => fillTargetInput(button));
+        });
+
+        document.querySelectorAll("[data-step-target]").forEach((button) => {
+            button.addEventListener("click", () => stepTime(button));
+        });
+    </script>
+</body>
+</html>

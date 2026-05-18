@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Anchor.Domain.Identity;
+using Anchor.Infrastructure.Data;
 using Anchor.Web.Data;
 using Anchor.Web.Tests.Support;
 using Microsoft.AspNetCore.Identity;

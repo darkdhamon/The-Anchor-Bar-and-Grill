@@ -3,7 +3,7 @@
 @using System.ComponentModel.DataAnnotations
 @using Anchor.Domain.Identity.Configuration
 @using Microsoft.AspNetCore.Identity
-@using Anchor.Web.Data
+@using Anchor.Infrastructure.Data
 
 @inject IConfirmedAccountAccessService ConfirmedAccountAccessService
 @inject UserManager<ApplicationUser> UserManager
@@ -212,3 +212,4 @@
         public PasskeyInputModel? Passkey { get; set; }
     }
 }
+

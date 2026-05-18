@@ -1,4 +1,4 @@
-using Anchor.Web.Data;
+using Anchor.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 
@@ -19,3 +19,4 @@ namespace Anchor.Web.Components.Account
             emailSender.SendEmailAsync(email, "Reset your password", $"Please reset your password using the following code: {resetCode}");
     }
 }
+

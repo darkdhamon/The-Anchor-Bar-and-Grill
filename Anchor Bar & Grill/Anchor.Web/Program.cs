@@ -1,3 +1,5 @@
+using Anchor.Infrastructure;
+using Anchor.Infrastructure.Data;
 using Anchor.Domain;
 using Anchor.Domain.Identity;
 using Anchor.Domain.Identity.Bootstrap;
@@ -36,14 +38,11 @@ builder.Services.AddAuthorizationBuilder()
 builder.Services.Configure<AnchorIdentityOptions>(builder.Configuration.GetSection(AnchorIdentityConfigurationKeys.SectionName));
 builder.Services.AddAnchorDomainServices();
 builder.Services.AddScoped<IConfirmedAccountConfigurationStore, JsonConfirmedAccountConfigurationStore>();
-builder.Services.AddScoped<IIdentityAdministrationRepository, IdentityAdministrationRepository>();
-builder.Services.AddScoped<IIdentityBootstrapRepository, IdentityBootstrapRepository>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+builder.Services.AddAnchorInfrastructure(connectionString);
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
@@ -63,6 +62,9 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await dbContext.Database.MigrateAsync();
+
     var bootstrapService = scope.ServiceProvider.GetRequiredService<IIdentityBootstrapService>();
     await bootstrapService.BootstrapAsync();
 }

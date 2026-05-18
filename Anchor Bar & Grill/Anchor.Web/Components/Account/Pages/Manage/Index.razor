@@ -3,7 +3,7 @@
 @using System.ComponentModel.DataAnnotations
 @using Anchor.Domain.Identity
 @using Anchor.Domain.Identity.Users
-@using Anchor.Web.Data
+@using Anchor.Infrastructure.Data
 @using Microsoft.AspNetCore.Identity
 
 @inject IIdentityAdministrationService IdentityAdministrationService
@@ -217,3 +217,4 @@
             ? description
             : "Access provided by this role is managed by an Admin.";
 }
+

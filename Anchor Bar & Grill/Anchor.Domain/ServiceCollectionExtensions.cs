@@ -1,6 +1,7 @@
 using Anchor.Domain.Identity.Bootstrap;
 using Anchor.Domain.Identity.Configuration;
 using Anchor.Domain.Identity.Users;
+using Anchor.Domain.Menu;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Anchor.Domain;
@@ -13,6 +14,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IConfirmedAccountConfigurationService, ConfirmedAccountConfigurationService>();
         services.AddScoped<IIdentityAdministrationService, IdentityAdministrationService>();
         services.AddScoped<IIdentityBootstrapService, IdentityBootstrapService>();
+        services.AddScoped<IMenuQueryService, MenuQueryService>();
+        services.AddScoped<IMenuManagementService, MenuManagementService>();
 
         return services;
     }

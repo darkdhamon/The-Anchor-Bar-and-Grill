@@ -1482,6 +1482,310 @@ html.anchor-theme-dark .site-shell {
     justify-items: end;
 }
 
+.menu-editor-intro,
+.menu-editor-hours-layout,
+.menu-editor-workspace,
+.menu-editor-browser__toolbar,
+.menu-editor-hours-summaries,
+.menu-editor-tree,
+.menu-editor-tree__select,
+.menu-editor-hours-summary__rows {
+    display: grid;
+    gap: 1rem;
+}
+
+.menu-editor-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.menu-editor-tabs__button {
+    border: 1px solid var(--outline);
+    background: rgba(247, 247, 244, 0.08);
+    color: var(--text-secondary);
+    border-radius: 999px;
+    padding: 0.8rem 1.2rem;
+    font-family: "Bebas Neue", "Impact", sans-serif;
+    font-size: 1.35rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.menu-editor-tabs__button:hover,
+.menu-editor-tabs__button:focus-visible,
+.menu-editor-tabs__button.is-selected {
+    transform: translateY(-1px);
+    color: var(--anchor-white);
+}
+
+.menu-editor-tabs__button.is-selected {
+    background: linear-gradient(135deg, rgba(64, 111, 176, 0.45), rgba(33, 53, 95, 0.85));
+    border-color: rgba(89, 175, 226, 0.42);
+    box-shadow: inset 0 0 0 1px rgba(89, 175, 226, 0.16);
+}
+
+.menu-editor-intro__copy {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.menu-editor-intro__list {
+    margin: 0;
+    padding-left: 1.15rem;
+    color: var(--text-secondary);
+    display: grid;
+    gap: 0.5rem;
+}
+
+.menu-editor-hours-layout {
+    grid-template-columns: minmax(320px, 0.92fr) minmax(0, 1.08fr);
+    align-items: start;
+}
+
+.menu-editor-hours-summaries {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.menu-editor-hours-summary {
+    display: grid;
+    gap: 0.85rem;
+    padding: 1rem;
+    border-radius: 1rem;
+    border: 1px solid var(--outline);
+    background: rgba(247, 247, 244, 0.04);
+}
+
+.menu-editor-hours-summary.is-selected {
+    background: linear-gradient(180deg, rgba(51, 80, 131, 0.28), rgba(34, 46, 84, 0.22));
+    border-color: rgba(89, 175, 226, 0.34);
+}
+
+.menu-editor-hours-summary__header,
+.menu-editor-hours-summary__row,
+.menu-editor-browser__toolbar,
+.menu-editor-tree__row,
+.menu-editor-tree__actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.menu-editor-hours-summary__eyebrow,
+.menu-editor-filters__label,
+.menu-editor-tree__group-label {
+    margin: 0;
+    color: var(--text-secondary);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+}
+
+.menu-editor-hours-summary__today {
+    margin: 0;
+    display: grid;
+    gap: 0.25rem;
+}
+
+.menu-editor-hours-summary__today span {
+    color: var(--text-secondary);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+}
+
+.menu-editor-hours-summary__today strong,
+.menu-editor-hours-summary__row strong {
+    color: var(--accent-readable);
+}
+
+.menu-editor-workspace {
+    grid-template-columns: minmax(320px, 0.92fr) minmax(0, 1.08fr);
+    align-items: start;
+}
+
+.menu-editor-browser,
+.menu-editor-detail {
+    display: grid;
+    gap: 1rem;
+}
+
+.menu-editor-filters {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.menu-editor-filter-chip,
+.menu-editor-segmented__button,
+.menu-editor-tree__icon-button,
+.menu-editor-tree__quick-action {
+    cursor: pointer;
+}
+
+button.menu-editor-filter-chip {
+    appearance: none;
+}
+
+.menu-editor-filter-chip.is-selected {
+    box-shadow: inset 0 0 0 1px rgba(89, 175, 226, 0.12);
+}
+
+.menu-editor-segmented {
+    display: inline-grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.25rem;
+    padding: 0.3rem;
+    border-radius: 999px;
+    border: 1px solid rgba(89, 175, 226, 0.22);
+    background: rgba(18, 28, 56, 0.55);
+    box-shadow: inset 0 0 0 1px rgba(89, 175, 226, 0.1);
+}
+
+.menu-editor-segmented__button {
+    border: 0;
+    border-radius: 999px;
+    padding: 0.7rem 1rem;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: "Bebas Neue", "Impact", sans-serif;
+    font-size: 1.15rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.menu-editor-segmented__button:hover,
+.menu-editor-segmented__button:focus-visible,
+.menu-editor-segmented__button.is-selected {
+    color: var(--anchor-white);
+}
+
+.menu-editor-segmented__button.is-selected {
+    background: radial-gradient(circle at center, rgba(90, 183, 234, 0.6), rgba(53, 94, 164, 0.92));
+    box-shadow: 0 0 18px rgba(90, 183, 234, 0.22);
+}
+
+.menu-editor-empty {
+    display: grid;
+    gap: 0.65rem;
+    min-height: 220px;
+    align-content: center;
+    justify-items: start;
+    padding: 1rem 0;
+}
+
+.menu-editor-empty p {
+    color: var(--text-secondary);
+    max-width: 52ch;
+}
+
+.menu-editor-tree__section {
+    display: grid;
+    gap: 0.8rem;
+    padding: 1rem;
+    border: 1px solid var(--outline);
+    border-radius: 1rem;
+    background: rgba(247, 247, 244, 0.04);
+}
+
+.menu-editor-tree__section.is-context-muted {
+    opacity: 0.82;
+}
+
+.menu-editor-tree__section.is-archived {
+    background: rgba(247, 247, 244, 0.03);
+}
+
+.menu-editor-tree__row {
+    gap: 0.9rem;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 0.95rem;
+    background: rgba(15, 23, 46, 0.42);
+}
+
+.menu-editor-tree__row.is-selected {
+    border-color: rgba(89, 175, 226, 0.45);
+    background: linear-gradient(180deg, rgba(55, 92, 149, 0.26), rgba(19, 30, 59, 0.45));
+}
+
+.menu-editor-tree__row.is-hidden {
+    background: rgba(247, 247, 244, 0.035);
+}
+
+.menu-editor-tree__row.is-archived {
+    color: rgba(247, 247, 244, 0.74);
+    background: rgba(247, 247, 244, 0.025);
+}
+
+.menu-editor-tree__select {
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+}
+
+.menu-editor-tree__title {
+    font-family: "Bebas Neue", "Impact", sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.05em;
+    color: var(--text-primary);
+}
+
+.menu-editor-tree__row.is-archived .menu-editor-tree__title,
+.menu-editor-tree__row.is-hidden .menu-editor-tree__title,
+.menu-editor-tree__section.is-context-muted .menu-editor-tree__title {
+    color: inherit;
+}
+
+.menu-editor-tree__subtitle {
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+}
+
+.menu-editor-tree__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    justify-content: flex-end;
+}
+
+.menu-editor-tree__actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.menu-editor-tree__icon-button,
+.menu-editor-tree__quick-action {
+    border: 1px solid var(--outline);
+    background: rgba(247, 247, 244, 0.08);
+    color: var(--text-primary);
+    border-radius: 999px;
+    padding: 0.48rem 0.8rem;
+}
+
+.menu-editor-tree__icon-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.menu-editor-tree__quick-action {
+    background: rgba(89, 175, 226, 0.12);
+    border-color: rgba(89, 175, 226, 0.26);
+    color: var(--accent-readable);
+}
+
+.menu-editor-tree__group {
+    display: grid;
+    gap: 0.7rem;
+    padding-left: 1rem;
+    border-left: 1px dashed rgba(89, 175, 226, 0.18);
+}
+
 .detail-list {
     margin: 0;
     display: grid;
@@ -1859,6 +2163,8 @@ html.anchor-theme-dark .site-shell {
     .menu-grid,
     .menu-tab-strip,
     .menu-overview-grid,
+    .menu-editor-hours-layout,
+    .menu-editor-workspace,
     .event-card-grid,
     .admin-grid,
     .account-grid,
@@ -1901,6 +2207,10 @@ html.anchor-theme-dark .site-shell {
 @media (min-width: 1500px) {
     .menu-page .menu-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .menu-editor-workspace {
+        grid-template-columns: minmax(360px, 0.84fr) minmax(0, 1.16fr);
     }
 }
 
@@ -2040,13 +2350,30 @@ html.anchor-theme-dark .site-shell {
     }
 
     .menu-admin-price-row,
-    .menu-hours-editor__row {
+    .menu-hours-editor__row,
+    .menu-editor-tree__row {
         grid-template-columns: 1fr;
     }
 
     .menu-admin-list-actions {
         justify-items: start;
         min-width: 0;
+    }
+
+    .menu-editor-hours-summary__header,
+    .menu-editor-hours-summary__row,
+    .menu-editor-browser__toolbar,
+    .menu-editor-tree__actions {
+        align-items: start;
+        flex-direction: column;
+    }
+
+    .menu-editor-tree__chips {
+        justify-content: flex-start;
+    }
+
+    .menu-editor-tree__group {
+        padding-left: 0.75rem;
     }
 
     .admin-list__item--media {

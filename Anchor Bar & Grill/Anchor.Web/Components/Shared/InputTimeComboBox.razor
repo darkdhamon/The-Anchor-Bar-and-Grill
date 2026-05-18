@@ -1,0 +1,51 @@
+@inherits InputTimeComboBoxBase
+
+<div class="time-combobox @(isOpen ? "time-combobox--open" : null)">
+    <div class="time-combobox__frame">
+        <input @ref="inputRef"
+               id="@ResolvedInputId"
+               name="@NameAttributeValue"
+               class="time-combobox__input @CssClass"
+               type="text"
+               value="@displayValue"
+               placeholder="@Placeholder"
+               role="combobox"
+               aria-autocomplete="list"
+               aria-expanded="@isOpen.ToString().ToLowerInvariant()"
+               aria-controls="@ListboxId"
+               autocomplete="off"
+               disabled="@Disabled"
+               @attributes="AdditionalAttributes"
+               @onfocus="HandleInputFocus"
+               @oninput="HandleInputChanged"
+               @onblur="HandleInputBlurAsync"
+               @onkeydown="HandleInputKeyDownAsync" />
+        <button type="button"
+                class="time-combobox__toggle"
+                aria-label="@ToggleAriaLabel"
+                disabled="@Disabled"
+                @onmousedown:preventDefault="true"
+                @onclick="HandleToggleClickAsync">
+            <span class="time-combobox__toggle-icon" aria-hidden="true"></span>
+        </button>
+    </div>
+
+    @if (isOpen)
+    {
+        <div @ref="menuRef"
+             id="@ListboxId"
+             class="time-combobox__menu"
+             role="listbox">
+            @foreach (var option in timeOptions)
+            {
+                <button type="button"
+                        class="@GetOptionClass(option)"
+                        @key="option.CanonicalValue"
+                        @onmousedown:preventDefault="true"
+                        @onclick="() => SelectOptionAsync(option)">
+                    @option.DisplayText
+                </button>
+            }
+        </div>
+    }
+</div>

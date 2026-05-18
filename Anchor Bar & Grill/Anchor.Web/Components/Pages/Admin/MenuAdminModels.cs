@@ -1,0 +1,144 @@
+using Anchor.Domain.Menu;
+using Anchor.Web.Components.Pages;
+
+namespace Anchor.Web.Components.Pages.Admin;
+
+internal enum MenuEditorTab
+{
+    Food,
+    Drinks,
+    Hours
+}
+
+internal enum MenuArchiveFilter
+{
+    Active,
+    Both,
+    Archived
+}
+
+internal enum MenuAdminDetailKind
+{
+    None,
+    Section,
+    Item,
+    Special
+}
+
+internal sealed record MenuAdminBrowserSectionViewModel(
+    MenuSectionAdminView Section,
+    bool IsContextMuted,
+    IReadOnlyList<MenuItemAdminView> Items,
+    IReadOnlyList<RecurringSpecialAdminView> Specials);
+
+internal sealed record MenuAdminHoursSummaryViewModel(
+    MenuTab Tab,
+    string Label,
+    MenuHoursCardView Card);
+
+internal sealed class MenuSectionFormModel
+{
+    public Guid? SectionId { get; set; }
+
+    public string Name { get; set; } = string.Empty;
+
+    public MenuFamily Family { get; set; } = MenuFamily.Food;
+
+    public int SortOrder { get; set; } = 1;
+
+    public bool IsVisibleToGuests { get; set; } = true;
+
+    public bool IsArchived { get; set; }
+}
+
+internal sealed class MenuItemPriceVariantFormModel
+{
+    public string Label { get; set; } = "Regular";
+
+    public string AmountText { get; set; } = "0.00";
+
+    public int SortOrder { get; set; } = 1;
+}
+
+internal sealed class MenuItemFormModel
+{
+    public Guid? ItemId { get; set; }
+
+    public string? SectionId { get; set; }
+
+    public string Name { get; set; } = string.Empty;
+
+    public string Description { get; set; } = string.Empty;
+
+    public string? ImagePath { get; set; }
+
+    public int SortOrder { get; set; } = 1;
+
+    public bool IsVisibleToGuests { get; set; } = true;
+
+    public bool IsArchived { get; set; }
+
+    public string? OfferStartsOnText { get; set; }
+
+    public string? OfferEndsOnText { get; set; }
+
+    public bool IsSeasonal { get; set; }
+
+    public bool ShowBreakfast { get; set; }
+
+    public bool ShowLunch { get; set; } = true;
+
+    public bool ShowDinner { get; set; } = true;
+
+    public List<MenuItemPriceVariantFormModel> PriceVariants { get; } =
+    [
+        new()
+    ];
+}
+
+internal sealed class MenuRecurringSpecialFormModel
+{
+    public Guid? SpecialId { get; set; }
+
+    public MenuTab Tab { get; set; } = MenuTab.Dinner;
+
+    public string? SectionId { get; set; }
+
+    public DayOfWeek DayOfWeek { get; set; } = DayOfWeek.Monday;
+
+    public string Title { get; set; } = string.Empty;
+
+    public string Description { get; set; } = string.Empty;
+
+    public string TimeNote { get; set; } = string.Empty;
+
+    public string? PriceNote { get; set; }
+
+    public string? LinkedMenuItemId { get; set; }
+
+    public int SortOrder { get; set; } = 1;
+
+    public bool IsVisibleToGuests { get; set; } = true;
+
+    public bool IsArchived { get; set; }
+}
+
+internal sealed class MenuServiceWindowDayFormModel
+{
+    public DayOfWeek DayOfWeek { get; set; }
+
+    public bool IsAvailable { get; set; }
+
+    public string? OpensAtText { get; set; }
+
+    public string? ClosesAtText { get; set; }
+
+    public bool ClosesNextDay { get; set; }
+}
+
+internal sealed class MenuServiceWindowFormModel
+{
+    public MenuTab Tab { get; set; } = MenuTab.Lunch;
+
+    public List<MenuServiceWindowDayFormModel> Days { get; } = [];
+}

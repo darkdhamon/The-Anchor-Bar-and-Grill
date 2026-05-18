@@ -14,7 +14,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - Section-scoped recurring specials that render inside the public menu section they belong to
 - Optional menu-item image support in the public menu and menu editor
 - Optional offer start/end dates for menu items, with guest-facing `Coming Soon`, `Seasonal`, and `Limited Time` labels derived at runtime
-- Database-backed Menu Editor for sections, price variants, menu items, recurring specials, visibility, archive state, and service hours
+- Database-backed Menu Editor with dedicated `Food`, `Drinks`, and `Hours` workspaces, section-tree browsing, explicit detail editing, archive-aware filters, and service-hour management
 - Events mockup page that lists all upcoming events, including recurring schedules, optional event images, and richer cadence examples such as every other week or the third Friday of the month
 - About mockup page for the restaurant story and guest experience
 - Contact mockup page for location, phone, hours, dynamic social media links, and guest inquiry layout
@@ -94,6 +94,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - Menu status labels are computed at request time from offer dates rather than stored as long-lived status flags
 - Menu sections, items, recurring specials, and service windows all follow the repository pattern and are covered by unit tests plus migration-chain tests
 - The Menu Editor now uses a shared time-combobox input for service hours, so staff can type shorthand like `1300` or `1pm`, pick from the reusable time list, and still keep Lunch, Dinner, Breakfast, and Drinks hours isolated cleanly across tab switches and saves
+- The Menu Editor now separates `Food`, `Drinks`, and `Hours` into a tabbed admin console, with archive-state browsing, greyed archived records, contextual create actions, and a section-tree browser paired with a focused detail panel
 - The shared site shell now uses fluid desktop width instead of a fixed centered column, and the public menu plus Menu Editor add larger-screen layout rules so wide displays can show more useful content at once
 - Public menu hours now collapse repeated daily schedules into grouped ranges such as `Daily`, `Monday-Friday`, or `Sunday-Thursday`, while still surfacing today's hours in a compact highlight
 - Non-editor elements such as navigation targets and post-navigation page headings suppress the default browser focus outline, while editor fields keep their normal editing focus behavior

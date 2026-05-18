@@ -1,8 +1,8 @@
-﻿@page "/Account/LoginWithRecoveryCode"
+@page "/Account/LoginWithRecoveryCode"
 
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Identity
-@using Anchor.Web.Data
+@using Anchor.Infrastructure.Data
 
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
@@ -85,3 +85,4 @@
         public string RecoveryCode { get; set; } = "";
     }
 }
+
