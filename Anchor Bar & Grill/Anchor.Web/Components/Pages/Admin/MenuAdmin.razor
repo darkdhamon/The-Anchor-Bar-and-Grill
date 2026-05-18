@@ -83,7 +83,7 @@
                 <ul class="menu-editor-intro__list">
                     <li>Archive is the safe removal path. Delete still exists, but it always requires a second confirmation.</li>
                     <li>The tree uses Active, Both, and Archived browsing modes so staff can focus on the right slice of the catalog.</li>
-                    <li>Move buttons and drag-and-drop both work for ordering, while exact sort-order fields remain available in the detail panel.</li>
+                    <li>Move buttons shift records one slot at a time, drag-and-drop drops into the new slot, and exact sort-order fields remain available in the detail panel.</li>
                 </ul>
             </div>
         </section>
@@ -249,7 +249,6 @@
                                     <div class="@GetTreeRowClass(MenuAdminDetailKind.Section, browserSection.Section.SectionId, browserSection.Section.IsArchived, browserSection.Section.IsVisibleToGuests)"
                                          draggable="true"
                                          @ondragstart="() => BeginSectionDrag(browserSection.Section)"
-                                         @ondragend="() => ClearDragState()"
                                          @ondragover:preventDefault
                                          @ondrop="() => DropSectionAsync(browserSection.Section)">
                                         <button type="button" class="menu-editor-tree__select" @onclick="() => SelectSection(browserSection.Section)">
@@ -294,7 +293,6 @@
                                                 <div class="@GetTreeRowClass(MenuAdminDetailKind.Special, special.SpecialId, special.IsArchived, special.IsVisibleToGuests)"
                                                      draggable="true"
                                                      @ondragstart="() => BeginSpecialDrag(special)"
-                                                     @ondragend="() => ClearDragState()"
                                                      @ondragover:preventDefault
                                                      @ondrop="() => DropSpecialAsync(special)">
                                                     <button type="button" class="menu-editor-tree__select" @onclick="() => SelectSpecial(special)">
@@ -343,7 +341,6 @@
                                                 <div class="@GetTreeRowClass(MenuAdminDetailKind.Item, item.ItemId, item.IsArchived, item.IsVisibleToGuests)"
                                                      draggable="true"
                                                      @ondragstart="() => BeginItemDrag(item)"
-                                                     @ondragend="() => ClearDragState()"
                                                      @ondragover:preventDefault
                                                      @ondrop="() => DropItemAsync(item)">
                                                     <button type="button" class="menu-editor-tree__select" @onclick="() => SelectItem(item)">

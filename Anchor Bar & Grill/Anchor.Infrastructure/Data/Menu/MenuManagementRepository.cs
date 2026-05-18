@@ -171,6 +171,51 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
         }
     }
 
+    public async Task ReorderSectionsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default)
+    {
+        dbContext.ChangeTracker.Clear();
+
+        var sectionIds = requests.Select(request => request.RecordId).ToArray();
+        var sections = await dbContext.MenuSections
+            .Where(section => sectionIds.Contains(section.MenuSectionId))
+            .ToDictionaryAsync(section => section.MenuSectionId, cancellationToken);
+
+        foreach (var request in requests)
+        {
+            sections[request.RecordId].SortOrder = request.SortOrder;
+        }
+    }
+
+    public async Task ReorderItemsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default)
+    {
+        dbContext.ChangeTracker.Clear();
+
+        var itemIds = requests.Select(request => request.RecordId).ToArray();
+        var items = await dbContext.MenuItems
+            .Where(item => itemIds.Contains(item.MenuItemId))
+            .ToDictionaryAsync(item => item.MenuItemId, cancellationToken);
+
+        foreach (var request in requests)
+        {
+            items[request.RecordId].SortOrder = request.SortOrder;
+        }
+    }
+
+    public async Task ReorderRecurringSpecialsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default)
+    {
+        dbContext.ChangeTracker.Clear();
+
+        var specialIds = requests.Select(request => request.RecordId).ToArray();
+        var specials = await dbContext.RecurringSpecials
+            .Where(special => specialIds.Contains(special.RecurringSpecialId))
+            .ToDictionaryAsync(special => special.RecurringSpecialId, cancellationToken);
+
+        foreach (var request in requests)
+        {
+            specials[request.RecordId].SortOrder = request.SortOrder;
+        }
+    }
+
     public async Task ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default)
     {
         var section = await dbContext.MenuSections.SingleAsync(item => item.MenuSectionId == sectionId, cancellationToken);

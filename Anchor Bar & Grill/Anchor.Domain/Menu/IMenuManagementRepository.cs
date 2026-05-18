@@ -20,6 +20,12 @@ public interface IMenuManagementRepository
 
     Task UpsertServiceWindowsAsync(SaveMenuServiceWindowRequest request, CancellationToken cancellationToken = default);
 
+    Task ReorderSectionsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default);
+
+    Task ReorderItemsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default);
+
+    Task ReorderRecurringSpecialsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default);
+
     Task ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default);
 
     Task DeleteSectionAsync(Guid sectionId, CancellationToken cancellationToken = default);

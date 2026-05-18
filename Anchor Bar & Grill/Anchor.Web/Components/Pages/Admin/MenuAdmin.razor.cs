@@ -1061,8 +1061,6 @@ public partial class MenuAdmin
     private void BeginSpecialDrag(RecurringSpecialAdminView special) =>
         dragState = new MenuBrowserDragState(MenuAdminDetailKind.Special, special.SpecialId, special.SectionId, GetFamilyForTab(special.Tab));
 
-    private void ClearDragState() => dragState = null;
-
     private async Task DropSectionAsync(MenuSectionAdminView targetSection)
     {
         if (dragState is not { Kind: MenuAdminDetailKind.Section } state
@@ -1160,7 +1158,7 @@ public partial class MenuAdmin
             .ThenBy(section => section.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        if (!MoveBeforeTarget(orderedSections, section => section.SectionId, sourceSectionId, targetSectionId))
+        if (!MoveIntoTargetSlot(orderedSections, section => section.SectionId, sourceSectionId, targetSectionId))
         {
             return;
         }
@@ -1179,7 +1177,7 @@ public partial class MenuAdmin
             .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        if (!MoveBeforeTarget(orderedItems, item => item.ItemId, sourceItemId, targetItemId))
+        if (!MoveIntoTargetSlot(orderedItems, item => item.ItemId, sourceItemId, targetItemId))
         {
             return;
         }
@@ -1198,7 +1196,7 @@ public partial class MenuAdmin
             .ThenBy(special => special.Title, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        if (!MoveBeforeTarget(orderedSpecials, special => special.SpecialId, sourceSpecialId, targetSpecialId))
+        if (!MoveIntoTargetSlot(orderedSpecials, special => special.SpecialId, sourceSpecialId, targetSpecialId))
         {
             return;
         }
@@ -1211,28 +1209,27 @@ public partial class MenuAdmin
 
     private async Task<bool> PersistSectionOrderAsync(IReadOnlyList<MenuSectionAdminView> orderedSections, string successMessage)
     {
+        List<SaveMenuSortOrderRequest> updates = [];
         for (var index = 0; index < orderedSections.Count; index++)
         {
             var section = orderedSections[index];
             var desiredSortOrder = index + 1;
-            if (section.SortOrder == desiredSortOrder)
+            if (section.SortOrder != desiredSortOrder)
             {
-                continue;
+                updates.Add(new SaveMenuSortOrderRequest(section.SectionId, desiredSortOrder));
             }
+        }
 
-            var result = await MenuManagementService.SaveSectionAsync(new SaveMenuSectionRequest(
-                section.SectionId,
-                section.Name,
-                section.Family,
-                desiredSortOrder,
-                section.IsVisibleToGuests,
-                section.IsArchived));
+        if (updates.Count == 0)
+        {
+            return false;
+        }
 
-            if (!result.Succeeded)
-            {
-                statusMessage = $"Error: {string.Join(" ", result.Errors)}";
-                return false;
-            }
+        var result = await MenuManagementService.ReorderSectionsAsync(updates);
+        if (!result.Succeeded)
+        {
+            statusMessage = $"Error: {string.Join(" ", result.Errors)}";
+            return false;
         }
 
         await LoadAsync();
@@ -1243,35 +1240,27 @@ public partial class MenuAdmin
 
     private async Task<bool> PersistItemOrderAsync(IReadOnlyList<MenuItemAdminView> orderedItems, string successMessage)
     {
+        List<SaveMenuSortOrderRequest> updates = [];
         for (var index = 0; index < orderedItems.Count; index++)
         {
             var item = orderedItems[index];
             var desiredSortOrder = index + 1;
-            if (item.SortOrder == desiredSortOrder)
+            if (item.SortOrder != desiredSortOrder)
             {
-                continue;
+                updates.Add(new SaveMenuSortOrderRequest(item.ItemId, desiredSortOrder));
             }
+        }
 
-            var result = await MenuManagementService.SaveItemAsync(new SaveMenuItemRequest(
-                item.ItemId,
-                item.SectionId,
-                item.Name,
-                item.Description,
-                item.ImagePath,
-                desiredSortOrder,
-                item.IsVisibleToGuests,
-                item.IsArchived,
-                item.OfferStartsOn,
-                item.OfferEndsOn,
-                item.IsSeasonal,
-                item.PriceVariants.Select(variant => new SaveMenuItemPriceVariantRequest(null, variant.Label, variant.Amount, variant.SortOrder)).ToArray(),
-                item.Family == MenuFamily.Food ? item.FoodTabs : Array.Empty<MenuTab>()));
+        if (updates.Count == 0)
+        {
+            return false;
+        }
 
-            if (!result.Succeeded)
-            {
-                statusMessage = $"Error: {string.Join(" ", result.Errors)}";
-                return false;
-            }
+        var result = await MenuManagementService.ReorderItemsAsync(updates);
+        if (!result.Succeeded)
+        {
+            statusMessage = $"Error: {string.Join(" ", result.Errors)}";
+            return false;
         }
 
         await LoadAsync();
@@ -1282,34 +1271,27 @@ public partial class MenuAdmin
 
     private async Task<bool> PersistSpecialOrderAsync(IReadOnlyList<RecurringSpecialAdminView> orderedSpecials, string successMessage)
     {
+        List<SaveMenuSortOrderRequest> updates = [];
         for (var index = 0; index < orderedSpecials.Count; index++)
         {
             var special = orderedSpecials[index];
             var desiredSortOrder = index + 1;
-            if (special.SortOrder == desiredSortOrder)
+            if (special.SortOrder != desiredSortOrder)
             {
-                continue;
+                updates.Add(new SaveMenuSortOrderRequest(special.SpecialId, desiredSortOrder));
             }
+        }
 
-            var result = await MenuManagementService.SaveRecurringSpecialAsync(new SaveRecurringSpecialRequest(
-                special.SpecialId,
-                special.Tab,
-                special.SectionId,
-                special.DayOfWeek,
-                special.Title,
-                special.Description,
-                special.TimeNote,
-                special.PriceNote,
-                special.LinkedMenuItemId,
-                desiredSortOrder,
-                special.IsVisibleToGuests,
-                special.IsArchived));
+        if (updates.Count == 0)
+        {
+            return false;
+        }
 
-            if (!result.Succeeded)
-            {
-                statusMessage = $"Error: {string.Join(" ", result.Errors)}";
-                return false;
-            }
+        var result = await MenuManagementService.ReorderRecurringSpecialsAsync(updates);
+        if (!result.Succeeded)
+        {
+            statusMessage = $"Error: {string.Join(" ", result.Errors)}";
+            return false;
         }
 
         await LoadAsync();
@@ -1318,7 +1300,7 @@ public partial class MenuAdmin
         return true;
     }
 
-    private static bool MoveBeforeTarget<T>(List<T> records, Func<T, Guid> getId, Guid sourceId, Guid targetId)
+    private static bool MoveIntoTargetSlot<T>(List<T> records, Func<T, Guid> getId, Guid sourceId, Guid targetId)
     {
         var sourceIndex = records.FindIndex(record => getId(record) == sourceId);
         var targetIndex = records.FindIndex(record => getId(record) == targetId);
@@ -1330,11 +1312,6 @@ public partial class MenuAdmin
 
         var record = records[sourceIndex];
         records.RemoveAt(sourceIndex);
-        if (sourceIndex < targetIndex)
-        {
-            targetIndex--;
-        }
-
         records.Insert(targetIndex, record);
         return true;
     }

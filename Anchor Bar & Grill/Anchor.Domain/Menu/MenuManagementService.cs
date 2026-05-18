@@ -248,6 +248,78 @@ public sealed class MenuManagementService(
         return MenuOperationResult.Success();
     }
 
+    public async Task<MenuOperationResult> ReorderSectionsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default)
+    {
+        var validationResult = ValidateSortOrderRequests(requests, "section");
+        if (validationResult is not null)
+        {
+            return validationResult;
+        }
+
+        var snapshot = await repository.GetMenuManagementSnapshotAsync(cancellationToken);
+        var knownIds = snapshot.Sections.Select(section => section.SectionId).ToHashSet();
+        if (requests.Any(request => !knownIds.Contains(request.RecordId)))
+        {
+            return MenuOperationResult.Failure("One or more sections could not be found for reordering.");
+        }
+
+        await repository.ReorderSectionsAsync(requests, cancellationToken);
+        await repository.SaveChangesAsync(cancellationToken);
+        await logSink.WriteAsync(
+            new MenuOperationLogEntry("reorder", "section", null, $"Updated sort order for {requests.Count} section(s)."),
+            cancellationToken);
+
+        return MenuOperationResult.Success();
+    }
+
+    public async Task<MenuOperationResult> ReorderItemsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default)
+    {
+        var validationResult = ValidateSortOrderRequests(requests, "menu item");
+        if (validationResult is not null)
+        {
+            return validationResult;
+        }
+
+        var snapshot = await repository.GetMenuManagementSnapshotAsync(cancellationToken);
+        var knownIds = snapshot.Items.Select(item => item.ItemId).ToHashSet();
+        if (requests.Any(request => !knownIds.Contains(request.RecordId)))
+        {
+            return MenuOperationResult.Failure("One or more menu items could not be found for reordering.");
+        }
+
+        await repository.ReorderItemsAsync(requests, cancellationToken);
+        await repository.SaveChangesAsync(cancellationToken);
+        await logSink.WriteAsync(
+            new MenuOperationLogEntry("reorder", "item", null, $"Updated sort order for {requests.Count} menu item(s)."),
+            cancellationToken);
+
+        return MenuOperationResult.Success();
+    }
+
+    public async Task<MenuOperationResult> ReorderRecurringSpecialsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default)
+    {
+        var validationResult = ValidateSortOrderRequests(requests, "recurring special");
+        if (validationResult is not null)
+        {
+            return validationResult;
+        }
+
+        var snapshot = await repository.GetMenuManagementSnapshotAsync(cancellationToken);
+        var knownIds = snapshot.Specials.Select(special => special.SpecialId).ToHashSet();
+        if (requests.Any(request => !knownIds.Contains(request.RecordId)))
+        {
+            return MenuOperationResult.Failure("One or more recurring specials could not be found for reordering.");
+        }
+
+        await repository.ReorderRecurringSpecialsAsync(requests, cancellationToken);
+        await repository.SaveChangesAsync(cancellationToken);
+        await logSink.WriteAsync(
+            new MenuOperationLogEntry("reorder", "recurring-special", null, $"Updated sort order for {requests.Count} recurring special(s)."),
+            cancellationToken);
+
+        return MenuOperationResult.Success();
+    }
+
     public async Task<MenuOperationResult> ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default)
     {
         var section = await repository.GetSectionReferenceAsync(sectionId, cancellationToken);
@@ -359,4 +431,31 @@ public sealed class MenuManagementService(
         string.IsNullOrWhiteSpace(value)
             ? null
             : value.Trim();
+
+    private static MenuOperationResult? ValidateSortOrderRequests(
+        IReadOnlyList<SaveMenuSortOrderRequest> requests,
+        string recordLabel)
+    {
+        if (requests.Count == 0)
+        {
+            return MenuOperationResult.Failure($"Add at least one {recordLabel} before saving sort-order changes.");
+        }
+
+        if (requests.Select(request => request.RecordId).Distinct().Count() != requests.Count)
+        {
+            return MenuOperationResult.Failure($"Each {recordLabel} can only appear once in a sort-order update.");
+        }
+
+        if (requests.Any(request => request.SortOrder <= 0))
+        {
+            return MenuOperationResult.Failure("Sort orders must be positive whole numbers.");
+        }
+
+        if (requests.Select(request => request.SortOrder).Distinct().Count() != requests.Count)
+        {
+            return MenuOperationResult.Failure($"Each {recordLabel} sort order must be unique.");
+        }
+
+        return null;
+    }
 }

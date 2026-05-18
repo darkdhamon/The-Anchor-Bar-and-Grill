@@ -142,4 +142,48 @@ public sealed class MenuRepositoriesTests
         Assert.True(await repository.SectionHasDependentsAsync(BurgersSectionId));
         Assert.True(await repository.ItemHasLinkedSpecialsAsync(ClassicHamburgerItemId));
     }
+
+    [Fact]
+    public async Task ReorderItemsAsync_updates_sort_orders_without_rewriting_price_variants()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+        var repository = new MenuManagementRepository(context.DbContext);
+
+        var beforeVariantIds = await context.DbContext.MenuItemPriceVariants
+            .Where(variant => variant.MenuItemId == ClassicHamburgerItemId)
+            .Select(variant => variant.MenuItemPriceVariantId)
+            .OrderBy(id => id)
+            .ToArrayAsync();
+
+        await repository.ReorderItemsAsync([new SaveMenuSortOrderRequest(ClassicHamburgerItemId, 99)]);
+        await repository.SaveChangesAsync();
+
+        var savedItem = await context.DbContext.MenuItems
+            .AsNoTracking()
+            .SingleAsync(item => item.MenuItemId == ClassicHamburgerItemId);
+        var afterVariantIds = await context.DbContext.MenuItemPriceVariants
+            .Where(variant => variant.MenuItemId == ClassicHamburgerItemId)
+            .Select(variant => variant.MenuItemPriceVariantId)
+            .OrderBy(id => id)
+            .ToArrayAsync();
+
+        Assert.Equal(99, savedItem.SortOrder);
+        Assert.Equal(beforeVariantIds, afterVariantIds);
+    }
+
+    [Fact]
+    public async Task ReorderSectionsAsync_updates_section_sort_orders()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+        var repository = new MenuManagementRepository(context.DbContext);
+
+        await repository.ReorderSectionsAsync([new SaveMenuSortOrderRequest(BurgersSectionId, 42)]);
+        await repository.SaveChangesAsync();
+
+        var burgers = await context.DbContext.MenuSections
+            .AsNoTracking()
+            .SingleAsync(section => section.MenuSectionId == BurgersSectionId);
+
+        Assert.Equal(42, burgers.SortOrder);
+    }
 }

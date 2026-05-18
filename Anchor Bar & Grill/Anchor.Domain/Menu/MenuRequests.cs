@@ -53,3 +53,7 @@ public sealed record SaveMenuServiceWindowDayRequest(
 public sealed record SaveMenuServiceWindowRequest(
     MenuTab Tab,
     IReadOnlyList<SaveMenuServiceWindowDayRequest> Days);
+
+public sealed record SaveMenuSortOrderRequest(
+    Guid RecordId,
+    int SortOrder);

@@ -7,6 +7,7 @@ public sealed class MenuManagementServiceTests
     private static readonly Guid FoodSectionId = Guid.Parse("6D0FA124-F2D4-457D-9E38-4402A5FD8D2A");
     private static readonly Guid DrinkSectionId = Guid.Parse("EA9E07D4-D8ED-4856-A367-FF8F8CA8C1FC");
     private static readonly Guid ItemId = Guid.Parse("F0248589-E957-49FF-B878-61E9E931B785");
+    private static readonly Guid SecondItemId = Guid.Parse("AF623E03-43BE-4AF9-B929-535BFB14A976");
     private static readonly Guid SpecialId = Guid.Parse("0EBE4D22-A04B-43E2-95AB-C86750001D9C");
 
     [Fact]
@@ -220,6 +221,79 @@ public sealed class MenuManagementServiceTests
         Assert.Equal(new TimeOnly(0, 0), friday.ClosesAt);
     }
 
+    [Fact]
+    public async Task ReorderItemsAsync_persists_requested_sort_orders()
+    {
+        var repository = new FakeMenuManagementRepository
+        {
+            Snapshot = new MenuManagementSnapshot(
+                [],
+                [
+                    new MenuItemRecord(ItemId, FoodSectionId, "Food", MenuFamily.Food, "Burger", "desc", null, 1, true, false, null, null, false, [], []),
+                    new MenuItemRecord(SecondItemId, FoodSectionId, "Food", MenuFamily.Food, "Fries", "desc", null, 2, true, false, null, null, false, [], [])
+                ],
+                [],
+                [])
+        };
+        var service = new MenuManagementService(repository, new FakeMenuOperationLogSink());
+
+        var result = await service.ReorderItemsAsync(
+            [
+                new SaveMenuSortOrderRequest(ItemId, 2),
+                new SaveMenuSortOrderRequest(SecondItemId, 1)
+            ]);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(
+            [
+                new SaveMenuSortOrderRequest(ItemId, 2),
+                new SaveMenuSortOrderRequest(SecondItemId, 1)
+            ],
+            repository.LastItemReorderRequests);
+    }
+
+    [Fact]
+    public async Task ReorderItemsAsync_rejects_duplicate_sort_orders()
+    {
+        var repository = new FakeMenuManagementRepository
+        {
+            Snapshot = new MenuManagementSnapshot(
+                [],
+                [
+                    new MenuItemRecord(ItemId, FoodSectionId, "Food", MenuFamily.Food, "Burger", "desc", null, 1, true, false, null, null, false, [], []),
+                    new MenuItemRecord(SecondItemId, FoodSectionId, "Food", MenuFamily.Food, "Fries", "desc", null, 2, true, false, null, null, false, [], [])
+                ],
+                [],
+                [])
+        };
+        var service = new MenuManagementService(repository, new FakeMenuOperationLogSink());
+
+        var result = await service.ReorderItemsAsync(
+            [
+                new SaveMenuSortOrderRequest(ItemId, 1),
+                new SaveMenuSortOrderRequest(SecondItemId, 1)
+            ]);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("must be unique", result.Errors[0], StringComparison.OrdinalIgnoreCase);
+        Assert.Null(repository.LastItemReorderRequests);
+    }
+
+    [Fact]
+    public async Task ReorderSectionsAsync_rejects_missing_section()
+    {
+        var repository = new FakeMenuManagementRepository
+        {
+            Snapshot = new MenuManagementSnapshot([], [], [], [])
+        };
+        var service = new MenuManagementService(repository, new FakeMenuOperationLogSink());
+
+        var result = await service.ReorderSectionsAsync([new SaveMenuSortOrderRequest(FoodSectionId, 1)]);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("could not be found", result.Errors[0], StringComparison.OrdinalIgnoreCase);
+    }
+
     private static readonly DayOfWeek[] OrderedDays =
     [
         DayOfWeek.Monday,
@@ -244,6 +318,12 @@ public sealed class MenuManagementServiceTests
         public bool ItemHasLinkedSpecials { get; set; }
 
         public SaveMenuServiceWindowRequest? LastServiceWindowRequest { get; private set; }
+
+        public IReadOnlyList<SaveMenuSortOrderRequest>? LastSectionReorderRequests { get; private set; }
+
+        public IReadOnlyList<SaveMenuSortOrderRequest>? LastItemReorderRequests { get; private set; }
+
+        public IReadOnlyList<SaveMenuSortOrderRequest>? LastSpecialReorderRequests { get; private set; }
 
         public Task<MenuManagementSnapshot> GetMenuManagementSnapshotAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(Snapshot);
@@ -272,6 +352,24 @@ public sealed class MenuManagementServiceTests
         public Task UpsertServiceWindowsAsync(SaveMenuServiceWindowRequest request, CancellationToken cancellationToken = default)
         {
             LastServiceWindowRequest = request;
+            return Task.CompletedTask;
+        }
+
+        public Task ReorderSectionsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default)
+        {
+            LastSectionReorderRequests = requests.ToArray();
+            return Task.CompletedTask;
+        }
+
+        public Task ReorderItemsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default)
+        {
+            LastItemReorderRequests = requests.ToArray();
+            return Task.CompletedTask;
+        }
+
+        public Task ReorderRecurringSpecialsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default)
+        {
+            LastSpecialReorderRequests = requests.ToArray();
             return Task.CompletedTask;
         }
 
