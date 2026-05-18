@@ -1,6 +1,7 @@
 using Anchor.Domain.Identity;
 using Anchor.Web.Components.Account.Shared;
 using Anchor.Domain.Identity.Users;
+using Anchor.Domain.Menu;
 using Anchor.Web.Components.Layout;
 using Anchor.Web.Components.Pages;
 using Anchor.Web.Components.Pages.Admin;
@@ -37,6 +38,8 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         authStateProvider = new TestAuthenticationStateProvider();
         Services.AddSingleton<AuthenticationStateProvider>(authStateProvider);
         Services.AddCascadingAuthenticationState();
+        Services.AddSingleton<IMenuQueryService>(new FakeMenuQueryService());
+        Services.AddSingleton<IMenuManagementService>(new FakeMenuManagementService());
     }
 
     [Fact]
@@ -243,20 +246,34 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     }
 
     [Fact]
-    public void MenuPage_RendersMenuSectionsFromMockupData()
+    public void MenuPage_DefaultsToLunchAndShowsServiceBackedSections()
     {
         var cut = Render<Menu>();
 
-        Assert.Contains("Menu mockup", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.NotNull(cut.Find(".menu-page"));
+        Assert.Contains("Browse the menu", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Lunch hours", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Appetizers", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Monday Night Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Sunday Pork Chop Dinner", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Choose Breakfast, Lunch, Dinner, or Drinks", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.NotEmpty(cut.FindAll(".menu-item__image"));
         Assert.NotEmpty(cut.FindAll(".menu-item--text-only"));
         Assert.Contains("Coming Soon", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Seasonal", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Limited Time Special", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Limited Time", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void MenuPage_UsesQueryStringTabSelectionAndShowsEmptyDrinksState()
+    {
+        var navigationManager = Services.GetRequiredService<NavigationManager>();
+        navigationManager.NavigateTo("http://localhost/menu?tab=drinks");
+
+        var cut = Render<Menu>();
+
+        Assert.Contains("Drink hours are live", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Drink hours", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Appetizers", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -325,19 +342,22 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     {
         var cut = Render<MenuAdmin>();
 
+        Assert.NotNull(cut.Find(".menu-admin-page"));
         Assert.Contains("Menu editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Section editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Item editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Section preview", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Menu image (optional)", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Optional image", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Choose an existing section or type a new section name to create it", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Recurring specials editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Menu hours editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Price variants", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Menu image path or URL", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Use archive as the safe removal path", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Offer start date", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(2, cut.FindAll("input[type='date']").Count);
-        Assert.Contains("Recurring specials", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Breakfast, Lunch, Dinner, and Drinks", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Day of week", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Monday Night Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Seasonal item?", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("without an end date is not treated as seasonal or limited time", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Closes next day", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -547,6 +567,456 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         }
 
         throw new InvalidOperationException("Could not locate repository root from test output directory.");
+    }
+
+    private sealed class FakeMenuQueryService : IMenuQueryService
+    {
+        private static readonly Guid AppetizersSectionId = Guid.Parse("24F84594-8F35-480E-B0F3-8E605E436511");
+        private static readonly Guid BurgersSectionId = Guid.Parse("1164E8D0-64EE-4CFD-BDE8-B00BC01F72F4");
+        private static readonly Guid DrinksSectionId = Guid.Parse("50293894-B6D4-4E6B-B242-C225E0D0B650");
+
+        public Task<IReadOnlyList<PublicRecurringSpecialView>> GetHomeRecurringSpecialsAsync(DateOnly today, CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<PublicRecurringSpecialView> specials =
+            [
+                new(
+                    Guid.Parse("4F2657C8-DDB4-4A69-A493-0CE49E61977D"),
+                    "Monday",
+                    "Monday Night Burgers",
+                    "A dependable burger-night draw with fries and easy weeknight pricing.",
+                    "After 5:00 PM",
+                    "$11 basket special",
+                    "Burgers - Featured item: Classic Hamburger",
+                    today.DayOfWeek == DayOfWeek.Monday),
+                new(
+                    Guid.Parse("B0A14AF0-708E-4678-95CE-2767DE55E0A4"),
+                    "Sunday",
+                    "Sunday Pork Chop Dinner",
+                    "A hearty end-of-week dinner special that should read as a repeatable tradition.",
+                    "After 3:00 PM",
+                    "$17 dinner plate",
+                    "Dinner Specials",
+                    today.DayOfWeek == DayOfWeek.Sunday)
+            ];
+
+            return Task.FromResult(specials);
+        }
+
+        public Task<MenuManagementView> GetMenuManagementViewAsync(DateOnly today, CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<MenuServiceWindowView> breakfastDays = CreateHours(
+                today,
+                new Dictionary<DayOfWeek, (bool IsAvailable, TimeOnly? OpensAt, TimeOnly? ClosesAt, bool ClosesNextDay)>
+                {
+                    [DayOfWeek.Saturday] = (true, new TimeOnly(10, 0), new TimeOnly(13, 0), false),
+                    [DayOfWeek.Sunday] = (true, new TimeOnly(10, 0), new TimeOnly(13, 0), false)
+                });
+
+            IReadOnlyList<MenuServiceWindowView> lunchDays = CreateHours(
+                today,
+                new Dictionary<DayOfWeek, (bool IsAvailable, TimeOnly? OpensAt, TimeOnly? ClosesAt, bool ClosesNextDay)>
+                {
+                    [DayOfWeek.Tuesday] = (true, new TimeOnly(11, 0), new TimeOnly(16, 0), false),
+                    [DayOfWeek.Wednesday] = (true, new TimeOnly(11, 0), new TimeOnly(16, 0), false),
+                    [DayOfWeek.Thursday] = (true, new TimeOnly(11, 0), new TimeOnly(16, 0), false),
+                    [DayOfWeek.Friday] = (true, new TimeOnly(11, 0), new TimeOnly(16, 0), false),
+                    [DayOfWeek.Saturday] = (true, new TimeOnly(11, 0), new TimeOnly(16, 0), false),
+                    [DayOfWeek.Sunday] = (true, new TimeOnly(11, 0), new TimeOnly(15, 0), false)
+                });
+
+            IReadOnlyList<MenuServiceWindowView> dinnerDays = CreateHours(
+                today,
+                new Dictionary<DayOfWeek, (bool IsAvailable, TimeOnly? OpensAt, TimeOnly? ClosesAt, bool ClosesNextDay)>
+                {
+                    [DayOfWeek.Monday] = (true, new TimeOnly(17, 0), new TimeOnly(20, 0), false),
+                    [DayOfWeek.Tuesday] = (true, new TimeOnly(16, 0), new TimeOnly(21, 0), false),
+                    [DayOfWeek.Wednesday] = (true, new TimeOnly(16, 0), new TimeOnly(21, 0), false),
+                    [DayOfWeek.Thursday] = (true, new TimeOnly(16, 0), new TimeOnly(21, 0), false),
+                    [DayOfWeek.Friday] = (true, new TimeOnly(16, 0), new TimeOnly(22, 0), false),
+                    [DayOfWeek.Saturday] = (true, new TimeOnly(16, 0), new TimeOnly(22, 0), false),
+                    [DayOfWeek.Sunday] = (true, new TimeOnly(15, 0), new TimeOnly(20, 0), false)
+                });
+
+            IReadOnlyList<MenuServiceWindowView> drinkDays = CreateHours(
+                today,
+                new Dictionary<DayOfWeek, (bool IsAvailable, TimeOnly? OpensAt, TimeOnly? ClosesAt, bool ClosesNextDay)>
+                {
+                    [DayOfWeek.Monday] = (true, new TimeOnly(16, 0), new TimeOnly(21, 0), false),
+                    [DayOfWeek.Tuesday] = (true, new TimeOnly(11, 0), new TimeOnly(22, 0), false),
+                    [DayOfWeek.Wednesday] = (true, new TimeOnly(11, 0), new TimeOnly(22, 0), false),
+                    [DayOfWeek.Thursday] = (true, new TimeOnly(11, 0), new TimeOnly(22, 0), false),
+                    [DayOfWeek.Friday] = (true, new TimeOnly(11, 0), new TimeOnly(0, 0), true),
+                    [DayOfWeek.Saturday] = (true, new TimeOnly(10, 0), new TimeOnly(0, 0), true),
+                    [DayOfWeek.Sunday] = (true, new TimeOnly(10, 0), new TimeOnly(21, 0), false)
+                });
+
+            IReadOnlyList<MenuSectionAdminView> sections =
+            [
+                new(AppetizersSectionId, "Appetizers", MenuFamily.Food, 1, true, false, []),
+                new(BurgersSectionId, "Burgers", MenuFamily.Food, 2, true, false, []),
+                new(DrinksSectionId, "Cocktails", MenuFamily.Drink, 1, true, false, [])
+            ];
+
+            IReadOnlyList<MenuItemAdminView> items =
+            [
+                new(
+                    Guid.Parse("1CC159E4-C492-474B-B4B0-15274F61B23F"),
+                    AppetizersSectionId,
+                    "Appetizers",
+                    MenuFamily.Food,
+                    "Cheese Curds",
+                    "Crisp white cheddar curds with your choice of dipping sauce.",
+                    "images/menu/appetizers.svg",
+                    1,
+                    true,
+                    false,
+                    null,
+                    null,
+                    false,
+                    [MenuTab.Lunch, MenuTab.Dinner],
+                    [new MenuItemPriceVariantView("Regular", 9m, 1)],
+                    [],
+                    null),
+                new(
+                    Guid.Parse("3C0AF95B-8976-4C46-84FB-C66E2B8B3575"),
+                    AppetizersSectionId,
+                    "Appetizers",
+                    MenuFamily.Food,
+                    "Seasonal Soup",
+                    "Cup or bowl, updated as the kitchen rotates specials.",
+                    null,
+                    2,
+                    true,
+                    false,
+                    null,
+                    null,
+                    false,
+                    [MenuTab.Lunch, MenuTab.Dinner],
+                    [new MenuItemPriceVariantView("Cup", 4m, 1), new MenuItemPriceVariantView("Bowl", 6m, 2)],
+                    [],
+                    null),
+                new(
+                    Guid.Parse("816F24F6-14F3-4648-9F8A-520C17600952"),
+                    BurgersSectionId,
+                    "Burgers",
+                    MenuFamily.Food,
+                    "Classic Hamburger",
+                    "Fresh hand-pattied burger; add cheese if desired.",
+                    "images/menu/burgers.svg",
+                    1,
+                    true,
+                    false,
+                    null,
+                    null,
+                    false,
+                    [MenuTab.Lunch, MenuTab.Dinner],
+                    [new MenuItemPriceVariantView("Regular", 11m, 1)],
+                    [],
+                    null)
+            ];
+
+            IReadOnlyList<RecurringSpecialAdminView> specials =
+            [
+                new(
+                    Guid.Parse("8F457E31-B23E-4CB0-A32B-5754C50B19F4"),
+                    MenuTab.Dinner,
+                    BurgersSectionId,
+                    "Burgers",
+                    DayOfWeek.Monday,
+                    "Monday",
+                    "Monday Night Burgers",
+                    "A dependable burger-night draw with fries and easy weeknight pricing.",
+                    "After 5:00 PM",
+                    "$11 basket special",
+                    Guid.Parse("816F24F6-14F3-4648-9F8A-520C17600952"),
+                    "Classic Hamburger",
+                    1,
+                    true,
+                    false,
+                    ["Today"],
+                    today.DayOfWeek == DayOfWeek.Monday)
+            ];
+
+            return Task.FromResult(
+                new MenuManagementView(
+                    [
+                        new(MenuTab.Breakfast, "Breakfast", breakfastDays),
+                        new(MenuTab.Lunch, "Lunch", lunchDays),
+                        new(MenuTab.Dinner, "Dinner", dinnerDays),
+                        new(MenuTab.Drinks, "Drinks", drinkDays)
+                    ],
+                    sections,
+                    items,
+                    specials));
+        }
+
+        public Task<PublicMenuView> GetPublicMenuAsync(MenuTab requestedTab, DateOnly today, CancellationToken cancellationToken = default)
+        {
+            var tabs = new[]
+            {
+                CreateTabLink(MenuTab.Breakfast, requestedTab, false),
+                CreateTabLink(MenuTab.Lunch, requestedTab, true),
+                CreateTabLink(MenuTab.Dinner, requestedTab, true),
+                CreateTabLink(MenuTab.Drinks, requestedTab, false)
+            };
+
+            return requestedTab switch
+            {
+                MenuTab.Dinner => Task.FromResult(CreateDinnerMenu(today, tabs)),
+                MenuTab.Drinks => Task.FromResult(CreateEmptyMenu(MenuTab.Drinks, "Drinks hours", tabs, today)),
+                MenuTab.Breakfast => Task.FromResult(CreateEmptyMenu(MenuTab.Breakfast, "Breakfast hours", tabs, today)),
+                _ => Task.FromResult(CreateLunchMenu(today, tabs))
+            };
+        }
+
+        private static PublicMenuView CreateLunchMenu(DateOnly today, IReadOnlyList<MenuTabLinkView> tabs)
+        {
+            IReadOnlyList<MenuServiceWindowView> hours = CreateHours(
+                today,
+                new Dictionary<DayOfWeek, (bool IsAvailable, TimeOnly? OpensAt, TimeOnly? ClosesAt, bool ClosesNextDay)>
+                {
+                    [DayOfWeek.Tuesday] = (true, new TimeOnly(11, 0), new TimeOnly(16, 0), false),
+                    [DayOfWeek.Wednesday] = (true, new TimeOnly(11, 0), new TimeOnly(16, 0), false),
+                    [DayOfWeek.Thursday] = (true, new TimeOnly(11, 0), new TimeOnly(16, 0), false),
+                    [DayOfWeek.Friday] = (true, new TimeOnly(11, 0), new TimeOnly(16, 0), false),
+                    [DayOfWeek.Saturday] = (true, new TimeOnly(11, 0), new TimeOnly(16, 0), false),
+                    [DayOfWeek.Sunday] = (true, new TimeOnly(11, 0), new TimeOnly(15, 0), false)
+                });
+
+            IReadOnlyList<PublicMenuSectionView> sections =
+            [
+                new(
+                    AppetizersSectionId,
+                    "Appetizers",
+                    "accent-blue",
+                    [],
+                    [
+                        new(
+                            Guid.Parse("A35ED7CC-E947-4BEC-8B0A-8C2B8B73BFAB"),
+                            "Cheese Curds",
+                            "Crisp white cheddar curds with your choice of dipping sauce.",
+                            "images/menu/appetizers.svg",
+                            [new MenuItemPriceVariantView("Regular", 9m, 1)],
+                            [],
+                            null),
+                        new(
+                            Guid.Parse("B9B1D225-227D-4F91-95D0-11FC0D3C5F84"),
+                            "Mini Tacos",
+                            "Served with salsa and sour cream.",
+                            null,
+                            [new MenuItemPriceVariantView("Regular", 9m, 1)],
+                            ["Coming Soon"],
+                            "Expected on May 31"),
+                        new(
+                            Guid.Parse("4BC371B2-DB2D-4872-8D68-393129E38556"),
+                            "Quesadillas",
+                            "Loaded with cheese and served with salsa and sour cream.",
+                            null,
+                            [new MenuItemPriceVariantView("Regular", 11m, 1)],
+                            ["Seasonal"],
+                            "Available through Jul 10"),
+                        new(
+                            Guid.Parse("C68985EB-A612-4A74-8FBE-E1EDB20E4A0B"),
+                            "Fish Tacos",
+                            "Finished with Boom Boom sauce for a bold bar-food favorite.",
+                            "images/menu/appetizers.svg",
+                            [new MenuItemPriceVariantView("Regular", 10m, 1)],
+                            ["Limited Time"],
+                            "Available through Jun 3")
+                    ]),
+                new(
+                    BurgersSectionId,
+                    "Burgers",
+                    "accent-magenta",
+                    [],
+                    [
+                        new(
+                            Guid.Parse("7D14308C-C286-4B2D-B58C-A8F74F8DBA0A"),
+                            "Classic Hamburger",
+                            "Fresh hand-pattied burger; add cheese if desired.",
+                            "images/menu/burgers.svg",
+                            [new MenuItemPriceVariantView("Regular", 11m, 1)],
+                            [],
+                            null),
+                        new(
+                            Guid.Parse("F4D0A309-1D35-47F6-B7A8-FB652C2B7141"),
+                            "Bacon Cheeseburger",
+                            "A familiar favorite with bacon and melty cheese.",
+                            null,
+                            [new MenuItemPriceVariantView("Regular", 13m, 1)],
+                            [],
+                            null)
+                    ])
+            ];
+
+            return new PublicMenuView(MenuTab.Lunch, tabs, hours, sections);
+        }
+
+        private static PublicMenuView CreateDinnerMenu(DateOnly today, IReadOnlyList<MenuTabLinkView> tabs)
+        {
+            IReadOnlyList<MenuServiceWindowView> hours = CreateHours(
+                today,
+                new Dictionary<DayOfWeek, (bool IsAvailable, TimeOnly? OpensAt, TimeOnly? ClosesAt, bool ClosesNextDay)>
+                {
+                    [DayOfWeek.Monday] = (true, new TimeOnly(17, 0), new TimeOnly(20, 0), false),
+                    [DayOfWeek.Tuesday] = (true, new TimeOnly(16, 0), new TimeOnly(21, 0), false),
+                    [DayOfWeek.Wednesday] = (true, new TimeOnly(16, 0), new TimeOnly(21, 0), false),
+                    [DayOfWeek.Thursday] = (true, new TimeOnly(16, 0), new TimeOnly(21, 0), false),
+                    [DayOfWeek.Friday] = (true, new TimeOnly(16, 0), new TimeOnly(22, 0), false),
+                    [DayOfWeek.Saturday] = (true, new TimeOnly(16, 0), new TimeOnly(22, 0), false),
+                    [DayOfWeek.Sunday] = (true, new TimeOnly(15, 0), new TimeOnly(20, 0), false)
+                });
+
+            IReadOnlyList<PublicMenuSectionView> sections =
+            [
+                new(
+                    BurgersSectionId,
+                    "Burgers",
+                    "accent-magenta",
+                    [
+                        new(
+                            Guid.Parse("DDFFDAE0-E918-43C2-B682-AE3FD5EC50EF"),
+                            "Monday",
+                            "Monday Night Burgers",
+                            "A dependable burger-night draw with fries and easy weeknight pricing.",
+                            "After 5:00 PM",
+                            "$11 basket special",
+                            "Burgers - Featured item: Classic Hamburger",
+                            today.DayOfWeek == DayOfWeek.Monday)
+                    ],
+                    [
+                        new(
+                            Guid.Parse("7D14308C-C286-4B2D-B58C-A8F74F8DBA0A"),
+                            "Classic Hamburger",
+                            "Fresh hand-pattied burger; add cheese if desired.",
+                            "images/menu/burgers.svg",
+                            [new MenuItemPriceVariantView("Regular", 11m, 1)],
+                            [],
+                            null)
+                    ])
+            ];
+
+            return new PublicMenuView(MenuTab.Dinner, tabs, hours, sections);
+        }
+
+        private static PublicMenuView CreateEmptyMenu(MenuTab tab, string heading, IReadOnlyList<MenuTabLinkView> tabs, DateOnly today)
+        {
+            IReadOnlyList<MenuServiceWindowView> hours = tab == MenuTab.Drinks
+                ? CreateHours(
+                    today,
+                    new Dictionary<DayOfWeek, (bool IsAvailable, TimeOnly? OpensAt, TimeOnly? ClosesAt, bool ClosesNextDay)>
+                    {
+                        [DayOfWeek.Monday] = (true, new TimeOnly(16, 0), new TimeOnly(21, 0), false),
+                        [DayOfWeek.Tuesday] = (true, new TimeOnly(11, 0), new TimeOnly(22, 0), false),
+                        [DayOfWeek.Wednesday] = (true, new TimeOnly(11, 0), new TimeOnly(22, 0), false),
+                        [DayOfWeek.Thursday] = (true, new TimeOnly(11, 0), new TimeOnly(22, 0), false),
+                        [DayOfWeek.Friday] = (true, new TimeOnly(11, 0), new TimeOnly(0, 0), true),
+                        [DayOfWeek.Saturday] = (true, new TimeOnly(10, 0), new TimeOnly(0, 0), true),
+                        [DayOfWeek.Sunday] = (true, new TimeOnly(10, 0), new TimeOnly(21, 0), false)
+                    })
+                : CreateHours(
+                    today,
+                    new Dictionary<DayOfWeek, (bool IsAvailable, TimeOnly? OpensAt, TimeOnly? ClosesAt, bool ClosesNextDay)>
+                    {
+                        [DayOfWeek.Saturday] = (true, new TimeOnly(10, 0), new TimeOnly(13, 0), false),
+                        [DayOfWeek.Sunday] = (true, new TimeOnly(10, 0), new TimeOnly(13, 0), false)
+                    });
+
+            return new PublicMenuView(tab, tabs, hours, []);
+        }
+
+        private static MenuTabLinkView CreateTabLink(MenuTab tab, MenuTab requestedTab, bool hasVisibleContent) =>
+            new(tab, GetTabLabel(tab), GetQueryValue(tab), requestedTab == tab, hasVisibleContent);
+
+        private static IReadOnlyList<MenuServiceWindowView> CreateHours(
+            DateOnly today,
+            IReadOnlyDictionary<DayOfWeek, (bool IsAvailable, TimeOnly? OpensAt, TimeOnly? ClosesAt, bool ClosesNextDay)> configuredDays)
+        {
+            return new[]
+            {
+                DayOfWeek.Monday,
+                DayOfWeek.Tuesday,
+                DayOfWeek.Wednesday,
+                DayOfWeek.Thursday,
+                DayOfWeek.Friday,
+                DayOfWeek.Saturday,
+                DayOfWeek.Sunday
+            }
+            .Select(day =>
+            {
+                var config = configuredDays.TryGetValue(day, out var value)
+                    ? value
+                    : (false, null, null, false);
+
+                var summary = !config.IsAvailable || config.OpensAt is null || config.ClosesAt is null
+                    ? "Not served"
+                    : $"{config.OpensAt.Value:h\\:mm} {(config.OpensAt.Value.Hour >= 12 ? "PM" : "AM")} - {config.ClosesAt.Value:h\\:mm} {(config.ClosesAt.Value.Hour >= 12 || config.ClosesAt.Value == TimeOnly.MinValue ? "PM" : "AM")}{(config.ClosesNextDay ? " next day" : string.Empty)}";
+
+                return new MenuServiceWindowView(
+                    day,
+                    day.ToString(),
+                    config.IsAvailable,
+                    summary,
+                    today.DayOfWeek == day,
+                    config.OpensAt,
+                    config.ClosesAt,
+                    config.ClosesNextDay);
+            })
+            .ToArray();
+        }
+
+        private static string GetTabLabel(MenuTab tab) =>
+            tab switch
+            {
+                MenuTab.Breakfast => "Breakfast",
+                MenuTab.Lunch => "Lunch",
+                MenuTab.Dinner => "Dinner",
+                MenuTab.Drinks => "Drinks",
+                _ => tab.ToString()
+            };
+
+        private static string GetQueryValue(MenuTab tab) =>
+            tab switch
+            {
+                MenuTab.Breakfast => "breakfast",
+                MenuTab.Lunch => "lunch",
+                MenuTab.Dinner => "dinner",
+                MenuTab.Drinks => "drinks",
+                _ => "lunch"
+            };
+    }
+
+    private sealed class FakeMenuManagementService : IMenuManagementService
+    {
+        public Task<MenuOperationResult> SaveSectionAsync(SaveMenuSectionRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(request.SectionId ?? Guid.NewGuid()));
+
+        public Task<MenuOperationResult> SaveItemAsync(SaveMenuItemRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(request.ItemId ?? Guid.NewGuid()));
+
+        public Task<MenuOperationResult> SaveRecurringSpecialAsync(SaveRecurringSpecialRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(request.SpecialId ?? Guid.NewGuid()));
+
+        public Task<MenuOperationResult> SaveServiceWindowsAsync(SaveMenuServiceWindowRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success());
+
+        public Task<MenuOperationResult> ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(sectionId));
+
+        public Task<MenuOperationResult> DeleteSectionAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(sectionId));
+
+        public Task<MenuOperationResult> ArchiveItemAsync(Guid itemId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(itemId));
+
+        public Task<MenuOperationResult> DeleteItemAsync(Guid itemId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(itemId));
+
+        public Task<MenuOperationResult> ArchiveRecurringSpecialAsync(Guid specialId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(specialId));
+
+        public Task<MenuOperationResult> DeleteRecurringSpecialAsync(Guid specialId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(specialId));
     }
 
     private sealed class TestAuthenticationStateProvider : AuthenticationStateProvider

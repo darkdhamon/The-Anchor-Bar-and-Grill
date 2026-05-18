@@ -1,23 +1,24 @@
 # The Anchor Bar and Grill
 
-This repository currently contains the first code-native website mockup for The Anchor Bar & Grill in a Blazor Server application.
+This repository contains The Anchor Bar & Grill website in a Blazor Server application, with a layered domain and infrastructure architecture and a database-backed menu system.
 
-## Current Mockup Scope
+## Current Application Scope
 
 - Guest-facing homepage with a welcome-first layout that is separate from the menu
 - Homepage preview of recurring weekly specials so guests can see day-of-week favorites before opening the full menu
 - Homepage list of upcoming events in the next month so guests can plan without leaving the landing page
-- Menu mockup page inspired by the existing printed menu
-- Weekly recurring specials on the menu mockup for day-of-week traditions like burger nights and dinner specials
-- Optional menu-item image support in the menu mockup and menu admin mockup
-- Optional offer start/end dates for menu items, including mockup states for seasonal, limited time, and coming soon items
-- Native date-picker inputs in the menu editor mockup for offer start and end dates
-- Menu editor recurring-specials mockup for defining weekly specials separately from one-off offer windows
-- Menu editor section assignment mockup that lets staff choose an existing section or type a new one from the same combo-box field
+- Database-backed public menu page inspired by the existing printed menu
+- Fixed public menu tabs for `Breakfast`, `Lunch`, `Dinner`, and `Drinks`
+- Structured per-tab menu hours, including after-midnight drink service windows
+- Shared food catalog where food items can appear on multiple meal tabs while drink items stay inside the Drinks tab
+- Section-scoped recurring specials that render inside the public menu section they belong to
+- Optional menu-item image support in the public menu and menu editor
+- Optional offer start/end dates for menu items, with guest-facing `Coming Soon`, `Seasonal`, and `Limited Time` labels derived at runtime
+- Database-backed Menu Editor for sections, price variants, menu items, recurring specials, visibility, archive state, and service hours
 - Events mockup page that lists all upcoming events, including recurring schedules, optional event images, and richer cadence examples such as every other week or the third Friday of the month
 - About mockup page for the restaurant story and guest experience
 - Contact mockup page for location, phone, hours, dynamic social media links, and guest inquiry layout
-- Role-gated editor mockup pages for managing events, menu items, publicity content, and contact details
+- Role-gated editor pages for managing menus, events, publicity content, and contact details
 - Contact editor mockup supports adding, editing, and deleting multiple social media profiles for the public contact page
 - Event editor mockup with date/time inputs, richer recurring-event controls, optional images, descriptions, and combo-select promo badges
 - Admin-only Help page organized by subject and role type for staff onboarding, editor ownership, bootstrap behavior, and security configuration
@@ -61,9 +62,18 @@ This repository currently contains the first code-native website mockup for The 
 - Persists the chosen light or dark theme so full-page account routes like `Account/Login` apply the saved theme immediately on load, otherwise defaulting from device theme and then time of day
 - Matches the menu typography direction with `Bebas Neue`, `Patrick Hand`, and `Barlow Condensed`
 
+## Architecture
+
+- `Anchor.Domain` contains business rules, service contracts, request and response models, and application services
+- `Anchor.Infrastructure` contains `ApplicationDbContext`, EF Core entities, repository implementations, code-first migrations, and seed data
+- `Anchor.Web` contains Razor components, page composition, authorization wiring, and startup configuration
+- UI code resolves domain services through dependency injection and does not access `ApplicationDbContext` directly
+- The solution also includes project-specific test suites for domain rules, infrastructure repositories, web rendering, and migration coverage
+
 ## Development Notes
 
 - The development configuration now includes a LocalDB connection string so the mockup can run locally without additional secret setup
+- The menu catalog now lives in the application database through the repository layer, with seed data for Lunch and Dinner food sections, Dinner recurring specials, and empty-state Breakfast and Drinks tabs that already have service hours configured
 - The current homepage uses a styled building-photo placeholder until a real exterior image is added to the project
 - The event mockup data now demonstrates weekly, every-other-week, and nth-weekday monthly recurrence patterns so the UI direction can be reviewed before backend scheduling is built
 - On mobile, the shared header now keeps public and admin mockup links inside the expandable menu and uses an icon-style site-menu control so it does not compete with the food Menu link
@@ -81,8 +91,12 @@ This repository currently contains the first code-native website mockup for The 
 - The shared header theme toggle and mobile menu now use browser-side JavaScript hooks instead of Blazor-only click handlers so they keep working on both static account routes and interactive admin routes
 - Internal account and manage-page links now use rooted `/Account/...` routes with the same full-load navigation behavior, so moving between login, recovery, profile, and admin surfaces stays consistent from any page
 - Startup bootstrap runs before the request pipeline so roles and the initial administrative account exist before the first login attempt
+- Menu status labels are computed at request time from offer dates rather than stored as long-lived status flags
+- Menu sections, items, recurring specials, and service windows all follow the repository pattern and are covered by unit tests plus migration-chain tests
+- The Menu Editor now uses a shared time-combobox input for service hours, so staff can type shorthand like `1300` or `1pm`, pick from the reusable time list, and still keep Lunch, Dinner, Breakfast, and Drinks hours isolated cleanly across tab switches and saves
+- The shared site shell now uses fluid desktop width instead of a fixed centered column, and the public menu plus Menu Editor add larger-screen layout rules so wide displays can show more useful content at once
 - Non-editor elements such as navigation targets and post-navigation page headings suppress the default browser focus outline, while editor fields keep their normal editing focus behavior
 - Account pages continue to use the server-routed Identity flow, so auth navigation should bypass interactive routing when needed
-- Test coverage now spans domain policy/bootstrap logic, repository behavior, layout and page rendering, themed account-route integration, and the full migration chain for the Identity schema
+- Test coverage now spans domain policy/bootstrap logic, menu-domain rules, repository behavior, layout and page rendering, themed account-route integration, and the full migration chain for the Identity and menu schema
 - Starter scaffold pages such as `Counter`, `Weather`, and other unused sample content have been removed from the public experience
 

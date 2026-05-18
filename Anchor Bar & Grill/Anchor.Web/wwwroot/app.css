@@ -105,7 +105,7 @@ html.anchor-theme-dark .site-shell {
 }
 
 .shell-container {
-    width: min(1180px, calc(100vw - 2rem));
+    width: calc(100vw - 2rem);
     margin: 0 auto;
 }
 
@@ -439,8 +439,13 @@ html.anchor-theme-dark .site-shell {
 }
 
 .site-content {
-    width: min(1180px, calc(100vw - 2rem));
+    width: calc(100vw - 2rem);
     margin: 0 auto;
+    display: grid;
+    gap: 1.5rem;
+}
+
+.menu-page {
     display: grid;
     gap: 1.5rem;
 }
@@ -730,6 +735,71 @@ html.anchor-theme-dark .site-shell {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.menu-tab-strip,
+.menu-overview-grid,
+.menu-section__specials,
+.menu-item__price-stack,
+.menu-admin-subcard,
+.menu-admin-price-stack,
+.menu-hours-editor,
+.menu-admin-list-copy,
+.menu-admin-list-actions {
+    display: grid;
+    gap: 1rem;
+}
+
+.menu-tab-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-bottom: 1rem;
+}
+
+.menu-tab-link {
+    display: grid;
+    gap: 0.35rem;
+    padding: 0.95rem 1rem;
+    border-radius: 1rem;
+    border: 1px solid var(--outline);
+    background: var(--surface-strong);
+    color: var(--text-primary);
+    text-decoration: none;
+    font-family: "Bebas Neue", "Impact", sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.04em;
+    transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.menu-tab-link:hover,
+.menu-tab-link:focus-visible {
+    transform: translateY(-1px);
+    border-color: rgba(89, 175, 226, 0.45);
+    color: var(--text-primary);
+}
+
+.menu-tab-link--selected {
+    background:
+        linear-gradient(135deg, rgba(48, 154, 221, 0.16), rgba(31, 36, 58, 0.08)),
+        var(--surface);
+    border-color: rgba(89, 175, 226, 0.42);
+}
+
+.menu-tab-link__hint {
+    font-size: 0.76rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.menu-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.menu-hours-card__header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
 .recurring-specials-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -764,6 +834,10 @@ html.anchor-theme-dark .site-shell {
 .menu-section__items {
     display: grid;
     gap: 0.85rem;
+}
+
+.menu-empty-state {
+    padding: 1.4rem;
 }
 
 .menu-item {
@@ -811,6 +885,28 @@ html.anchor-theme-dark .site-shell {
 
 .menu-item__badges--admin {
     margin: 0.35rem 0 0.45rem;
+}
+
+.menu-item__price-stack {
+    gap: 0.2rem;
+}
+
+.menu-item__price-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.menu-item__price-label {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.menu-item__price-value {
+    font-family: "Bebas Neue", "Impact", sans-serif;
+    color: var(--accent-readable);
 }
 
 .status-pill {
@@ -983,6 +1079,10 @@ html.anchor-theme-dark .site-shell {
     box-shadow: 0 18px 42px rgba(31, 36, 58, 0.22);
 }
 
+.recurring-special--inline {
+    padding: 1rem;
+}
+
 .recurring-special__header,
 .recurring-special__footer {
     display: flex;
@@ -1064,6 +1164,11 @@ html.anchor-theme-dark .site-shell {
     gap: 1rem;
     padding: 0.85rem 0;
     border-bottom: 1px solid var(--outline);
+}
+
+.hours-row--today {
+    color: var(--accent-readable);
+    border-color: rgba(89, 175, 226, 0.34);
 }
 
 .hours-row:last-child {
@@ -1278,6 +1383,63 @@ html.anchor-theme-dark .site-shell {
 .admin-field-note {
     color: var(--text-secondary);
     line-height: 1.45;
+}
+
+.menu-admin-subcard {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: var(--surface-muted);
+    border: 1px solid var(--outline);
+    border-radius: 1rem;
+}
+
+.menu-admin-checkbox-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.menu-admin-price-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+    gap: 0.85rem;
+    align-items: end;
+}
+
+.menu-hours-tab-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.menu-hours-editor__row {
+    display: grid;
+    grid-template-columns: minmax(110px, 0.8fr) auto repeat(2, minmax(120px, 1fr)) auto;
+    gap: 0.85rem;
+    align-items: end;
+    padding: 0.85rem 0;
+    border-bottom: 1px dashed var(--outline);
+}
+
+.menu-hours-editor__row:last-child {
+    border-bottom: 0;
+}
+
+.menu-hours-editor__toggle {
+    display: grid;
+    gap: 0.45rem;
+    color: var(--text-secondary);
+    align-content: end;
+}
+
+.menu-admin-list-copy {
+    min-width: 0;
+}
+
+.menu-admin-list-actions {
+    min-width: 220px;
+    justify-items: end;
 }
 
 .detail-list {
@@ -1655,6 +1817,8 @@ html.anchor-theme-dark .site-shell {
     .feature-grid,
     .recurring-specials-grid,
     .menu-grid,
+    .menu-tab-strip,
+    .menu-overview-grid,
     .event-card-grid,
     .admin-grid,
     .account-grid,
@@ -1680,10 +1844,30 @@ html.anchor-theme-dark .site-shell {
     }
 }
 
+@media (min-width: 1280px) {
+    .menu-page .menu-overview-grid {
+        grid-template-columns: minmax(0, 0.9fr) minmax(24rem, 1.1fr);
+    }
+
+    .menu-admin-page .admin-grid {
+        grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+    }
+
+    .menu-admin-page .editor-form__grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1500px) {
+    .menu-page .menu-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
 @media (max-width: 760px) {
     .shell-container,
     .site-content {
-        width: min(100vw - 1rem, 1180px);
+        width: calc(100vw - 1rem);
     }
 
     .site-header__grid {
@@ -1787,6 +1971,7 @@ html.anchor-theme-dark .site-shell {
     .admin-list__item,
     .site-footer__grid,
     .hours-row,
+    .menu-hours-card__header,
     .recurring-special__header,
     .recurring-special__footer,
     .event-card__top,
@@ -1803,6 +1988,16 @@ html.anchor-theme-dark .site-shell {
     .event-card--with-image,
     .event-preview--with-image {
         grid-template-columns: 1fr;
+    }
+
+    .menu-admin-price-row,
+    .menu-hours-editor__row {
+        grid-template-columns: 1fr;
+    }
+
+    .menu-admin-list-actions {
+        justify-items: start;
+        min-width: 0;
     }
 
     .admin-list__item--media {

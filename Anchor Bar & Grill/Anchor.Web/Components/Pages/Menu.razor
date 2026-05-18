@@ -1,110 +1,184 @@
 @page "/menu"
+@using Anchor.Domain.Menu
 @attribute [ExcludeFromInteractiveRouting]
 
 <PageTitle>Menu</PageTitle>
 
-<section class="page-hero page-hero--section">
-    <p class="page-hero__eyebrow">Guest Menu Preview</p>
-    <h1>Menu mockup</h1>
-    <p class="page-hero__lead">
-        The website menu should borrow the color, framing, and typography direction of the printed menu while becoming cleaner and easier to scan on phones and desktops.
-    </p>
-</section>
+<div class="menu-page">
+    @if (menuView is null)
+    {
+        <section class="page-hero page-hero--section">
+            <p class="page-hero__eyebrow">Food &amp; Drink</p>
+            <h1>Menu</h1>
+            <p class="page-hero__lead">Loading the latest menu details.</p>
+        </section>
+    }
+    else
+    {
+        <section class="page-hero page-hero--section">
+            <p class="page-hero__eyebrow">Food &amp; Drink</p>
+            <h1>Browse the menu</h1>
+            <p class="page-hero__lead">
+                Choose Breakfast, Lunch, Dinner, or Drinks to see the guest-facing sections, recurring specials,
+                and service hours that belong to that tab.
+            </p>
+        </section>
 
-<section class="section-shell">
-    <div class="section-heading">
-        <p class="section-heading__eyebrow">Weekly Specials</p>
-        <h2>Recurring specials should live right on the menu.</h2>
-    </div>
+        <section class="section-shell">
+            <div class="menu-tab-strip" aria-label="Menu tabs">
+                @foreach (var tab in menuView.Tabs)
+                {
+                    <a class="menu-tab-link @(tab.IsSelected ? "menu-tab-link--selected" : string.Empty)"
+                       href="@GetTabHref(tab.QueryValue)"
+                       data-enhance-nav="false">
+                        <span>@tab.Label</span>
 
-    <div class="recurring-specials-grid">
-        @foreach (var special in MockupContent.RecurringSpecials)
-        {
-            <article class="feature-card recurring-special @(special.IsToday(today) ? "recurring-special--today" : string.Empty)">
-                <div class="recurring-special__header">
-                    <div>
-                        <p class="feature-card__eyebrow">@special.DayLabel</p>
-                        <h3>@special.Title</h3>
+                        @if (!tab.HasVisibleContent)
+                        {
+                            <span class="menu-tab-link__hint">Coming soon</span>
+                        }
+                    </a>
+                }
+            </div>
+
+            <div class="menu-overview-grid">
+                <article class="feature-card feature-card--tight">
+                    <p class="feature-card__eyebrow">@GetSelectedTabLabel(menuView.SelectedTab)</p>
+                    <h2>@GetSelectedTabLabel(menuView.SelectedTab)</h2>
+                    <p>@GetSelectedTabDescription(menuView.SelectedTab)</p>
+                </article>
+
+                <article class="feature-card feature-card--tight menu-hours-card">
+                    <div class="menu-hours-card__header">
+                        <div>
+                            <p class="feature-card__eyebrow">Weekly availability</p>
+                            <h2>@GetSelectedTabLabel(menuView.SelectedTab) hours</h2>
+                        </div>
+                        <span class="admin-card__badge">Today highlighted</span>
                     </div>
 
-                    @if (special.IsToday(today))
-                    {
-                        <span class="status-pill status-pill--today">Today</span>
-                    }
-                </div>
+                    <div class="hours-list">
+                        @foreach (var window in menuView.ServiceHours)
+                        {
+                            <div class="hours-row @(window.IsToday ? "hours-row--today" : string.Empty)">
+                                <span>@window.DayLabel</span>
+                                <span>@window.Summary</span>
+                            </div>
+                        }
+                    </div>
+                </article>
+            </div>
+        </section>
 
-                <p class="event-card__meta">@special.TimeLabel</p>
-                <p>@special.Description</p>
-
-                <div class="recurring-special__footer">
-                    <span class="recurring-special__price">@special.PriceNote</span>
-                    <span class="recurring-special__placement">@special.PlacementSummary</span>
-                </div>
-            </article>
-        }
-    </div>
-</section>
-
-<section class="section-shell">
-    <div class="menu-grid">
-        @foreach (var menuSection in MockupContent.MenuSections)
+        @if (menuView.Sections.Count == 0)
         {
-            <article class="menu-section @menuSection.AccentClass">
-                <header class="menu-section__header">
-                    <h2>@menuSection.Title</h2>
-                    <p>@menuSection.Note</p>
-                </header>
-
-                <div class="menu-section__items">
-                    @foreach (var item in menuSection.Items)
+            <section class="section-shell">
+                <article class="feature-card menu-empty-state">
+                    <p class="feature-card__eyebrow">@GetSelectedTabLabel(menuView.SelectedTab)</p>
+                    <h2>@GetEmptyStateTitle(menuView.SelectedTab)</h2>
+                    <p>@GetEmptyStateDescription(menuView.SelectedTab)</p>
+                </article>
+            </section>
+        }
+        else
+        {
+            <section class="section-shell">
+                <div class="menu-grid">
+                    @foreach (var section in menuView.Sections)
                     {
-                        <article class="menu-item @(item.Image is not null ? "menu-item--with-image" : "menu-item--text-only")">
-                            @if (item.Image is not null)
+                        <article class="menu-section @section.AccentClass">
+                            <header class="menu-section__header">
+                                <h2>@section.Name</h2>
+                                <p>Recurring specials and menu items are grouped together so guests can scan the whole section at once.</p>
+                            </header>
+
+                            @if (section.Specials.Count > 0)
                             {
-                                <div class="menu-item__visual">
-                                    <img class="menu-item__image" src="@item.Image.Source" alt="@item.Image.AltText" />
+                                <div class="menu-section__specials">
+                                    @foreach (var special in section.Specials)
+                                    {
+                                        <article class="recurring-special recurring-special--inline @(special.IsToday ? "recurring-special--today" : string.Empty)">
+                                            <div class="recurring-special__header">
+                                                <div>
+                                                    <p class="feature-card__eyebrow">@special.DayLabel</p>
+                                                    <h3>@special.Title</h3>
+                                                </div>
+
+                                                <div class="menu-item__badges">
+                                                    <span class="status-pill status-pill--schedule">@special.DayLabel</span>
+                                                    @if (special.IsToday)
+                                                    {
+                                                        <span class="status-pill status-pill--today">Today</span>
+                                                    }
+                                                </div>
+                                            </div>
+
+                                            <p class="event-card__meta">@special.TimeNote</p>
+                                            <p>@special.Description</p>
+
+                                            <div class="recurring-special__footer">
+                                                <span class="recurring-special__price">@special.PriceNote</span>
+                                                <span class="recurring-special__placement">@special.PlacementSummary</span>
+                                            </div>
+                                        </article>
+                                    }
                                 </div>
                             }
 
-                            <div class="menu-item__content">
-                                <div class="menu-item__title-row">
-                                    <h3>@item.Name</h3>
-                                    <span>@item.Price</span>
-                                </div>
-
-                                @if (item.GetStatusLabels(today).Count > 0)
+                            <div class="menu-section__items">
+                                @foreach (var item in section.Items)
                                 {
-                                    <div class="menu-item__badges">
-                                        @foreach (var label in item.GetStatusLabels(today))
+                                    <article class="menu-item @(item.ImagePath is not null ? "menu-item--with-image" : "menu-item--text-only")">
+                                        @if (item.ImagePath is not null)
                                         {
-                                            <span class="status-pill @(GetBadgeClass(label))">@label</span>
+                                            <div class="menu-item__visual">
+                                                <img class="menu-item__image" src="@item.ImagePath" alt="@item.Name" />
+                                            </div>
                                         }
-                                    </div>
-                                }
 
-                                <p>@item.Description</p>
+                                        <div class="menu-item__content">
+                                            <div class="menu-item__title-row">
+                                                <h3>@item.Name</h3>
+                                                <span>@GetPriceSummary(item)</span>
+                                            </div>
 
-                                @if (item.GetOfferDateSummary(today) is { } offerSummary)
-                                {
-                                    <p class="menu-item__offer-range">@offerSummary</p>
+                                            @if (item.PriceVariants.Count > 1)
+                                            {
+                                                <div class="menu-item__price-stack">
+                                                    @foreach (var variant in item.PriceVariants)
+                                                    {
+                                                        <div class="menu-item__price-line">
+                                                            <span class="menu-item__price-label">@variant.Label</span>
+                                                            <span class="menu-item__price-value">@variant.PriceDisplay</span>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+
+                                            @if (item.StatusLabels.Count > 0)
+                                            {
+                                                <div class="menu-item__badges">
+                                                    @foreach (var label in item.StatusLabels)
+                                                    {
+                                                        <span class="status-pill @(GetBadgeClass(label))">@label</span>
+                                                    }
+                                                </div>
+                                            }
+
+                                            <p>@item.Description</p>
+
+                                            @if (item.OfferDateSummary is { } offerSummary)
+                                            {
+                                                <p class="menu-item__offer-range">@offerSummary</p>
+                                            }
+                                        </div>
+                                    </article>
                                 }
                             </div>
                         </article>
                     }
                 </div>
-            </article>
+            </section>
         }
-    </div>
-</section>
-
-@code {
-    private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
-
-    private static string GetBadgeClass(string label) =>
-        label switch
-        {
-            "Coming Soon" => "status-pill--coming-soon",
-            "Seasonal" => "status-pill--seasonal",
-            _ => "status-pill--limited"
-        };
-}
+    }
+</div>
