@@ -249,6 +249,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     public void MenuPage_DefaultsToLunchAndShowsServiceBackedSections()
     {
         var cut = Render<Menu>();
+        var hoursCard = cut.Find(".menu-hours-card").TextContent;
 
         Assert.NotNull(cut.Find(".menu-page"));
         Assert.Contains("Browse the menu", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -256,6 +257,11 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Appetizers", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Choose Breakfast, Lunch, Dinner, or Drinks", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Today", hoursCard, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Tuesday-Saturday", hoursCard, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Not served", hoursCard, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Today highlighted", hoursCard, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(3, cut.FindAll(".hours-row").Count);
         Assert.NotEmpty(cut.FindAll(".menu-item__image"));
         Assert.NotEmpty(cut.FindAll(".menu-item--text-only"));
         Assert.Contains("Coming Soon", cut.Markup, StringComparison.OrdinalIgnoreCase);

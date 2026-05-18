@@ -95,6 +95,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - Menu sections, items, recurring specials, and service windows all follow the repository pattern and are covered by unit tests plus migration-chain tests
 - The Menu Editor now uses a shared time-combobox input for service hours, so staff can type shorthand like `1300` or `1pm`, pick from the reusable time list, and still keep Lunch, Dinner, Breakfast, and Drinks hours isolated cleanly across tab switches and saves
 - The shared site shell now uses fluid desktop width instead of a fixed centered column, and the public menu plus Menu Editor add larger-screen layout rules so wide displays can show more useful content at once
+- Public menu hours now collapse repeated daily schedules into grouped ranges such as `Daily`, `Monday-Friday`, or `Sunday-Thursday`, while still surfacing today's hours in a compact highlight
 - Non-editor elements such as navigation targets and post-navigation page headings suppress the default browser focus outline, while editor fields keep their normal editing focus behavior
 - Account pages continue to use the server-routed Identity flow, so auth navigation should bypass interactive routing when needed
 - Test coverage now spans domain policy/bootstrap logic, menu-domain rules, repository behavior, layout and page rendering, themed account-route integration, and the full migration chain for the Identity and menu schema

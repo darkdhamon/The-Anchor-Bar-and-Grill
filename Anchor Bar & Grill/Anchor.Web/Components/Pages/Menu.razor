@@ -49,24 +49,27 @@
                 </article>
 
                 <article class="feature-card feature-card--tight menu-hours-card">
-                    <div class="menu-hours-card__header">
-                        <div>
-                            <p class="feature-card__eyebrow">Weekly availability</p>
-                            <h2>@GetSelectedTabLabel(menuView.SelectedTab) hours</h2>
-                        </div>
-                        <span class="admin-card__badge">Today highlighted</span>
+                <div class="menu-hours-card__header">
+                    <div>
+                        <p class="feature-card__eyebrow">Weekly availability</p>
+                        <h2>@GetSelectedTabLabel(menuView.SelectedTab) hours</h2>
                     </div>
+                    <div class="hours-today-badge" aria-label="Today's hours">
+                        <span class="hours-today-badge__label">Today</span>
+                        <strong class="hours-today-badge__value">@menuHoursCard.TodaySummary</strong>
+                    </div>
+                </div>
 
-                    <div class="hours-list">
-                        @foreach (var window in menuView.ServiceHours)
-                        {
-                            <div class="hours-row @(window.IsToday ? "hours-row--today" : string.Empty)">
-                                <span>@window.DayLabel</span>
-                                <span>@window.Summary</span>
-                            </div>
-                        }
-                    </div>
-                </article>
+                <div class="hours-list">
+                    @foreach (var row in menuHoursCard.Rows)
+                    {
+                        <div class="hours-row">
+                            <span class="hours-row__label">@row.Label</span>
+                            <span class="hours-row__summary">@row.Summary</span>
+                        </div>
+                    }
+                </div>
+            </article>
             </div>
         </section>
 

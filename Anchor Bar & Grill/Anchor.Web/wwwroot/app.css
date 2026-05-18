@@ -793,11 +793,43 @@ html.anchor-theme-dark .site-shell {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.hours-list {
+    gap: 0;
+}
+
 .menu-hours-card__header {
     display: flex;
     justify-content: space-between;
     gap: 1rem;
     align-items: flex-start;
+}
+
+.hours-today-badge {
+    display: grid;
+    gap: 0.3rem;
+    justify-items: end;
+    padding: 0.75rem 0.95rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(89, 175, 226, 0.28);
+    background:
+        linear-gradient(135deg, rgba(48, 154, 221, 0.14), rgba(31, 36, 58, 0.08)),
+        var(--surface-strong);
+    text-align: right;
+}
+
+.hours-today-badge__label {
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.hours-today-badge__value {
+    font-family: "Bebas Neue", "Impact", sans-serif;
+    font-size: 1.45rem;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    color: var(--accent-readable);
 }
 
 .recurring-specials-grid {
@@ -1161,14 +1193,22 @@ html.anchor-theme-dark .site-shell {
 .hours-row {
     display: flex;
     justify-content: space-between;
+    align-items: baseline;
     gap: 1rem;
     padding: 0.85rem 0;
     border-bottom: 1px solid var(--outline);
 }
 
-.hours-row--today {
+.hours-row__label {
+    font-family: "Bebas Neue", "Impact", sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 0.04em;
+    color: var(--text-primary);
+}
+
+.hours-row__summary {
     color: var(--accent-readable);
-    border-color: rgba(89, 175, 226, 0.34);
+    text-align: right;
 }
 
 .hours-row:last-child {
@@ -1983,11 +2023,20 @@ html.anchor-theme-dark .site-shell {
         align-items: stretch;
     }
 
+    .hours-today-badge {
+        justify-items: start;
+        text-align: left;
+    }
+
     .menu-item--with-image,
     .admin-list__item--media,
     .event-card--with-image,
     .event-preview--with-image {
         grid-template-columns: 1fr;
+    }
+
+    .hours-row__summary {
+        text-align: left;
     }
 
     .menu-admin-price-row,
