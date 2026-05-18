@@ -54,14 +54,19 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
         var specials = await dbContext.RecurringSpecials
             .AsNoTracking()
             .Where(special => special.Tab == tab)
-            .Where(special => special.Section.Family == family)
-            .Where(special => special.Section.IsVisibleToGuests && !special.Section.IsArchived)
+            .Where(special => (special.LinkedMenuItemId.HasValue
+                ? special.LinkedMenuItem!.Section.Family
+                : special.Section.Family) == family)
+            .Where(special => special.LinkedMenuItemId == null || !special.LinkedMenuItem!.IsArchived)
+            .Where(special => special.LinkedMenuItemId.HasValue
+                ? special.LinkedMenuItem!.Section.IsVisibleToGuests && !special.LinkedMenuItem.Section.IsArchived
+                : special.Section.IsVisibleToGuests && !special.Section.IsArchived)
             .Where(special => special.IsVisibleToGuests && !special.IsArchived)
             .Select(special => new MenuRecurringSpecialRecord(
                 special.RecurringSpecialId,
                 special.Tab,
-                special.MenuSectionId,
-                special.Section.Name,
+                special.LinkedMenuItemId.HasValue ? special.LinkedMenuItem!.MenuSectionId : special.MenuSectionId,
+                special.LinkedMenuItemId.HasValue ? special.LinkedMenuItem!.Section.Name : special.Section.Name,
                 special.DayOfWeek,
                 special.Title,
                 special.Description,
@@ -113,14 +118,17 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
         await dbContext.RecurringSpecials
             .AsNoTracking()
             .Where(special => special.IsVisibleToGuests && !special.IsArchived)
-            .Where(special => special.Section.IsVisibleToGuests && !special.Section.IsArchived)
+            .Where(special => special.LinkedMenuItemId == null || !special.LinkedMenuItem!.IsArchived)
+            .Where(special => special.LinkedMenuItemId.HasValue
+                ? special.LinkedMenuItem!.Section.IsVisibleToGuests && !special.LinkedMenuItem.Section.IsArchived
+                : special.Section.IsVisibleToGuests && !special.Section.IsArchived)
             .OrderBy(special => special.DayOfWeek)
             .ThenBy(special => special.SortOrder)
             .Select(special => new MenuRecurringSpecialRecord(
                 special.RecurringSpecialId,
                 special.Tab,
-                special.MenuSectionId,
-                special.Section.Name,
+                special.LinkedMenuItemId.HasValue ? special.LinkedMenuItem!.MenuSectionId : special.MenuSectionId,
+                special.LinkedMenuItemId.HasValue ? special.LinkedMenuItem!.Section.Name : special.Section.Name,
                 special.DayOfWeek,
                 special.Title,
                 special.Description,
@@ -154,7 +162,10 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
             var hasSpecials = await dbContext.RecurringSpecials
                 .AsNoTracking()
                 .Where(special => special.Tab == tab)
-                .Where(special => special.Section.IsVisibleToGuests && !special.Section.IsArchived)
+                .Where(special => special.LinkedMenuItemId == null || !special.LinkedMenuItem!.IsArchived)
+                .Where(special => special.LinkedMenuItemId.HasValue
+                    ? special.LinkedMenuItem!.Section.IsVisibleToGuests && !special.LinkedMenuItem.Section.IsArchived
+                    : special.Section.IsVisibleToGuests && !special.Section.IsArchived)
                 .AnyAsync(special => special.IsVisibleToGuests && !special.IsArchived, cancellationToken);
 
             if (hasItems || hasSpecials)
@@ -220,8 +231,8 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
             .Select(special => new MenuRecurringSpecialRecord(
                 special.RecurringSpecialId,
                 special.Tab,
-                special.MenuSectionId,
-                special.Section.Name,
+                special.LinkedMenuItemId.HasValue ? special.LinkedMenuItem!.MenuSectionId : special.MenuSectionId,
+                special.LinkedMenuItemId.HasValue ? special.LinkedMenuItem!.Section.Name : special.Section.Name,
                 special.DayOfWeek,
                 special.Title,
                 special.Description,

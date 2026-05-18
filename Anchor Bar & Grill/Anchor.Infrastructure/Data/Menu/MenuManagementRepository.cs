@@ -24,6 +24,7 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
                 item.MenuSectionId,
                 item.Section.Family,
                 item.Name,
+                item.Description,
                 item.IsArchived,
                 item.FoodTabs.Select(link => link.Tab).ToList()))
             .SingleOrDefaultAsync(cancellationToken);
@@ -90,7 +91,6 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
         entity.OfferEndsOn = request.OfferEndsOn;
         entity.IsSeasonal = request.IsSeasonal;
 
-        dbContext.MenuItemPriceVariants.RemoveRange(entity.PriceVariants);
         entity.PriceVariants.Clear();
         foreach (var variant in request.PriceVariants)
         {
@@ -103,7 +103,6 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
             });
         }
 
-        dbContext.MenuItemTabs.RemoveRange(entity.FoodTabs);
         entity.FoodTabs.Clear();
         foreach (var tab in request.FoodTabs.Distinct())
         {

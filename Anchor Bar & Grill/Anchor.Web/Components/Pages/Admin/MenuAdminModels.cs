@@ -17,6 +17,13 @@ internal enum MenuArchiveFilter
     Archived
 }
 
+internal enum MenuContentFilter
+{
+    All,
+    Standard,
+    Specials
+}
+
 internal enum MenuAdminDetailKind
 {
     None,
@@ -25,11 +32,16 @@ internal enum MenuAdminDetailKind
     Special
 }
 
+internal sealed record MenuAdminBrowserItemViewModel(
+    MenuItemAdminView Item,
+    bool IsContextMuted,
+    IReadOnlyList<RecurringSpecialAdminView> Specials);
+
 internal sealed record MenuAdminBrowserSectionViewModel(
     MenuSectionAdminView Section,
     bool IsContextMuted,
-    IReadOnlyList<MenuItemAdminView> Items,
-    IReadOnlyList<RecurringSpecialAdminView> Specials);
+    IReadOnlyList<MenuAdminBrowserItemViewModel> Items,
+    IReadOnlyList<RecurringSpecialAdminView> DetachedSpecials);
 
 internal sealed record MenuAdminHoursSummaryViewModel(
     MenuTab Tab,
@@ -102,13 +114,7 @@ internal sealed class MenuRecurringSpecialFormModel
 
     public MenuTab Tab { get; set; } = MenuTab.Dinner;
 
-    public string? SectionId { get; set; }
-
     public DayOfWeek DayOfWeek { get; set; } = DayOfWeek.Monday;
-
-    public string Title { get; set; } = string.Empty;
-
-    public string Description { get; set; } = string.Empty;
 
     public string TimeNote { get; set; } = string.Empty;
 

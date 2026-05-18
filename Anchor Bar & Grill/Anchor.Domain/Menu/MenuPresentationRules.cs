@@ -183,7 +183,7 @@ internal static class MenuPresentationRules
     public static string GetPlacementSummary(MenuRecurringSpecialRecord special) =>
         string.IsNullOrWhiteSpace(special.LinkedMenuItemName)
             ? special.SectionName
-            : $"{special.SectionName} - Featured item: {special.LinkedMenuItemName}";
+            : $"{special.SectionName} - Menu item: {special.LinkedMenuItemName}";
 
     private static bool Assign(MenuTab value, out MenuTab target)
     {

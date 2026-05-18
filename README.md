@@ -11,10 +11,10 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - Fixed public menu tabs for `Breakfast`, `Lunch`, `Dinner`, and `Drinks`
 - Structured per-tab menu hours, including after-midnight drink service windows
 - Shared food catalog where food items can appear on multiple meal tabs while drink items stay inside the Drinks tab
-- Section-scoped recurring specials that render inside the public menu section they belong to
+- Section-scoped recurring specials that render as item-backed offers inside the public menu section they belong to
 - Optional menu-item image support in the public menu and menu editor
 - Optional offer start/end dates for menu items, with guest-facing `Coming Soon`, `Seasonal`, and `Limited Time` labels derived at runtime
-- Database-backed Menu Editor with dedicated `Food`, `Drinks`, and `Hours` workspaces, section-tree browsing, explicit detail editing, archive-aware filters, and service-hour management
+- Database-backed Menu Editor with dedicated `Food`, `Drinks`, and `Hours` workspaces, section-tree browsing, item-backed special offers, archive-aware filters, content filters, and service-hour management
 - Events mockup page that lists all upcoming events, including recurring schedules, optional event images, and richer cadence examples such as every other week or the third Friday of the month
 - About mockup page for the restaurant story and guest experience
 - Contact mockup page for location, phone, hours, dynamic social media links, and guest inquiry layout
@@ -73,7 +73,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 ## Development Notes
 
 - The development configuration now includes a LocalDB connection string so the mockup can run locally without additional secret setup
-- The menu catalog now lives in the application database through the repository layer, with seed data for Lunch and Dinner food sections, Dinner recurring specials, and empty-state Breakfast and Drinks tabs that already have service hours configured
+- The menu catalog now lives in the application database through the repository layer, with seed data for Lunch and Dinner food sections, Dinner recurring specials, a hidden special-only Sunday dinner item, and empty-state Breakfast and Drinks tabs that already have service hours configured
 - The current homepage uses a styled building-photo placeholder until a real exterior image is added to the project
 - The event mockup data now demonstrates weekly, every-other-week, and nth-weekday monthly recurrence patterns so the UI direction can be reviewed before backend scheduling is built
 - On mobile, the shared header now keeps public and admin mockup links inside the expandable menu and uses an icon-style site-menu control so it does not compete with the food Menu link
@@ -92,9 +92,10 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - Internal account and manage-page links now use rooted `/Account/...` routes with the same full-load navigation behavior, so moving between login, recovery, profile, and admin surfaces stays consistent from any page
 - Startup bootstrap runs before the request pipeline so roles and the initial administrative account exist before the first login attempt
 - Menu status labels are computed at request time from offer dates rather than stored as long-lived status flags
-- Menu sections, items, recurring specials, and service windows all follow the repository pattern and are covered by unit tests plus migration-chain tests
+- Menu sections, items, recurring special offers, and service windows all follow the repository pattern and are covered by unit tests plus migration-chain tests
 - The Menu Editor now uses a shared time-combobox input for service hours, so staff can type shorthand like `1300` or `1pm`, pick from the reusable time list, and still keep Lunch, Dinner, Breakfast, and Drinks hours isolated cleanly across tab switches and saves
 - The Menu Editor now separates `Food`, `Drinks`, and `Hours` into a tabbed admin console, with archive-state browsing, greyed archived records, contextual create actions, and a section-tree browser paired with a focused detail panel
+- The Menu Editor now treats recurring specials as item-backed offers, nests those offers under their parent menu items in the tree, and adds `All`, `Standard`, and `Specials` content filters so staff can browse the right slice of the catalog faster
 - Menu Editor reordering now uses dedicated sort-order updates for sections, items, and recurring specials, so move buttons and drag-and-drop stay in sync without rewriting the rest of a menu record
 - The shared site shell now uses fluid desktop width instead of a fixed centered column, and the public menu plus Menu Editor add larger-screen layout rules so wide displays can show more useful content at once
 - Public menu hours now collapse repeated daily schedules into grouped ranges such as `Daily`, `Monday-Friday`, or `Sunday-Thursday`, while still surfacing today's hours in a compact highlight

@@ -13,6 +13,7 @@ internal static class MenuSeedData
     private static readonly Guid WrapsSectionId = Guid.Parse("FA5DA0F9-7E81-4B9D-9E11-FA5B1F828C72");
     private static readonly Guid KidsSectionId = Guid.Parse("2EA5E671-E8AC-4C8A-B3D9-4C136A32A71B");
     private static readonly Guid DessertsSectionId = Guid.Parse("A8F0B603-E02D-49F5-873D-1BB6BFC16C0F");
+    private static readonly Guid SundayPorkChopItemId = Guid.Parse("9E7F7A6B-C8DB-4E8D-B2EF-A60A40E91F70");
 
     private static readonly DateOnly OfferReferenceDate = new(2026, 5, 17);
 
@@ -31,6 +32,13 @@ internal static class MenuSeedData
             OfferEndsOn = endsOn,
             IsSeasonal = isSeasonal
         };
+
+    private static MenuItemEntity CreateHiddenItem(Guid itemId, Guid sectionId, string name, string description, string? imagePath, int sortOrder, DateOnly? startsOn, DateOnly? endsOn, bool isSeasonal)
+    {
+        var item = CreateItem(itemId, sectionId, name, description, imagePath, sortOrder, startsOn, endsOn, isSeasonal);
+        item.IsVisibleToGuests = false;
+        return item;
+    }
 
     private static MenuItemPriceVariantEntity Price(Guid variantId, Guid itemId, string label, decimal amount, int sortOrder) =>
         new()
@@ -89,7 +97,8 @@ internal static class MenuSeedData
         CreateItem(Guid.Parse("5B1C6127-F7F0-497A-88B9-537E9110176F"), KidsSectionId, "Mini Corn Dogs", "The classic choice for a quick family meal.", "images/menu/kids.svg", 2, null, null, false),
         CreateItem(Guid.Parse("06F858A2-F226-4B2F-A912-A6330BBF4EC1"), KidsSectionId, "Chicken Strips", "Served with sauce.", null, 3, null, null, false),
         CreateItem(Guid.Parse("8FCAA555-D618-4AD8-AE73-ABF51854A329"), DessertsSectionId, "Chocolate Lava Cake", "Served warm with ice cream.", "images/menu/desserts.svg", 1, OfferStartingIn(-2), OfferEndingIn(-2, 18), false),
-        CreateItem(Guid.Parse("44472C07-5F31-482A-8506-8A3C11CF1F26"), DessertsSectionId, "Mini Donuts", "Fair-style donuts for a casual sweet finish.", "images/menu/desserts.svg", 2, null, null, false)
+        CreateItem(Guid.Parse("44472C07-5F31-482A-8506-8A3C11CF1F26"), DessertsSectionId, "Mini Donuts", "Fair-style donuts for a casual sweet finish.", "images/menu/desserts.svg", 2, null, null, false),
+        CreateHiddenItem(SundayPorkChopItemId, DinnerSpecialsSectionId, "Sunday Pork Chop Dinner", "A hearty end-of-week dinner special that should read as a repeatable tradition.", null, 1, null, null, false)
     ];
 
     public static IReadOnlyList<MenuItemPriceVariantEntity> PriceVariants { get; } =
@@ -121,11 +130,14 @@ internal static class MenuSeedData
         Price(Guid.Parse("D1A821D1-D919-45D4-A11D-13EDE02F145D"), Guid.Parse("5B1C6127-F7F0-497A-88B9-537E9110176F"), "Regular", 7m, 1),
         Price(Guid.Parse("40E09332-7D77-44FA-B03A-B24E9A65D1A5"), Guid.Parse("06F858A2-F226-4B2F-A912-A6330BBF4EC1"), "Regular", 7m, 1),
         Price(Guid.Parse("CF5A1B06-F3AD-47F7-8C3F-D5D0B6823B24"), Guid.Parse("8FCAA555-D618-4AD8-AE73-ABF51854A329"), "Regular", 6m, 1),
-        Price(Guid.Parse("0DC7E9F1-2C5A-490A-8919-80D2983CD1E1"), Guid.Parse("44472C07-5F31-482A-8506-8A3C11CF1F26"), "Regular", 6m, 1)
+        Price(Guid.Parse("0DC7E9F1-2C5A-490A-8919-80D2983CD1E1"), Guid.Parse("44472C07-5F31-482A-8506-8A3C11CF1F26"), "Regular", 6m, 1),
+        Price(Guid.Parse("DB1A72C1-6185-4F76-BF47-4A034A0DAEFE"), SundayPorkChopItemId, "Regular", 17m, 1)
     ];
 
     public static IReadOnlyList<MenuItemTabEntity> FoodItemTabs { get; } =
-        Items.SelectMany(item => new[] { Tab(item.MenuItemId, MenuTab.Lunch), Tab(item.MenuItemId, MenuTab.Dinner) }).ToArray();
+        Items.SelectMany(item => item.MenuItemId == SundayPorkChopItemId
+            ? new[] { Tab(item.MenuItemId, MenuTab.Dinner) }
+            : new[] { Tab(item.MenuItemId, MenuTab.Lunch), Tab(item.MenuItemId, MenuTab.Dinner) }).ToArray();
 
     public static IReadOnlyList<RecurringSpecialEntity> RecurringSpecials { get; } =
     [
@@ -133,7 +145,7 @@ internal static class MenuSeedData
         new() { RecurringSpecialId = Guid.Parse("5EE7BBEA-C2F4-4D5B-BCDB-BD0FD0A06704"), Tab = MenuTab.Dinner, MenuSectionId = AppetizersSectionId, DayOfWeek = DayOfWeek.Tuesday, Title = "Tuesday Taco Basket", Description = "A taco-night feature built for quick dinner traffic and casual bar seating.", TimeNote = "After 4:00 PM", PriceNote = "$10 dinner feature", LinkedMenuItemId = Guid.Parse("E75D8A92-F1D2-4D58-9CD0-9B7E80CE9D80"), SortOrder = 2, IsVisibleToGuests = true, IsArchived = false },
         new() { RecurringSpecialId = Guid.Parse("7E8222C3-63EC-4B4B-B777-D1E3AA7C5A86"), Tab = MenuTab.Dinner, MenuSectionId = WingsSectionId, DayOfWeek = DayOfWeek.Wednesday, Title = "Wing Night", Description = "Sauced wings with a strong shareable hook for midweek regulars.", TimeNote = "After 5:00 PM", PriceNote = "$16 dozen special", LinkedMenuItemId = Guid.Parse("1C4D4F34-5260-4F7D-ABCB-1C6875B7EBF8"), SortOrder = 3, IsVisibleToGuests = true, IsArchived = false },
         new() { RecurringSpecialId = Guid.Parse("88BB945A-B7B4-4725-972B-60A042E524E9"), Tab = MenuTab.Dinner, MenuSectionId = SandwichesSectionId, DayOfWeek = DayOfWeek.Friday, Title = "Friday Fish Fry", Description = "A Friday dinner anchor that deserves a permanent home in the guest menu flow.", TimeNote = "After 4:00 PM", PriceNote = "$15 dinner plate", LinkedMenuItemId = Guid.Parse("E1FD2B7F-D7E0-47CC-9E3E-4BC3A30AA4B8"), SortOrder = 4, IsVisibleToGuests = true, IsArchived = false },
-        new() { RecurringSpecialId = Guid.Parse("6BAA63B3-55C9-4E47-8555-803573B9B38D"), Tab = MenuTab.Dinner, MenuSectionId = DinnerSpecialsSectionId, DayOfWeek = DayOfWeek.Sunday, Title = "Sunday Pork Chop Dinner", Description = "A hearty end-of-week dinner special that should read as a repeatable tradition.", TimeNote = "After 3:00 PM", PriceNote = "$17 dinner plate", LinkedMenuItemId = null, SortOrder = 5, IsVisibleToGuests = true, IsArchived = false }
+        new() { RecurringSpecialId = Guid.Parse("6BAA63B3-55C9-4E47-8555-803573B9B38D"), Tab = MenuTab.Dinner, MenuSectionId = DinnerSpecialsSectionId, DayOfWeek = DayOfWeek.Sunday, Title = "Sunday Pork Chop Dinner", Description = "A hearty end-of-week dinner special that should read as a repeatable tradition.", TimeNote = "After 3:00 PM", PriceNote = "$17 dinner plate", LinkedMenuItemId = SundayPorkChopItemId, SortOrder = 5, IsVisibleToGuests = true, IsArchived = false }
     ];
 
     public static IReadOnlyList<MenuServiceWindowEntity> ServiceWindows { get; } =

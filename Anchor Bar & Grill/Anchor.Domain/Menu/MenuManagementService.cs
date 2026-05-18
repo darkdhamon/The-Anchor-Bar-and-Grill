@@ -51,9 +51,10 @@ public sealed class MenuManagementService(
             return MenuOperationResult.Failure("Select a valid section before saving the menu item.");
         }
 
+        MenuItemReferenceRecord? existingItem = null;
         if (request.ItemId is { } existingItemId)
         {
-            var existingItem = await repository.GetItemReferenceAsync(existingItemId, cancellationToken);
+            existingItem = await repository.GetItemReferenceAsync(existingItemId, cancellationToken);
             if (existingItem is null)
             {
                 return MenuOperationResult.Failure("The selected menu item could not be found.");
@@ -123,6 +124,31 @@ public sealed class MenuManagementService(
             return MenuOperationResult.Failure("Drink items cannot be assigned to Breakfast, Lunch, or Dinner.");
         }
 
+        MenuRecurringSpecialRecord[] linkedSpecials = [];
+        if (existingItem is not null)
+        {
+            linkedSpecials = (await repository.GetMenuManagementSnapshotAsync(cancellationToken)).Specials
+                .Where(special => special.LinkedMenuItemId == existingItem.ItemId)
+                .ToArray();
+        }
+
+        if (request.IsArchived && linkedSpecials.Any(special => !special.IsArchived))
+        {
+            return MenuOperationResult.Failure("Archive or remove the recurring specials that use this menu item before archiving it.");
+        }
+
+        if (section.Family == MenuFamily.Food)
+        {
+            if (linkedSpecials.Any(special => special.Tab == MenuTab.Drinks || !normalizedTabs.Contains(special.Tab)))
+            {
+                return MenuOperationResult.Failure("Update or remove the linked recurring specials before removing this item from one of their meal tabs.");
+            }
+        }
+        else if (linkedSpecials.Any(special => special.Tab != MenuTab.Drinks))
+        {
+            return MenuOperationResult.Failure("Update or remove the linked recurring specials before moving this item into the Drinks menu.");
+        }
+
         var itemId = await repository.UpsertItemAsync(
             request with
             {
@@ -142,28 +168,26 @@ public sealed class MenuManagementService(
 
     public async Task<MenuOperationResult> SaveRecurringSpecialAsync(SaveRecurringSpecialRequest request, CancellationToken cancellationToken = default)
     {
-        var section = await repository.GetSectionReferenceAsync(request.SectionId, cancellationToken);
-        if (section is null)
+        if (request.LinkedMenuItemId is not { } linkedItemId)
         {
-            return MenuOperationResult.Failure("Select a valid section before saving the recurring special.");
+            return MenuOperationResult.Failure("Choose a menu item before saving the recurring special.");
+        }
+
+        var linkedItem = await repository.GetItemReferenceAsync(linkedItemId, cancellationToken);
+        if (linkedItem is null)
+        {
+            return MenuOperationResult.Failure("The featured menu item could not be found.");
+        }
+
+        if (linkedItem.IsArchived)
+        {
+            return MenuOperationResult.Failure("Archived menu items cannot be used for recurring specials.");
         }
 
         var expectedFamily = request.Tab == MenuTab.Drinks ? MenuFamily.Drink : MenuFamily.Food;
-        if (section.Family != expectedFamily)
+        if (linkedItem.Family != expectedFamily)
         {
-            return MenuOperationResult.Failure("Recurring specials must stay inside a section that matches the selected menu tab.");
-        }
-
-        var normalizedTitle = request.Title.Trim();
-        if (string.IsNullOrWhiteSpace(normalizedTitle))
-        {
-            return MenuOperationResult.Failure("Recurring special title is required.");
-        }
-
-        var normalizedDescription = request.Description.Trim();
-        if (string.IsNullOrWhiteSpace(normalizedDescription))
-        {
-            return MenuOperationResult.Failure("Recurring special description is required.");
+            return MenuOperationResult.Failure("Recurring specials must use a menu item that matches the selected menu tab.");
         }
 
         var normalizedTimeNote = request.TimeNote.Trim();
@@ -181,42 +205,25 @@ public sealed class MenuManagementService(
             }
         }
 
-        if (request.LinkedMenuItemId is { } linkedItemId)
+        if (request.Tab != MenuTab.Drinks && !linkedItem.FoodTabs.Contains(request.Tab))
         {
-            var linkedItem = await repository.GetItemReferenceAsync(linkedItemId, cancellationToken);
-            if (linkedItem is null)
-            {
-                return MenuOperationResult.Failure("The featured menu item could not be found.");
-            }
-
-            if (linkedItem.SectionId != request.SectionId)
-            {
-                return MenuOperationResult.Failure("Featured menu items must stay in the same section as the recurring special.");
-            }
-
-            if (linkedItem.Family != expectedFamily)
-            {
-                return MenuOperationResult.Failure("Featured menu items must match the family of the recurring special.");
-            }
-
-            if (request.Tab != MenuTab.Drinks && !linkedItem.FoodTabs.Contains(request.Tab))
-            {
-                return MenuOperationResult.Failure("Featured food items must appear on the same meal tab as the recurring special.");
-            }
+            return MenuOperationResult.Failure("Featured food items must appear on the same meal tab as the recurring special.");
         }
 
         var specialId = await repository.UpsertRecurringSpecialAsync(
             request with
             {
-                Title = normalizedTitle,
-                Description = normalizedDescription,
+                SectionId = linkedItem.SectionId,
+                Title = linkedItem.Name,
+                Description = linkedItem.Description,
                 TimeNote = normalizedTimeNote,
-                PriceNote = NormalizeOptionalValue(request.PriceNote)
+                PriceNote = NormalizeOptionalValue(request.PriceNote),
+                LinkedMenuItemId = linkedItemId
             },
             cancellationToken);
 
         await repository.SaveChangesAsync(cancellationToken);
-        await logSink.WriteAsync(new MenuOperationLogEntry("save", "recurring-special", specialId, normalizedTitle), cancellationToken);
+        await logSink.WriteAsync(new MenuOperationLogEntry("save", "recurring-special", specialId, linkedItem.Name), cancellationToken);
 
         return MenuOperationResult.Success(specialId);
     }

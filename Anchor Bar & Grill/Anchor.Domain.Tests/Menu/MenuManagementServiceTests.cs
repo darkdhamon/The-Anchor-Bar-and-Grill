@@ -107,22 +107,16 @@ public sealed class MenuManagementServiceTests
     }
 
     [Fact]
-    public async Task SaveRecurringSpecialAsync_rejects_section_family_mismatch()
+    public async Task SaveRecurringSpecialAsync_requires_linked_menu_item()
     {
-        var repository = new FakeMenuManagementRepository
-        {
-            SectionReferences =
-            {
-                [DrinkSectionId] = new MenuSectionReferenceRecord(DrinkSectionId, MenuFamily.Drink, false)
-            }
-        };
+        var repository = new FakeMenuManagementRepository();
         var service = new MenuManagementService(repository, new FakeMenuOperationLogSink());
 
         var result = await service.SaveRecurringSpecialAsync(
             new SaveRecurringSpecialRequest(
                 null,
                 MenuTab.Dinner,
-                DrinkSectionId,
+                FoodSectionId,
                 DayOfWeek.Friday,
                 "Fish Fry",
                 "Friday night feature.",
@@ -134,7 +128,41 @@ public sealed class MenuManagementServiceTests
                 false));
 
         Assert.False(result.Succeeded);
-        Assert.Contains("matches the selected menu tab", result.Errors[0], StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("choose a menu item", result.Errors[0], StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task SaveRecurringSpecialAsync_uses_linked_item_metadata()
+    {
+        var repository = new FakeMenuManagementRepository
+        {
+            ItemReferences =
+            {
+                [ItemId] = new MenuItemReferenceRecord(ItemId, FoodSectionId, MenuFamily.Food, "Classic Hamburger", "Fresh hand-pattied burger.", false, [MenuTab.Dinner])
+            }
+        };
+        var service = new MenuManagementService(repository, new FakeMenuOperationLogSink());
+
+        var result = await service.SaveRecurringSpecialAsync(
+            new SaveRecurringSpecialRequest(
+                null,
+                MenuTab.Dinner,
+                Guid.Empty,
+                DayOfWeek.Friday,
+                "Ignored title",
+                "Ignored description",
+                "After 4:00 PM",
+                "$15 plate",
+                ItemId,
+                1,
+                true,
+                false));
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(repository.LastRecurringSpecialRequest);
+        Assert.Equal(FoodSectionId, repository.LastRecurringSpecialRequest!.SectionId);
+        Assert.Equal("Classic Hamburger", repository.LastRecurringSpecialRequest.Title);
+        Assert.Equal("Fresh hand-pattied burger.", repository.LastRecurringSpecialRequest.Description);
     }
 
     [Fact]
@@ -144,7 +172,7 @@ public sealed class MenuManagementServiceTests
         {
             ItemReferences =
             {
-                [ItemId] = new MenuItemReferenceRecord(ItemId, FoodSectionId, MenuFamily.Food, "Classic Hamburger", false, [MenuTab.Dinner])
+                [ItemId] = new MenuItemReferenceRecord(ItemId, FoodSectionId, MenuFamily.Food, "Classic Hamburger", "Fresh hand-pattied burger.", false, [MenuTab.Dinner])
             },
             ItemHasLinkedSpecials = true
         };
@@ -319,6 +347,8 @@ public sealed class MenuManagementServiceTests
 
         public SaveMenuServiceWindowRequest? LastServiceWindowRequest { get; private set; }
 
+        public SaveRecurringSpecialRequest? LastRecurringSpecialRequest { get; private set; }
+
         public IReadOnlyList<SaveMenuSortOrderRequest>? LastSectionReorderRequests { get; private set; }
 
         public IReadOnlyList<SaveMenuSortOrderRequest>? LastItemReorderRequests { get; private set; }
@@ -346,8 +376,11 @@ public sealed class MenuManagementServiceTests
         public Task<Guid> UpsertItemAsync(SaveMenuItemRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(request.ItemId ?? Guid.NewGuid());
 
-        public Task<Guid> UpsertRecurringSpecialAsync(SaveRecurringSpecialRequest request, CancellationToken cancellationToken = default) =>
-            Task.FromResult(request.SpecialId ?? Guid.NewGuid());
+        public Task<Guid> UpsertRecurringSpecialAsync(SaveRecurringSpecialRequest request, CancellationToken cancellationToken = default)
+        {
+            LastRecurringSpecialRequest = request;
+            return Task.FromResult(request.SpecialId ?? Guid.NewGuid());
+        }
 
         public Task UpsertServiceWindowsAsync(SaveMenuServiceWindowRequest request, CancellationToken cancellationToken = default)
         {

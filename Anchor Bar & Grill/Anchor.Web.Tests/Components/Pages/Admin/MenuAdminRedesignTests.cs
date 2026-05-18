@@ -64,11 +64,28 @@ public sealed class MenuAdminRedesignTests : BunitContext
 
         var cut = RenderMenuAdmin("/admin/menu?tab=food&food=breakfast");
 
-        var selectedChip = cut.FindAll(".menu-editor-filter-chip.is-selected").Single();
+        var selectedChip = cut.FindAll(".menu-editor-filter-chip.is-selected")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Breakfast", StringComparison.Ordinal));
 
         Assert.Equal("Breakfast", selectedChip.TextContent.Trim());
         Assert.Contains("Breakfast Burrito", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Late Night Burger", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Specials_content_filter_shows_item_backed_specials()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+
+        var cut = RenderMenuAdmin("/admin/menu");
+
+        cut.FindAll(".menu-editor-filter-chip")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Specials", StringComparison.Ordinal))
+            .Click();
+
+        Assert.Contains("Late Night Burger", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Monday Night Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Secret Nachos", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -173,6 +190,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
         private static readonly Guid ArchivedFoodItemId = Guid.Parse("44AA62BE-4B4D-46C7-A3D3-5088BF3B58DD");
         private static readonly Guid BreakfastItemId = Guid.Parse("797FEE70-BA14-46A5-AB88-DCDA3DAF7262");
         private static readonly Guid DrinkItemId = Guid.Parse("0A5B6B42-778E-49D3-8568-9AB1A785432D");
+        private static readonly Guid ActiveSpecialId = Guid.Parse("73A3369D-820A-4ADF-8B9E-D5A6307438B2");
         private static readonly Guid ArchivedSpecialId = Guid.Parse("50B483A3-5A9E-4B28-B6F2-09D0BCF56D63");
         private static readonly DateOnly Today = new(2026, 5, 18);
 
@@ -303,6 +321,24 @@ public sealed class MenuAdminRedesignTests : BunitContext
 
             IReadOnlyList<RecurringSpecialAdminView> specials =
             [
+                new(
+                    ActiveSpecialId,
+                    MenuTab.Dinner,
+                    AppetizersSectionId,
+                    "Appetizers",
+                    DayOfWeek.Monday,
+                    "Monday",
+                    "Monday Night Burgers",
+                    "Live recurring special.",
+                    "After 5:00 PM",
+                    "$11",
+                    ActiveFoodItemId,
+                    "Late Night Burger",
+                    1,
+                    true,
+                    false,
+                    [],
+                    false),
                 new(
                     ArchivedSpecialId,
                     MenuTab.Lunch,

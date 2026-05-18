@@ -186,4 +186,37 @@ public sealed class MenuRepositoriesTests
 
         Assert.Equal(42, burgers.SortOrder);
     }
+
+    [Fact]
+    public async Task UpsertRecurringSpecialAsync_persists_linked_menu_item_reference()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+        var repository = new MenuManagementRepository(context.DbContext);
+
+        var specialId = await repository.UpsertRecurringSpecialAsync(
+            new SaveRecurringSpecialRequest(
+                null,
+                MenuTab.Dinner,
+                BurgersSectionId,
+                DayOfWeek.Saturday,
+                "Burger Night",
+                "Choose your burger and fries.",
+                "After 5:00 PM",
+                "$12 combo",
+                ClassicHamburgerItemId,
+                1,
+                true,
+                false));
+        await repository.SaveChangesAsync();
+
+        var special = await context.DbContext.RecurringSpecials
+            .AsNoTracking()
+            .SingleAsync(item => item.RecurringSpecialId == specialId);
+
+        Assert.Equal(MenuTab.Dinner, special.Tab);
+        Assert.Equal(BurgersSectionId, special.MenuSectionId);
+        Assert.Equal("Burger Night", special.Title);
+        Assert.Equal("Choose your burger and fries.", special.Description);
+        Assert.Equal(ClassicHamburgerItemId, special.LinkedMenuItemId);
+    }
 }

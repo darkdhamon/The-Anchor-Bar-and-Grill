@@ -41,6 +41,7 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Contains("20260514200752_AddManagedUserProfileFields", appliedMigrations);
             Assert.Contains("20260515170550_AddAccountConfirmedFlag", appliedMigrations);
             Assert.Contains("20260517015850_AddMenuCatalog", appliedMigrations);
+            Assert.Contains("20260518213938_LinkSeededRecurringSpecialsToMenuItems", appliedMigrations);
             Assert.Empty(pendingMigrations);
             Assert.True(await context.Database.CanConnectAsync());
 
@@ -87,9 +88,11 @@ public sealed class ApplicationDbContextMigrationTests
 
             Assert.True(await context.MenuSections.AnyAsync(section => section.Name == "Appetizers"));
             Assert.True(await context.MenuItems.AnyAsync(item => item.Name == "Cheese Curds"));
+            Assert.True(await context.MenuItems.AnyAsync(item => item.MenuItemId == Guid.Parse("9E7F7A6B-C8DB-4E8D-B2EF-A60A40E91F70") && !item.IsVisibleToGuests));
             Assert.True(await context.MenuItemPriceVariants.AnyAsync(variant => variant.Label == "Bowl" && variant.Amount == 6m));
             Assert.True(await context.MenuItemTabs.AnyAsync(link => link.MenuItemId == Guid.Parse("7626D0DF-9F8A-4FE8-9062-3596165E148A") && link.Tab == MenuTab.Dinner));
             Assert.True(await context.RecurringSpecials.AnyAsync(special => special.Title == "Monday Night Burgers"));
+            Assert.True(await context.RecurringSpecials.AnyAsync(special => special.RecurringSpecialId == Guid.Parse("6BAA63B3-55C9-4E47-8555-803573B9B38D") && special.LinkedMenuItemId == Guid.Parse("9E7F7A6B-C8DB-4E8D-B2EF-A60A40E91F70")));
             Assert.True(await context.MenuServiceWindows.AnyAsync(window => window.Tab == MenuTab.Drinks && window.DayOfWeek == DayOfWeek.Friday && window.ClosesNextDay));
         }
         finally

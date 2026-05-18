@@ -71,5 +71,6 @@ public sealed record MenuItemReferenceRecord(
     Guid SectionId,
     MenuFamily Family,
     string Name,
+    string Description,
     bool IsArchived,
     IReadOnlyList<MenuTab> FoodTabs);

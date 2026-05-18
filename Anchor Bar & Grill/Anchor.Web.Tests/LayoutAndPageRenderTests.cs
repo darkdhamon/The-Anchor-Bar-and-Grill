@@ -587,7 +587,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                     "A dependable burger-night draw with fries and easy weeknight pricing.",
                     "After 5:00 PM",
                     "$11 basket special",
-                    "Burgers - Featured item: Classic Hamburger",
+                    "Burgers - Menu item: Classic Hamburger",
                     today.DayOfWeek == DayOfWeek.Monday),
                 new(
                     Guid.Parse("B0A14AF0-708E-4678-95CE-2767DE55E0A4"),
@@ -882,7 +882,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                             "A dependable burger-night draw with fries and easy weeknight pricing.",
                             "After 5:00 PM",
                             "$11 basket special",
-                            "Burgers - Featured item: Classic Hamburger",
+                            "Burgers - Menu item: Classic Hamburger",
                             today.DayOfWeek == DayOfWeek.Monday)
                     ],
                     [
