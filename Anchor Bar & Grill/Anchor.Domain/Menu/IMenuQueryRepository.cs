@@ -8,7 +8,10 @@ public interface IMenuQueryRepository
         DateOnly comingSoonCutoff,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<MenuRecurringSpecialRecord>> GetHomeRecurringSpecialsAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<MenuItemRecord>> GetHomeSpecialItemsAsync(
+        DateOnly today,
+        DateOnly comingSoonCutoff,
+        CancellationToken cancellationToken = default);
 
     Task<IReadOnlyCollection<MenuTab>> GetTabsWithVisibleContentAsync(
         DateOnly today,

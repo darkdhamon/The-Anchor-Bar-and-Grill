@@ -576,9 +576,9 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         private static readonly Guid BurgersSectionId = Guid.Parse("1164E8D0-64EE-4CFD-BDE8-B00BC01F72F4");
         private static readonly Guid DrinksSectionId = Guid.Parse("50293894-B6D4-4E6B-B242-C225E0D0B650");
 
-        public Task<IReadOnlyList<PublicRecurringSpecialView>> GetHomeRecurringSpecialsAsync(DateOnly today, CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<PublicHomeSpecialView>> GetHomeSpecialsAsync(DateOnly today, CancellationToken cancellationToken = default)
         {
-            IReadOnlyList<PublicRecurringSpecialView> specials =
+            IReadOnlyList<PublicHomeSpecialView> specials =
             [
                 new(
                     Guid.Parse("4F2657C8-DDB4-4A69-A493-0CE49E61977D"),
@@ -677,6 +677,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                     [MenuTab.Lunch, MenuTab.Dinner],
                     [new MenuItemPriceVariantView("Regular", 9m, 1)],
                     [],
+                    null,
                     null),
                 new(
                     Guid.Parse("3C0AF95B-8976-4C46-84FB-C66E2B8B3575"),
@@ -695,6 +696,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                     [MenuTab.Lunch, MenuTab.Dinner],
                     [new MenuItemPriceVariantView("Cup", 4m, 1), new MenuItemPriceVariantView("Bowl", 6m, 2)],
                     [],
+                    null,
                     null),
                 new(
                     Guid.Parse("816F24F6-14F3-4648-9F8A-520C17600952"),
@@ -713,29 +715,40 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                     [MenuTab.Lunch, MenuTab.Dinner],
                     [new MenuItemPriceVariantView("Regular", 11m, 1)],
                     [],
-                    null)
-            ];
-
-            IReadOnlyList<RecurringSpecialAdminView> specials =
-            [
+                    null,
+                    null),
                 new(
                     Guid.Parse("8F457E31-B23E-4CB0-A32B-5754C50B19F4"),
-                    MenuTab.Dinner,
                     BurgersSectionId,
                     "Burgers",
-                    DayOfWeek.Monday,
-                    "Monday",
+                    MenuFamily.Food,
                     "Monday Night Burgers",
                     "A dependable burger-night draw with fries and easy weeknight pricing.",
-                    "After 5:00 PM",
-                    "$11 basket special",
-                    Guid.Parse("816F24F6-14F3-4648-9F8A-520C17600952"),
-                    "Classic Hamburger",
+                    "images/menu/burgers.svg",
                     1,
                     true,
                     false,
-                    ["Today"],
-                    today.DayOfWeek == DayOfWeek.Monday)
+                    null,
+                    null,
+                    false,
+                    [MenuTab.Dinner],
+                    [new MenuItemPriceVariantView("Regular", 11m, 1)],
+                    ["Special", "Today"],
+                    null,
+                    new MenuItemSpecialAdminView(
+                        MenuItemSpecialScheduleKind.WeeklyRecurring,
+                        DayOfWeek.Monday,
+                        new DateOnly(2026, 1, 1),
+                        null,
+                        new TimeOnly(17, 0),
+                        null,
+                        false,
+                        "Monday",
+                        "Every Monday starting Jan 1",
+                        "After 5:00 PM",
+                        "$11 basket special",
+                        ["Today"],
+                        today.DayOfWeek == DayOfWeek.Monday))
             ];
 
             return Task.FromResult(
@@ -747,8 +760,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                         new(MenuTab.Drinks, "Drinks", drinkDays)
                     ],
                     sections,
-                    items,
-                    specials));
+                    items));
         }
 
         public Task<PublicMenuView> GetPublicMenuAsync(MenuTab requestedTab, DateOnly today, CancellationToken cancellationToken = default)
@@ -790,7 +802,6 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                     AppetizersSectionId,
                     "Appetizers",
                     "accent-blue",
-                    [],
                     [
                         new(
                             Guid.Parse("A35ED7CC-E947-4BEC-8B0A-8C2B8B73BFAB"),
@@ -799,6 +810,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                             "images/menu/appetizers.svg",
                             [new MenuItemPriceVariantView("Regular", 9m, 1)],
                             [],
+                            null,
                             null),
                         new(
                             Guid.Parse("B9B1D225-227D-4F91-95D0-11FC0D3C5F84"),
@@ -807,7 +819,8 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                             null,
                             [new MenuItemPriceVariantView("Regular", 9m, 1)],
                             ["Coming Soon"],
-                            "Expected on May 31"),
+                            "Expected on May 31",
+                            null),
                         new(
                             Guid.Parse("4BC371B2-DB2D-4872-8D68-393129E38556"),
                             "Quesadillas",
@@ -815,7 +828,8 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                             null,
                             [new MenuItemPriceVariantView("Regular", 11m, 1)],
                             ["Seasonal"],
-                            "Available through Jul 10"),
+                            "Available through Jul 10",
+                            null),
                         new(
                             Guid.Parse("C68985EB-A612-4A74-8FBE-E1EDB20E4A0B"),
                             "Fish Tacos",
@@ -823,13 +837,13 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                             "images/menu/appetizers.svg",
                             [new MenuItemPriceVariantView("Regular", 10m, 1)],
                             ["Limited Time"],
-                            "Available through Jun 3")
+                            "Available through Jun 3",
+                            null)
                     ]),
                 new(
                     BurgersSectionId,
                     "Burgers",
                     "accent-magenta",
-                    [],
                     [
                         new(
                             Guid.Parse("7D14308C-C286-4B2D-B58C-A8F74F8DBA0A"),
@@ -838,6 +852,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                             "images/menu/burgers.svg",
                             [new MenuItemPriceVariantView("Regular", 11m, 1)],
                             [],
+                            null,
                             null),
                         new(
                             Guid.Parse("F4D0A309-1D35-47F6-B7A8-FB652C2B7141"),
@@ -846,6 +861,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                             null,
                             [new MenuItemPriceVariantView("Regular", 13m, 1)],
                             [],
+                            null,
                             null)
                     ])
             ];
@@ -877,15 +893,19 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                     [
                         new(
                             Guid.Parse("DDFFDAE0-E918-43C2-B682-AE3FD5EC50EF"),
-                            "Monday",
                             "Monday Night Burgers",
                             "A dependable burger-night draw with fries and easy weeknight pricing.",
-                            "After 5:00 PM",
-                            "$11 basket special",
-                            "Burgers - Menu item: Classic Hamburger",
-                            today.DayOfWeek == DayOfWeek.Monday)
-                    ],
-                    [
+                            "images/menu/burgers.svg",
+                            [new MenuItemPriceVariantView("Regular", 11m, 1)],
+                            ["Special", "Today"],
+                            null,
+                            new MenuItemSpecialPublicView(
+                                MenuItemSpecialScheduleKind.WeeklyRecurring,
+                                "Monday",
+                                "Every Monday",
+                                "After 5:00 PM",
+                                "$11 basket special",
+                                today.DayOfWeek == DayOfWeek.Monday)),
                         new(
                             Guid.Parse("7D14308C-C286-4B2D-B58C-A8F74F8DBA0A"),
                             "Classic Hamburger",
@@ -893,6 +913,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                             "images/menu/burgers.svg",
                             [new MenuItemPriceVariantView("Regular", 11m, 1)],
                             [],
+                            null,
                             null)
                     ])
             ];
@@ -995,9 +1016,6 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         public Task<MenuOperationResult> SaveItemAsync(SaveMenuItemRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success(request.ItemId ?? Guid.NewGuid()));
 
-        public Task<MenuOperationResult> SaveRecurringSpecialAsync(SaveRecurringSpecialRequest request, CancellationToken cancellationToken = default) =>
-            Task.FromResult(MenuOperationResult.Success(request.SpecialId ?? Guid.NewGuid()));
-
         public Task<MenuOperationResult> SaveServiceWindowsAsync(SaveMenuServiceWindowRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success());
 
@@ -1005,9 +1023,6 @@ public sealed class LayoutAndPageRenderTests : BunitContext
             Task.FromResult(MenuOperationResult.Success());
 
         public Task<MenuOperationResult> ReorderItemsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default) =>
-            Task.FromResult(MenuOperationResult.Success());
-
-        public Task<MenuOperationResult> ReorderRecurringSpecialsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success());
 
         public Task<MenuOperationResult> ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
@@ -1022,11 +1037,6 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         public Task<MenuOperationResult> DeleteItemAsync(Guid itemId, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success(itemId));
 
-        public Task<MenuOperationResult> ArchiveRecurringSpecialAsync(Guid specialId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(MenuOperationResult.Success(specialId));
-
-        public Task<MenuOperationResult> DeleteRecurringSpecialAsync(Guid specialId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(MenuOperationResult.Success(specialId));
     }
 
     private sealed class TestAuthenticationStateProvider : AuthenticationStateProvider

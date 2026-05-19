@@ -73,7 +73,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
     }
 
     [Fact]
-    public void Specials_content_filter_shows_item_backed_specials()
+    public void Specials_content_filter_shows_special_items()
     {
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
 
@@ -84,8 +84,8 @@ public sealed class MenuAdminRedesignTests : BunitContext
             .Click();
 
         Assert.Contains("Late Night Burger", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Monday Night Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Secret Nachos", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Breakfast Burrito", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -143,7 +143,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
             .Click();
 
         var sectionSelect = cut.Find("select");
-        var mealCheckboxes = cut.FindAll(".menu-admin-checkbox-grid input[type='checkbox']");
+        var mealCheckboxes = cut.FindAll(".menu-editor-checkbox-stack input[type='checkbox']");
 
         Assert.Equal(StaticMenuAdminQueryService.AppetizersSectionId.ToString(), sectionSelect.GetAttribute("value"));
         Assert.True(mealCheckboxes[0].HasAttribute("checked"));
@@ -185,20 +185,18 @@ public sealed class MenuAdminRedesignTests : BunitContext
         internal static readonly Guid AppetizersSectionId = Guid.Parse("D8F92296-4F3C-4B88-B2D4-D1775F54A1D1");
         private static readonly Guid BreakfastSectionId = Guid.Parse("8A88226D-F45A-4E15-9420-8E1828654A73");
         private static readonly Guid CocktailsSectionId = Guid.Parse("5E3C8768-2020-4C8A-A565-B2B981AAB1B1");
-        private static readonly Guid ActiveFoodItemId = Guid.Parse("A4CC9DA8-54AE-4FA9-85D1-2E666FCF4B18");
+        private static readonly Guid ActiveSpecialItemId = Guid.Parse("A4CC9DA8-54AE-4FA9-85D1-2E666FCF4B18");
         private static readonly Guid HiddenFoodItemId = Guid.Parse("89CE687D-62E8-453F-8D08-12D74F85FCB9");
         private static readonly Guid ArchivedFoodItemId = Guid.Parse("44AA62BE-4B4D-46C7-A3D3-5088BF3B58DD");
         private static readonly Guid BreakfastItemId = Guid.Parse("797FEE70-BA14-46A5-AB88-DCDA3DAF7262");
         private static readonly Guid DrinkItemId = Guid.Parse("0A5B6B42-778E-49D3-8568-9AB1A785432D");
-        private static readonly Guid ActiveSpecialId = Guid.Parse("73A3369D-820A-4ADF-8B9E-D5A6307438B2");
-        private static readonly Guid ArchivedSpecialId = Guid.Parse("50B483A3-5A9E-4B28-B6F2-09D0BCF56D63");
         private static readonly DateOnly Today = new(2026, 5, 18);
 
         public Task<PublicMenuView> GetPublicMenuAsync(MenuTab requestedTab, DateOnly today, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
-        public Task<IReadOnlyList<PublicRecurringSpecialView>> GetHomeRecurringSpecialsAsync(DateOnly today, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<PublicRecurringSpecialView>>([]);
+        public Task<IReadOnlyList<PublicHomeSpecialView>> GetHomeSpecialsAsync(DateOnly today, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<PublicHomeSpecialView>>([]);
 
         public Task<MenuManagementView> GetMenuManagementViewAsync(DateOnly today, CancellationToken cancellationToken = default)
         {
@@ -228,7 +226,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
             IReadOnlyList<MenuItemAdminView> items =
             [
                 new(
-                    ActiveFoodItemId,
+                    ActiveSpecialItemId,
                     AppetizersSectionId,
                     "Appetizers",
                     MenuFamily.Food,
@@ -243,8 +241,22 @@ public sealed class MenuAdminRedesignTests : BunitContext
                     false,
                     new[] { MenuTab.Lunch, MenuTab.Dinner },
                     new[] { new MenuItemPriceVariantView("Regular", 12m, 1) },
-                    [],
-                    null),
+                    new[] { "Special", "Today" },
+                    null,
+                    new MenuItemSpecialAdminView(
+                        MenuItemSpecialScheduleKind.WeeklyRecurring,
+                        DayOfWeek.Monday,
+                        new DateOnly(2026, 1, 1),
+                        null,
+                        new TimeOnly(17, 0),
+                        null,
+                        false,
+                        "Monday",
+                        "Every Monday starting Jan 1",
+                        "After 5:00 PM",
+                        "$11 basket special",
+                        new[] { "Today" },
+                        Today.DayOfWeek == DayOfWeek.Monday)),
                 new(
                     HiddenFoodItemId,
                     AppetizersSectionId,
@@ -262,6 +274,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
                     new[] { MenuTab.Lunch },
                     new[] { new MenuItemPriceVariantView("Regular", 10m, 1) },
                     new[] { "Hidden" },
+                    null,
                     null),
                 new(
                     ArchivedFoodItemId,
@@ -280,6 +293,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
                     new[] { MenuTab.Lunch },
                     new[] { new MenuItemPriceVariantView("Regular", 9m, 1) },
                     new[] { "Archived" },
+                    null,
                     null),
                 new(
                     BreakfastItemId,
@@ -298,6 +312,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
                     new[] { MenuTab.Breakfast },
                     new[] { new MenuItemPriceVariantView("Regular", 11m, 1) },
                     [],
+                    null,
                     null),
                 new(
                     DrinkItemId,
@@ -316,50 +331,11 @@ public sealed class MenuAdminRedesignTests : BunitContext
                     Array.Empty<MenuTab>(),
                     new[] { new MenuItemPriceVariantView("Regular", 12m, 1) },
                     [],
+                    null,
                     null)
             ];
 
-            IReadOnlyList<RecurringSpecialAdminView> specials =
-            [
-                new(
-                    ActiveSpecialId,
-                    MenuTab.Dinner,
-                    AppetizersSectionId,
-                    "Appetizers",
-                    DayOfWeek.Monday,
-                    "Monday",
-                    "Monday Night Burgers",
-                    "Live recurring special.",
-                    "After 5:00 PM",
-                    "$11",
-                    ActiveFoodItemId,
-                    "Late Night Burger",
-                    1,
-                    true,
-                    false,
-                    [],
-                    false),
-                new(
-                    ArchivedSpecialId,
-                    MenuTab.Lunch,
-                    AppetizersSectionId,
-                    "Appetizers",
-                    DayOfWeek.Monday,
-                    "Monday",
-                    "Monday Night Burgers",
-                    "Archived recurring special.",
-                    "After 5:00 PM",
-                    "$10",
-                    ActiveFoodItemId,
-                    "Late Night Burger",
-                    1,
-                    true,
-                    true,
-                    new[] { "Archived" },
-                    false)
-            ];
-
-            return Task.FromResult(new MenuManagementView(tabs, sections, items, specials));
+            return Task.FromResult(new MenuManagementView(tabs, sections, items));
         }
     }
 
@@ -371,9 +347,6 @@ public sealed class MenuAdminRedesignTests : BunitContext
         public Task<MenuOperationResult> SaveItemAsync(SaveMenuItemRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success(request.ItemId ?? Guid.NewGuid()));
 
-        public Task<MenuOperationResult> SaveRecurringSpecialAsync(SaveRecurringSpecialRequest request, CancellationToken cancellationToken = default) =>
-            Task.FromResult(MenuOperationResult.Success(request.SpecialId ?? Guid.NewGuid()));
-
         public Task<MenuOperationResult> SaveServiceWindowsAsync(SaveMenuServiceWindowRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success());
 
@@ -381,9 +354,6 @@ public sealed class MenuAdminRedesignTests : BunitContext
             Task.FromResult(MenuOperationResult.Success());
 
         public Task<MenuOperationResult> ReorderItemsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default) =>
-            Task.FromResult(MenuOperationResult.Success());
-
-        public Task<MenuOperationResult> ReorderRecurringSpecialsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success());
 
         public Task<MenuOperationResult> ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
@@ -397,12 +367,6 @@ public sealed class MenuAdminRedesignTests : BunitContext
 
         public Task<MenuOperationResult> DeleteItemAsync(Guid itemId, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success(itemId));
-
-        public Task<MenuOperationResult> ArchiveRecurringSpecialAsync(Guid specialId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(MenuOperationResult.Success(specialId));
-
-        public Task<MenuOperationResult> DeleteRecurringSpecialAsync(Guid specialId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(MenuOperationResult.Success(specialId));
     }
 
     private sealed class TestAuthenticationStateProvider : AuthenticationStateProvider

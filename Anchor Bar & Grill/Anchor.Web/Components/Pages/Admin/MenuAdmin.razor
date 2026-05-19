@@ -27,7 +27,7 @@
                 <h2>Loading menu data</h2>
                 <span class="admin-card__badge">Please wait</span>
             </div>
-            <p class="admin-field-note">Pulling the latest sections, items, recurring specials, and service hours from the catalog.</p>
+            <p class="admin-field-note">Pulling the latest sections, special items, standard items, and service hours from the catalog.</p>
         </section>
     }
     else
@@ -69,21 +69,22 @@
                 else if (selectedEditorTab == MenuEditorTab.Food)
                 {
                     <p>
-                        Browse food sections and menu items together, then manage recurring specials as item-backed offers.
-                        Use the meal and content chips to focus the tree without changing the underlying menu assignments.
+                        Browse food sections and edit every food record through one shared item form. Specials are now first-class
+                        menu items, so the browser shows one list while the item form reveals extra schedule controls only when
+                        <strong>Is special</strong> is enabled.
                     </p>
                 }
                 else
                 {
                     <p>
-                        Manage drink sections, beverage items, and recurring specials as one catalog. Archived content stays
-                        accessible from the same tree so staff can restore or reuse it later.
+                        Manage drink sections and beverage items through the same item workflow. Archived content stays in reach
+                        through the browser filter so staff can restore or reuse it later.
                     </p>
                 }
                 <ul class="menu-editor-intro__list">
                     <li>Archive is the safe removal path. Delete still exists, but it always requires a second confirmation.</li>
-                    <li>The tree uses Active, Both, and Archived browsing modes so staff can focus on the right slice of the catalog.</li>
-                    <li>Move buttons shift records one slot at a time, drag-and-drop drops into the new slot, and exact sort-order fields remain available in the detail panel.</li>
+                    <li>The browser uses Active, Both, and Archived modes plus All, Standard, and Specials filters to focus the current catalog slice.</li>
+                    <li>Move buttons and drag-and-drop both reorder sections and item groups. Special items only reorder with other special items so the public menu keeps specials first.</li>
                 </ul>
             </div>
         </section>
@@ -238,7 +239,7 @@
                         <div class="action-row action-row--wrap">
                             <button type="button" class="action-button action-button--primary" @onclick="StartNewSectionForCurrentTab">Add section</button>
                             <button type="button" class="action-button action-button--secondary" disabled="@(!HasItemCreationContext)" @onclick="StartNewItemForCurrentTab">Add item</button>
-                            <button type="button" class="action-button action-button--secondary" disabled="@(!HasSpecialCreationContext)" @onclick="StartNewSpecialForCurrentTab">Add special offer</button>
+                            <button type="button" class="action-button action-button--secondary" disabled="@(!HasItemCreationContext)" @onclick="StartNewSpecialItemForCurrentTab">Add special item</button>
                         </div>
                     </div>
 
@@ -277,19 +278,19 @@
                                             <button type="button"
                                                     class="menu-editor-tree__icon-button"
                                                     title="Move section up"
-                                                    disabled="@(BrowserSections.First().Section.SectionId == browserSection.Section.SectionId)"
+                                                    disabled="@(!CanMoveSection(browserSection.Section, -1))"
                                                     @onclick="() => MoveSectionAsync(browserSection.Section, -1)">
                                                 Up
                                             </button>
                                             <button type="button"
                                                     class="menu-editor-tree__icon-button"
                                                     title="Move section down"
-                                                    disabled="@(BrowserSections.Last().Section.SectionId == browserSection.Section.SectionId)"
+                                                    disabled="@(!CanMoveSection(browserSection.Section, 1))"
                                                     @onclick="() => MoveSectionAsync(browserSection.Section, 1)">
                                                 Down
                                             </button>
-                                            <button type="button" class="menu-editor-tree__quick-action" @onclick="() => StartNewItemFromSection(browserSection.Section)">+ Item</button>
-                                            <button type="button" class="menu-editor-tree__quick-action" @onclick="() => StartNewSpecialFromSection(browserSection.Section)">+ Special offer</button>
+                                            <button type="button" class="menu-editor-tree__quick-action" @onclick="() => StartNewItemFromSection(browserSection.Section, false)">+ Item</button>
+                                            <button type="button" class="menu-editor-tree__quick-action" @onclick="() => StartNewItemFromSection(browserSection.Section, true)">+ Special item</button>
                                         </div>
                                     </div>
 
@@ -306,14 +307,14 @@
                                                      @ondrop="() => DropItemAsync(itemEntry.Item)">
                                                     <button type="button" class="menu-editor-tree__select" @onclick="() => SelectItem(itemEntry.Item)">
                                                         <span class="menu-editor-tree__title">@itemEntry.Item.Name</span>
-                                                        <span class="menu-editor-tree__subtitle">@GetItemTabSummary(itemEntry.Item)</span>
+                                                        <span class="menu-editor-tree__subtitle">@GetItemBrowserSubtitle(itemEntry.Item)</span>
                                                     </button>
 
                                                     <div class="menu-editor-tree__chips">
                                                         <span class="chip chip--neutral">@GetPriceSummary(itemEntry.Item)</span>
-                                                        @if (itemEntry.Specials.Count > 0)
+                                                        @if (itemEntry.Item.Special is not null)
                                                         {
-                                                            <span class="chip chip--info">@itemEntry.Specials.Count special@(itemEntry.Specials.Count == 1 ? string.Empty : "s")</span>
+                                                            <span class="chip chip--info">@itemEntry.Item.Special.BadgeLabel</span>
                                                         }
                                                         @foreach (var label in itemEntry.Item.StatusLabels)
                                                         {
@@ -325,109 +326,15 @@
                                                         <button type="button"
                                                                 class="menu-editor-tree__icon-button"
                                                                 title="Move item up"
-                                                                disabled="@(browserSection.Items.First().Item.ItemId == itemEntry.Item.ItemId)"
+                                                                disabled="@(!CanMoveItem(itemEntry.Item, -1))"
                                                                 @onclick="() => MoveItemAsync(itemEntry.Item, -1)">
                                                             Up
                                                         </button>
                                                         <button type="button"
                                                                 class="menu-editor-tree__icon-button"
                                                                 title="Move item down"
-                                                                disabled="@(browserSection.Items.Last().Item.ItemId == itemEntry.Item.ItemId)"
+                                                                disabled="@(!CanMoveItem(itemEntry.Item, 1))"
                                                                 @onclick="() => MoveItemAsync(itemEntry.Item, 1)">
-                                                            Down
-                                                        </button>
-                                                        <button type="button" class="menu-editor-tree__quick-action" @onclick="() => StartNewSpecialFromItem(itemEntry.Item)">+ Offer</button>
-                                                    </div>
-                                                </div>
-
-                                                @if (itemEntry.Specials.Count > 0)
-                                                {
-                                                    <div class="menu-editor-tree__group">
-                                                        <p class="menu-editor-tree__group-label">Special offers</p>
-                                                        @foreach (var special in itemEntry.Specials)
-                                                        {
-                                                            <div class="@GetTreeRowClass(MenuAdminDetailKind.Special, special.SpecialId, special.IsArchived, special.IsVisibleToGuests)"
-                                                                 draggable="true"
-                                                                 @ondragstart="() => BeginSpecialDrag(special)"
-                                                                 @ondragover:preventDefault
-                                                                 @ondrop="() => DropSpecialAsync(special)">
-                                                                <button type="button" class="menu-editor-tree__select" @onclick="() => SelectSpecial(special)">
-                                                                    <span class="menu-editor-tree__title">@special.Title</span>
-                                                                    <span class="menu-editor-tree__subtitle">@GetSpecialSubtitle(special)</span>
-                                                                </button>
-
-                                                                <div class="menu-editor-tree__chips">
-                                                                    @if (!string.IsNullOrWhiteSpace(special.PriceNote))
-                                                                    {
-                                                                        <span class="chip chip--neutral">@special.PriceNote</span>
-                                                                    }
-                                                                    @foreach (var label in special.StatusLabels)
-                                                                    {
-                                                                        <span class="status-pill @(GetStatusClass(label))">@label</span>
-                                                                    }
-                                                                </div>
-
-                                                                <div class="menu-editor-tree__actions">
-                                                                    <button type="button"
-                                                                            class="menu-editor-tree__icon-button"
-                                                                            title="Move special up"
-                                                                            disabled="@(itemEntry.Specials.First().SpecialId == special.SpecialId)"
-                                                                            @onclick="() => MoveSpecialAsync(special, -1)">
-                                                                        Up
-                                                                    </button>
-                                                                    <button type="button"
-                                                                            class="menu-editor-tree__icon-button"
-                                                                            title="Move special down"
-                                                                            disabled="@(itemEntry.Specials.Last().SpecialId == special.SpecialId)"
-                                                                            @onclick="() => MoveSpecialAsync(special, 1)">
-                                                                        Down
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        }
-                                                    </div>
-                                                }
-                                            }
-                                        </div>
-                                    }
-
-                                    @if (browserSection.DetachedSpecials.Count > 0)
-                                    {
-                                        <div class="menu-editor-tree__group">
-                                            <p class="menu-editor-tree__group-label">Special offers needing an item link</p>
-                                            @foreach (var special in browserSection.DetachedSpecials)
-                                            {
-                                                <div class="@GetTreeRowClass(MenuAdminDetailKind.Special, special.SpecialId, special.IsArchived, special.IsVisibleToGuests)"
-                                                     draggable="true"
-                                                     @ondragstart="() => BeginSpecialDrag(special)"
-                                                     @ondragover:preventDefault
-                                                     @ondrop="() => DropSpecialAsync(special)">
-                                                    <button type="button" class="menu-editor-tree__select" @onclick="() => SelectSpecial(special)">
-                                                        <span class="menu-editor-tree__title">@special.Title</span>
-                                                        <span class="menu-editor-tree__subtitle">@GetSpecialSubtitle(special)</span>
-                                                    </button>
-
-                                                    <div class="menu-editor-tree__chips">
-                                                        <span class="status-pill status-pill--limited">Needs item link</span>
-                                                        @foreach (var label in special.StatusLabels)
-                                                        {
-                                                            <span class="status-pill @(GetStatusClass(label))">@label</span>
-                                                        }
-                                                    </div>
-
-                                                    <div class="menu-editor-tree__actions">
-                                                        <button type="button"
-                                                                class="menu-editor-tree__icon-button"
-                                                                title="Move special up"
-                                                                disabled="@(browserSection.DetachedSpecials.First().SpecialId == special.SpecialId)"
-                                                                @onclick="() => MoveSpecialAsync(special, -1)">
-                                                            Up
-                                                        </button>
-                                                        <button type="button"
-                                                                class="menu-editor-tree__icon-button"
-                                                                title="Move special down"
-                                                                disabled="@(browserSection.DetachedSpecials.Last().SpecialId == special.SpecialId)"
-                                                                @onclick="() => MoveSpecialAsync(special, 1)">
                                                             Down
                                                         </button>
                                                     </div>
@@ -444,312 +351,320 @@
                 <section class="admin-card menu-editor-detail">
                     <div class="admin-card__header">
                         <h2>@CurrentDetailTitle</h2>
-                        @if (detailKind != MenuAdminDetailKind.None)
-                        {
-                            <span class="admin-card__badge">@(CurrentDetailHasUnsavedChanges ? "Unsaved changes" : "Saved state")</span>
-                        }
+                        <span class="admin-card__badge">@(CurrentDetailHasUnsavedChanges ? "Unsaved changes" : "Saved state")</span>
                     </div>
 
                     @if (detailKind == MenuAdminDetailKind.None)
                     {
                         <div class="menu-editor-empty">
-                            <h3>Select a section, item, or special from the tree.</h3>
-                            <p>The detail panel keeps explicit save controls, archive actions, and delete confirmations together so staff can work on one record at a time.</p>
+                            <h3>Select a section or item to edit it.</h3>
+                            <p>The browser stays on the left so staff can scan structure first, then use the detail panel for explicit saves.</p>
                         </div>
                     }
                     else if (detailKind == MenuAdminDetailKind.Section)
                     {
-                        <div class="editor-form__grid">
-                            <label>
-                                Section name
-                                <input type="text" @bind="sectionForm.Name" />
-                                <small>Use clear guest-facing names like Appetizers, Burgers, Cocktails, or Draft Beer.</small>
-                            </label>
-                            <label>
-                                Menu family
-                                <input type="text" value="@GetFamilyLabel(sectionForm.Family)" disabled />
-                                <small>This workspace only manages @(GetFamilyLabel(CurrentContentFamily).ToLowerInvariant()) sections.</small>
-                            </label>
-                            <label>
-                                Sort order
-                                <input type="number" @bind="sectionForm.SortOrder" />
-                            </label>
-                            <label class="editor-form__toggle">
-                                <span>Guest visibility</span>
-                                <div class="editor-form__toggle-row">
-                                    <input type="checkbox" @bind="sectionForm.IsVisibleToGuests" />
-                                    <small>Hidden sections stay visible in the editor but do not show to guests.</small>
-                                </div>
-                            </label>
-                            <label class="editor-form__toggle">
-                                <span>Archive section</span>
-                                <div class="editor-form__toggle-row">
-                                    <input type="checkbox" @bind="sectionForm.IsArchived" />
-                                    <small>Archived sections remain stored for reuse and disappear from the active guest view.</small>
-                                </div>
-                            </label>
-                        </div>
+                        <div class="editor-form">
+                            <div class="editor-form__grid">
+                                <label>
+                                    <span>Section name</span>
+                                    <input type="text" @bind="sectionForm.Name" placeholder="Appetizers, Wings, Cocktails..." />
+                                </label>
 
-                        @if (pendingSectionDeleteId == sectionForm.SectionId)
-                        {
-                            <p class="status-banner status-banner--warning">Delete is armed for this section. Click Delete section again to permanently remove it.</p>
-                        }
+                                <label>
+                                    <span>Family</span>
+                                    <select @bind="sectionForm.Family">
+                                        <option value="@MenuFamily.Food">Food</option>
+                                        <option value="@MenuFamily.Drink">Drink</option>
+                                    </select>
+                                </label>
 
-                        <div class="action-row action-row--wrap">
-                            <button type="button" class="action-button action-button--primary" @onclick="SaveSectionAsync">
-                                @(sectionForm.SectionId is null ? "Create section" : "Save section")
-                            </button>
-                            <button type="button" class="action-button action-button--secondary" @onclick="StartNewSectionForCurrentTab">Clear form</button>
-                            @if (sectionForm.SectionId is Guid sectionId)
+                                <label>
+                                    <span>Sort order</span>
+                                    <input type="number" @bind="sectionForm.SortOrder" />
+                                </label>
+
+                                <div class="editor-form__toggle">
+                                    <label class="editor-form__toggle-row">
+                                        <input type="checkbox" @bind="sectionForm.IsVisibleToGuests" />
+                                        <span>
+                                            Show this section to guests
+                                            <small>Hidden sections stay available in the editor so staff can continue staging content.</small>
+                                        </span>
+                                    </label>
+                                </div>
+
+                                <div class="editor-form__toggle">
+                                    <label class="editor-form__toggle-row">
+                                        <input type="checkbox" @bind="sectionForm.IsArchived" />
+                                        <span>
+                                            Archive this section
+                                            <small>Archived sections stay stored for later reuse. They remain hidden from guests.</small>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            @if (pendingSectionDeleteId == sectionForm.SectionId)
                             {
-                                <button type="button" class="action-button action-button--success" @onclick="() => ArchiveSectionAsync(sectionId)">Archive section</button>
-                                <button type="button" class="action-button action-button--danger" @onclick="() => ToggleSectionDeleteAsync(sectionId)">
-                                    @(pendingSectionDeleteId == sectionId ? "Confirm delete" : "Delete section")
-                                </button>
+                                <p class="admin-field-note">Click delete again to permanently remove this section. Sections with dependent items cannot be deleted until those items are moved or removed.</p>
                             }
-                        </div>
 
-                        <p class="admin-field-note">Sections anchor the tree, so use them as stable containers and move items or specials beneath them before considering delete.</p>
+                            <div class="action-row action-row--wrap">
+                                <button type="button" class="action-button action-button--primary" @onclick="SaveSectionAsync">
+                                    @(sectionForm.SectionId is null ? "Create section" : "Save section")
+                                </button>
+                                <button type="button" class="action-button action-button--secondary" @onclick="ResetCurrentDetail">
+                                    @(sectionForm.SectionId is null ? "Clear section form" : "Revert changes")
+                                </button>
+                                @if (sectionForm.SectionId is Guid sectionId)
+                                {
+                                    <button type="button"
+                                            class="action-button action-button--secondary"
+                                            disabled="@sectionForm.IsArchived"
+                                            @onclick="() => ArchiveSectionAsync(sectionId)">
+                                        Archive section
+                                    </button>
+                                    <button type="button" class="action-button action-button--danger" @onclick="() => ToggleSectionDeleteAsync(sectionId)">
+                                        @(pendingSectionDeleteId == sectionId ? "Confirm delete section" : "Delete section")
+                                    </button>
+                                }
+                            </div>
+                        </div>
                     }
                     else if (detailKind == MenuAdminDetailKind.Item)
                     {
-                        <div class="editor-form__grid">
-                            <label>
-                                Section
-                                <select value="@itemForm.SectionId" @onchange="HandleItemSectionChangedAsync">
-                                    <option value="">Select a section</option>
-                                    @foreach (var section in ItemSectionOptions)
-                                    {
-                                        <option value="@section.SectionId">@section.Name</option>
-                                    }
-                                </select>
-                                <small>Choose the section first so the editor can keep the item inside the correct tree branch.</small>
-                            </label>
-                            <label>
-                                Menu item
-                                <input type="text" @bind="itemForm.Name" />
-                            </label>
-                            <label>
-                                Sort order
-                                <input type="number" @bind="itemForm.SortOrder" />
-                            </label>
-                            <label>
-                                Menu image path or URL (optional)
-                                <input type="text" @bind="itemForm.ImagePath" />
-                                <small>Leave blank when the item does not have a photo yet.</small>
-                            </label>
-                            <label>
-                                Offer start date
-                                <input type="date" value="@itemForm.OfferStartsOnText" @onchange="args => itemForm.OfferStartsOnText = args.Value?.ToString()" />
-                            </label>
-                            <label>
-                                Offer end date (optional)
-                                <input type="date" value="@itemForm.OfferEndsOnText" @onchange="args => itemForm.OfferEndsOnText = args.Value?.ToString()" />
-                            </label>
-                            <label class="editor-form__toggle">
-                                <span>Guest visibility</span>
-                                <div class="editor-form__toggle-row">
-                                    <input type="checkbox" @bind="itemForm.IsVisibleToGuests" />
-                                    <small>Hidden items stay editable and can be restored later.</small>
-                                </div>
-                            </label>
-                            <label class="editor-form__toggle">
-                                <span>Archive item</span>
-                                <div class="editor-form__toggle-row">
-                                    <input type="checkbox" @bind="itemForm.IsArchived" />
-                                    <small>Archived items leave the active menu but stay available for reference and reuse.</small>
-                                </div>
-                            </label>
-                            <label class="editor-form__toggle">
-                                <span>Seasonal item?</span>
-                                <div class="editor-form__toggle-row">
-                                    <input type="checkbox" @bind="itemForm.IsSeasonal" />
-                                    <small>The guest-facing Seasonal and Limited Time labels are still derived from dates at runtime.</small>
-                                </div>
-                            </label>
-                            <label class="editor-form__message">
-                                Description
-                                <textarea rows="4" @bind="itemForm.Description"></textarea>
-                            </label>
-                        </div>
+                        <div class="editor-form">
+                            <div class="editor-form__grid">
+                                <label>
+                                    <span>Section</span>
+                                    <select value="@itemForm.SectionId" @onchange="HandleItemSectionChangedAsync">
+                                        @foreach (var section in ItemSectionOptions)
+                                        {
+                                            <option value="@section.SectionId">@section.Name</option>
+                                        }
+                                    </select>
+                                </label>
 
-                        <div class="menu-admin-subcard">
-                            <div class="admin-card__header">
-                                <h3>Guest tabs</h3>
-                                <span class="admin-card__badge">Fixed tabs</span>
-                            </div>
+                                <label>
+                                    <span>Sort order</span>
+                                    <input type="number" @bind="itemForm.SortOrder" />
+                                </label>
 
-                            @if (GetItemEditorFamily() == MenuFamily.Drink)
-                            {
-                                <p class="admin-field-note">Drink items belong to the Drinks tab automatically because they live inside a drink section.</p>
-                            }
-                            else
-                            {
-                                <div class="menu-admin-checkbox-grid">
-                                    <label class="editor-form__toggle-row">
-                                        <input type="checkbox" @bind="itemForm.ShowBreakfast" />
-                                        <span>Breakfast</span>
-                                    </label>
-                                    <label class="editor-form__toggle-row">
-                                        <input type="checkbox" @bind="itemForm.ShowLunch" />
-                                        <span>Lunch</span>
-                                    </label>
-                                    <label class="editor-form__toggle-row">
-                                        <input type="checkbox" @bind="itemForm.ShowDinner" />
-                                        <span>Dinner</span>
-                                    </label>
+                                <label>
+                                    <span>Name</span>
+                                    <input type="text" @bind="itemForm.Name" placeholder="Classic hamburger, wing night, old fashioned..." />
+                                </label>
+
+                                <label>
+                                    <span>Image path or URL</span>
+                                    <input type="text" @bind="itemForm.ImagePath" placeholder="/images/menu/wings.jpg" />
+                                </label>
+
+                                <label class="editor-form__message">
+                                    <span>Description</span>
+                                    <textarea @bind="itemForm.Description" placeholder="Describe what guests should know about this item."></textarea>
+                                </label>
+
+                                <div class="editor-form__message">
+                                    <span>Price variants</span>
+                                    <div class="menu-editor-price-list">
+                                        @foreach (var variant in itemForm.PriceVariants)
+                                        {
+                                            <div class="menu-editor-price-row">
+                                                <label>
+                                                    <span>Label</span>
+                                                    <input type="text" @bind="variant.Label" placeholder="Regular, Basket, Single..." />
+                                                </label>
+                                                <label>
+                                                    <span>Amount</span>
+                                                    <input type="text" @bind="variant.AmountText" placeholder="9.00" />
+                                                </label>
+                                                <button type="button"
+                                                        class="menu-editor-tree__icon-button"
+                                                        disabled="@(itemForm.PriceVariants.Count == 1)"
+                                                        @onclick="() => RemovePriceVariant(variant)">
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        }
+                                    </div>
+                                    <button type="button" class="action-button action-button--secondary" @onclick="AddPriceVariant">Add price variant</button>
                                 </div>
-                            }
-                        </div>
 
-                        <div class="menu-admin-subcard">
-                            <div class="admin-card__header">
-                                <h3>Price variants</h3>
-                                <span class="admin-card__badge">@itemForm.PriceVariants.Count variant@(itemForm.PriceVariants.Count == 1 ? string.Empty : "s")</span>
-                            </div>
-
-                            <div class="menu-admin-price-stack">
-                                @foreach (var variant in itemForm.PriceVariants)
+                                @if (GetItemEditorFamily() == MenuFamily.Food)
                                 {
-                                    <div class="menu-admin-price-row" @key="variant">
-                                        <label>
-                                            Label
-                                            <input type="text" @bind="variant.Label" />
+                                    <div class="editor-form__message">
+                                        <span>Guest tabs</span>
+                                        <div class="menu-editor-checkbox-stack">
+                                            <label class="editor-form__toggle-row">
+                                                <input type="checkbox" @bind="itemForm.ShowBreakfast" />
+                                                <span>Breakfast</span>
+                                            </label>
+                                            <label class="editor-form__toggle-row">
+                                                <input type="checkbox" @bind="itemForm.ShowLunch" />
+                                                <span>Lunch</span>
+                                            </label>
+                                            <label class="editor-form__toggle-row">
+                                                <input type="checkbox" @bind="itemForm.ShowDinner" />
+                                                <span>Dinner</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                }
+
+                                <div class="editor-form__toggle">
+                                    <label class="editor-form__toggle-row">
+                                        <input type="checkbox" @bind="itemForm.IsVisibleToGuests" />
+                                        <span>
+                                            Show this item to guests
+                                            <small>Hidden items stay in the editor but do not show on the public menu.</small>
+                                        </span>
+                                    </label>
+                                </div>
+
+                                <div class="editor-form__toggle">
+                                    <label class="editor-form__toggle-row">
+                                        <input type="checkbox" @bind="itemForm.IsArchived" />
+                                        <span>
+                                            Archive this item
+                                            <small>Archived items stay stored for future reuse and appear greyed out in the browser.</small>
+                                        </span>
+                                    </label>
+                                </div>
+
+                                <div class="editor-form__toggle">
+                                    <label class="editor-form__toggle-row">
+                                        <input type="checkbox" checked="@itemForm.IsSpecial" @onchange="HandleSpecialToggleChangedAsync" />
+                                        <span>
+                                            Is special
+                                            <small>Turn this on when the item is a recurring or dated special. Shared item fields stay here, and special-only schedule fields appear below.</small>
+                                        </span>
+                                    </label>
+                                </div>
+
+                                @if (!itemForm.IsSpecial)
+                                {
+                                    <label>
+                                        <span>Offer start date</span>
+                                        <input type="text" @bind="itemForm.OfferStartsOnText" placeholder="YYYY-MM-DD" />
+                                    </label>
+
+                                    <label>
+                                        <span>Offer end date</span>
+                                        <input type="text" @bind="itemForm.OfferEndsOnText" placeholder="YYYY-MM-DD" />
+                                    </label>
+
+                                    <div class="editor-form__toggle">
+                                        <label class="editor-form__toggle-row">
+                                            <input type="checkbox" @bind="itemForm.IsSeasonal" />
+                                            <span>
+                                                Seasonal item
+                                                <small>Use this for normal menu items that should show a seasonal badge while their date window is active.</small>
+                                            </span>
                                         </label>
-                                        <label>
-                                            Amount
-                                            <input type="number" step="0.01" @bind="variant.AmountText" />
-                                        </label>
-                                        <label>
-                                            Sort order
-                                            <input type="number" @bind="variant.SortOrder" />
-                                        </label>
-                                        <button type="button"
-                                                class="action-button action-button--danger"
-                                                disabled="@(itemForm.PriceVariants.Count == 1)"
-                                                @onclick="() => RemovePriceVariant(variant)">
-                                            Remove
-                                        </button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="editor-form__message menu-editor-special-settings">
+                                        <div class="admin-card__header">
+                                            <h3>Special settings</h3>
+                                            <span class="admin-card__badge">Item extension</span>
+                                        </div>
+
+                                        <div class="editor-form__grid">
+                                            <label>
+                                                <span>Schedule type</span>
+                                                <select @bind="itemForm.SpecialScheduleKind">
+                                                    <option value="@MenuItemSpecialScheduleKind.WeeklyRecurring">Weekly recurring</option>
+                                                    <option value="@MenuItemSpecialScheduleKind.Dated">Dated</option>
+                                                </select>
+                                            </label>
+
+                                            @if (itemForm.SpecialScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring)
+                                            {
+                                                <label>
+                                                    <span>Weekday</span>
+                                                    <select @bind="itemForm.SpecialDayOfWeek">
+                                                        @foreach (var day in Enum.GetValues<DayOfWeek>())
+                                                        {
+                                                            <option value="@day">@GetDayLabel(day)</option>
+                                                        }
+                                                    </select>
+                                                </label>
+                                            }
+
+                                            <label>
+                                                <span>Start date</span>
+                                                <input type="text" @bind="itemForm.SpecialStartDateText" placeholder="YYYY-MM-DD" />
+                                            </label>
+
+                                            <label>
+                                                <span>End date</span>
+                                                <input type="text" @bind="itemForm.SpecialEndDateText" placeholder="YYYY-MM-DD" />
+                                            </label>
+
+                                            <div>
+                                                <label for="special-start-time">Start time</label>
+                                                <InputTimeComboBox Id="special-start-time"
+                                                                   @bind-Value="itemForm.SpecialStartsAtText"
+                                                                   Placeholder="Optional"
+                                                                   ToggleAriaLabel="Show special start times" />
+                                            </div>
+
+                                            <div>
+                                                <label for="special-end-time">End time</label>
+                                                <InputTimeComboBox Id="special-end-time"
+                                                                   @bind-Value="itemForm.SpecialEndsAtText"
+                                                                   Placeholder="Optional"
+                                                                   ToggleAriaLabel="Show special end times" />
+                                            </div>
+
+                                            <div class="editor-form__toggle">
+                                                <label class="editor-form__toggle-row">
+                                                    <input type="checkbox" @bind="itemForm.SpecialClosesNextDay" />
+                                                    <span>
+                                                        Closes next day
+                                                        <small>Use this when a special starts late and ends after midnight.</small>
+                                                    </span>
+                                                </label>
+                                            </div>
+
+                                            <label class="editor-form__message">
+                                                <span>Short callout</span>
+                                                <input type="text" @bind="itemForm.SpecialCallout" placeholder="After 5 PM, while supplies last, bar-only..." />
+                                            </label>
+                                        </div>
                                     </div>
                                 }
                             </div>
 
-                            <div class="action-row">
-                                <button type="button" class="action-button action-button--secondary" @onclick="AddPriceVariant">Add another price</button>
+                            @if (itemForm.ItemId is Guid existingItemId && pendingItemDeleteId == existingItemId)
+                            {
+                                <p class="admin-field-note">Click delete again to permanently remove this item. Special items are deleted as a whole item record together with their special extension.</p>
+                            }
+
+                            <div class="action-row action-row--wrap">
+                                <button type="button" class="action-button action-button--primary" @onclick="SaveItemAsync">
+                                    @(itemForm.ItemId is null ? (itemForm.IsSpecial ? "Create special item" : "Create item") : (itemForm.IsSpecial ? "Save special item" : "Save item"))
+                                </button>
+                                <button type="button" class="action-button action-button--secondary" @onclick="ResetCurrentDetail">
+                                    @(itemForm.ItemId is null ? (itemForm.IsSpecial ? "Clear special form" : "Clear item form") : "Revert changes")
+                                </button>
+                                @if (itemForm.ItemId is Guid itemId)
+                                {
+                                    <button type="button"
+                                            class="action-button action-button--secondary"
+                                            disabled="@itemForm.IsArchived"
+                                            @onclick="() => ArchiveItemAsync(itemId)">
+                                        Archive item
+                                    </button>
+                                    <button type="button" class="action-button action-button--danger" @onclick="() => ToggleItemDeleteAsync(itemId)">
+                                        @(pendingItemDeleteId == itemId ? "Confirm delete item" : "Delete item")
+                                    </button>
+                                }
                             </div>
                         </div>
-
-                        @if (pendingItemDeleteId == itemForm.ItemId)
-                        {
-                            <p class="status-banner status-banner--warning">Delete is armed for this item. Click Delete item again to permanently remove it.</p>
-                        }
-
-                        <div class="action-row action-row--wrap">
-                            <button type="button" class="action-button action-button--primary" @onclick="SaveItemAsync">
-                                @(itemForm.ItemId is null ? "Create menu item" : "Save menu item")
-                            </button>
-                            <button type="button" class="action-button action-button--secondary" @onclick="StartNewItemForCurrentTab">Clear form</button>
-                            @if (itemForm.ItemId is Guid itemId)
-                            {
-                                <button type="button" class="action-button action-button--success" @onclick="() => ArchiveItemAsync(itemId)">Archive item</button>
-                                <button type="button" class="action-button action-button--danger" @onclick="() => ToggleItemDeleteAsync(itemId)">
-                                    @(pendingItemDeleteId == itemId ? "Confirm delete" : "Delete item")
-                                </button>
-                            }
-                        </div>
-
-                        <p class="admin-field-note">A single-price item still needs one price variant. Use labels like Regular, Cup, Bowl, Single, or Double when guests need a clearer price breakdown.</p>
-                    }
-                    else if (detailKind == MenuAdminDetailKind.Special)
-                    {
-                        <div class="editor-form__grid">
-                            <label>
-                                Menu tab
-                                <select value="@specialForm.Tab" @onchange="HandleSpecialTabChangedAsync">
-                                    @foreach (var tab in SpecialTabOptions)
-                                    {
-                                        <option value="@tab">@GetTabLabel(tab)</option>
-                                    }
-                                </select>
-                            </label>
-                            <label>
-                                Menu item
-                                <select value="@specialForm.LinkedMenuItemId" @onchange="HandleSpecialLinkedItemChangedAsync">
-                                    <option value="">Select a menu item</option>
-                                    @foreach (var item in SpecialLinkedItemOptions)
-                                    {
-                                        <option value="@item.ItemId">@GetSpecialLinkedItemOptionLabel(item)</option>
-                                    }
-                                </select>
-                                <small>Specials are item-backed offers. Choose the real menu item first, then add the timing and price modifiers for the offer.</small>
-                            </label>
-                            <label>
-                                Section
-                                <input type="text" value="@(SelectedSpecialLinkedItem?.SectionName ?? "Select a menu item first")" disabled />
-                                <small>The section follows the linked menu item automatically.</small>
-                            </label>
-                            <label class="editor-form__message">
-                                Item description preview
-                                <textarea rows="4" readonly>@(SelectedSpecialLinkedItem?.Description ?? string.Empty)</textarea>
-                            </label>
-                            <label>
-                                Day of week
-                                <select @bind="specialForm.DayOfWeek">
-                                    @foreach (var day in Enum.GetValues<DayOfWeek>())
-                                    {
-                                        <option value="@day">@GetDayLabel(day)</option>
-                                    }
-                                </select>
-                            </label>
-                            <label>
-                                Sort order
-                                <input type="number" @bind="specialForm.SortOrder" />
-                            </label>
-                            <label>
-                                Time note
-                                <input type="text" @bind="specialForm.TimeNote" />
-                                <small>Examples: After 5:00 PM, All day, or 11:00 AM - 2:00 PM.</small>
-                            </label>
-                            <label>
-                                Price or callout
-                                <input type="text" @bind="specialForm.PriceNote" />
-                            </label>
-                            <label class="editor-form__toggle">
-                                <span>Guest visibility</span>
-                                <div class="editor-form__toggle-row">
-                                    <input type="checkbox" @bind="specialForm.IsVisibleToGuests" />
-                                    <small>Turn this off when you want to keep the offer stored without showing it to guests.</small>
-                                </div>
-                            </label>
-                            <label class="editor-form__toggle">
-                                <span>Archive special</span>
-                                <div class="editor-form__toggle-row">
-                                    <input type="checkbox" @bind="specialForm.IsArchived" />
-                                    <small>Archived specials remain available for reference and future reuse.</small>
-                                </div>
-                            </label>
-                        </div>
-
-                        @if (pendingSpecialDeleteId == specialForm.SpecialId)
-                        {
-                            <p class="status-banner status-banner--warning">Delete is armed for this special. Click Delete special again to permanently remove it.</p>
-                        }
-
-                        <div class="action-row action-row--wrap">
-                            <button type="button" class="action-button action-button--primary" @onclick="SaveRecurringSpecialAsync">
-                                @(specialForm.SpecialId is null ? "Create special offer" : "Save special offer")
-                            </button>
-                            <button type="button" class="action-button action-button--secondary" @onclick="StartNewSpecialForCurrentTab">Clear form</button>
-                            @if (specialForm.SpecialId is Guid specialId)
-                            {
-                                <button type="button" class="action-button action-button--success" @onclick="() => ArchiveSpecialAsync(specialId)">Archive special</button>
-                                <button type="button" class="action-button action-button--danger" @onclick="() => ToggleSpecialDeleteAsync(specialId)">
-                                    @(pendingSpecialDeleteId == specialId ? "Confirm delete" : "Delete special")
-                                </button>
-                            }
-                        </div>
-
-                        <p class="admin-field-note">Recurring specials are item-backed offers. Keep the base item accurate, then use this panel for the day, time, and price modifiers guests should see.</p>
                     }
                 </section>
             </div>

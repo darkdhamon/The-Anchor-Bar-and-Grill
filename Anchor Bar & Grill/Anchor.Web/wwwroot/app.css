@@ -877,6 +877,20 @@ html.anchor-theme-dark .site-shell {
     border-top: 1px dashed var(--outline);
 }
 
+.menu-item--special {
+    padding: 1rem;
+    border: 1px solid rgba(89, 175, 226, 0.26);
+    border-radius: 1rem;
+    background:
+        linear-gradient(180deg, rgba(48, 154, 221, 0.08), transparent 44%),
+        rgba(247, 247, 244, 0.04);
+    box-shadow: 0 14px 32px rgba(22, 32, 61, 0.14);
+}
+
+.menu-item--special + .menu-item {
+    margin-top: 0.35rem;
+}
+
 .menu-item--with-image {
     display: grid;
     grid-template-columns: minmax(110px, 150px) minmax(0, 1fr);
@@ -1480,6 +1494,35 @@ html.anchor-theme-dark .site-shell {
 .menu-admin-list-actions {
     min-width: 220px;
     justify-items: end;
+}
+
+.menu-editor-price-list {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 0.65rem;
+}
+
+.menu-editor-price-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(140px, 0.8fr) auto;
+    gap: 0.85rem;
+    align-items: end;
+}
+
+.menu-editor-checkbox-stack {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.65rem;
+}
+
+.menu-editor-special-settings {
+    padding: 1rem;
+    border: 1px solid rgba(89, 175, 226, 0.22);
+    border-radius: 1rem;
+    background:
+        linear-gradient(180deg, rgba(50, 88, 145, 0.2), rgba(18, 28, 56, 0.14)),
+        rgba(247, 247, 244, 0.03);
 }
 
 .menu-editor-intro,
@@ -2350,6 +2393,7 @@ button.menu-editor-filter-chip {
     }
 
     .menu-admin-price-row,
+    .menu-editor-price-row,
     .menu-hours-editor__row,
     .menu-editor-tree__row {
         grid-template-columns: 1fr;

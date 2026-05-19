@@ -30,5 +30,5 @@ public sealed class MenuItemEntity
 
     public ICollection<MenuItemTabEntity> FoodTabs { get; set; } = [];
 
-    public ICollection<RecurringSpecialEntity> LinkedRecurringSpecials { get; set; } = [];
+    public MenuItemSpecialEntity? Special { get; set; }
 }

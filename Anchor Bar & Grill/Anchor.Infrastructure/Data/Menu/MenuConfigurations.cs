@@ -34,6 +34,10 @@ public sealed class MenuItemEntityConfiguration : IEntityTypeConfiguration<MenuI
             .WithMany(section => section.Items)
             .HasForeignKey(item => item.MenuSectionId)
             .OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(item => item.Special)
+            .WithOne(special => special.Item)
+            .HasForeignKey<MenuItemSpecialEntity>(special => special.MenuItemId)
+            .OnDelete(DeleteBehavior.Cascade);
         builder.HasData(MenuSeedData.Items);
     }
 }
@@ -68,25 +72,19 @@ public sealed class MenuItemTabEntityConfiguration : IEntityTypeConfiguration<Me
     }
 }
 
-public sealed class RecurringSpecialEntityConfiguration : IEntityTypeConfiguration<RecurringSpecialEntity>
+public sealed class MenuItemSpecialEntityConfiguration : IEntityTypeConfiguration<MenuItemSpecialEntity>
 {
-    public void Configure(EntityTypeBuilder<RecurringSpecialEntity> builder)
+    public void Configure(EntityTypeBuilder<MenuItemSpecialEntity> builder)
     {
-        builder.ToTable("RecurringSpecials");
-        builder.HasKey(special => special.RecurringSpecialId);
-        builder.Property(special => special.Title).HasMaxLength(150).IsRequired();
-        builder.Property(special => special.Description).HasMaxLength(1000).IsRequired();
-        builder.Property(special => special.TimeNote).HasMaxLength(100).IsRequired();
-        builder.Property(special => special.PriceNote).HasMaxLength(100);
-        builder.HasOne(special => special.Section)
-            .WithMany(section => section.RecurringSpecials)
-            .HasForeignKey(special => special.MenuSectionId)
-            .OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne(special => special.LinkedMenuItem)
-            .WithMany(item => item.LinkedRecurringSpecials)
-            .HasForeignKey(special => special.LinkedMenuItemId)
-            .OnDelete(DeleteBehavior.Restrict);
-        builder.HasData(MenuSeedData.RecurringSpecials);
+        builder.ToTable("MenuItemSpecials");
+        builder.HasKey(special => special.MenuItemId);
+        builder.Property(special => special.ScheduleKind).IsRequired();
+        builder.Property(special => special.StartDate).HasColumnType("date");
+        builder.Property(special => special.EndDate).HasColumnType("date");
+        builder.Property(special => special.StartsAt).HasColumnType("time");
+        builder.Property(special => special.EndsAt).HasColumnType("time");
+        builder.Property(special => special.Callout).HasMaxLength(100);
+        builder.HasData(MenuSeedData.Specials);
     }
 }
 

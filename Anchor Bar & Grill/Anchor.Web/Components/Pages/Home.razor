@@ -73,16 +73,16 @@
 <section class="section-shell">
     <div class="section-heading">
         <p class="section-heading__eyebrow">Weekly Specials</p>
-        <h2>Put recurring day-of-week favorites in front of guests right away.</h2>
+        <h2>Put special menu items in front of guests right away.</h2>
     </div>
 
     <div class="recurring-specials-grid">
-        @foreach (var special in homeRecurringSpecials)
+        @foreach (var special in homeSpecialItems)
         {
             <article class="feature-card recurring-special @(special.IsToday ? "recurring-special--today" : string.Empty)">
                 <div class="recurring-special__header">
                     <div>
-                        <p class="feature-card__eyebrow">@special.DayLabel</p>
+                        <p class="feature-card__eyebrow">@special.BadgeLabel</p>
                         <h3>@special.Title</h3>
                     </div>
 
@@ -92,11 +92,14 @@
                     }
                 </div>
 
-                <p class="event-card__meta">@special.TimeNote</p>
+                @if (!string.IsNullOrWhiteSpace(special.TimeSummary))
+                {
+                    <p class="event-card__meta">@special.TimeSummary</p>
+                }
                 <p>@special.Description</p>
 
                 <div class="recurring-special__footer">
-                    <span class="recurring-special__price">@special.PriceNote</span>
+                    <span class="recurring-special__price">@special.Callout</span>
                     <span class="recurring-special__placement">@special.PlacementSummary</span>
                 </div>
             </article>
@@ -166,11 +169,11 @@
 
 @code {
     private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
-    private IReadOnlyList<PublicRecurringSpecialView> homeRecurringSpecials = [];
+    private IReadOnlyList<PublicHomeSpecialView> homeSpecialItems = [];
     private IReadOnlyList<UpcomingEventOccurrence> homeUpcomingEvents => MockupContent.GetUpcomingEvents(today, 30);
 
     protected override async Task OnInitializedAsync()
     {
-        homeRecurringSpecials = await MenuQueryService.GetHomeRecurringSpecialsAsync(today);
+        homeSpecialItems = await MenuQueryService.GetHomeSpecialsAsync(today);
     }
 }

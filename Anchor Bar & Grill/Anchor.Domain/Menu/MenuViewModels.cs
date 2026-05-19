@@ -23,13 +23,21 @@ public sealed record MenuItemPriceVariantView(string Label, decimal Amount, int 
         : Amount.ToString("C2", UsCulture);
 }
 
-public sealed record PublicRecurringSpecialView(
-    Guid SpecialId,
-    string DayLabel,
+public sealed record MenuItemSpecialPublicView(
+    MenuItemSpecialScheduleKind ScheduleKind,
+    string BadgeLabel,
+    string ScheduleSummary,
+    string? TimeSummary,
+    string? Callout,
+    bool IsToday);
+
+public sealed record PublicHomeSpecialView(
+    Guid ItemId,
+    string BadgeLabel,
     string Title,
     string Description,
-    string TimeNote,
-    string? PriceNote,
+    string? TimeSummary,
+    string? Callout,
     string PlacementSummary,
     bool IsToday);
 
@@ -40,13 +48,13 @@ public sealed record PublicMenuItemView(
     string? ImagePath,
     IReadOnlyList<MenuItemPriceVariantView> PriceVariants,
     IReadOnlyList<string> StatusLabels,
-    string? OfferDateSummary);
+    string? OfferDateSummary,
+    MenuItemSpecialPublicView? Special);
 
 public sealed record PublicMenuSectionView(
     Guid SectionId,
     string Name,
     string AccentClass,
-    IReadOnlyList<PublicRecurringSpecialView> Specials,
     IReadOnlyList<PublicMenuItemView> Items);
 
 public sealed record PublicMenuView(
@@ -81,24 +89,21 @@ public sealed record MenuItemAdminView(
     IReadOnlyList<MenuTab> FoodTabs,
     IReadOnlyList<MenuItemPriceVariantView> PriceVariants,
     IReadOnlyList<string> StatusLabels,
-    string? OfferDateSummary);
+    string? OfferDateSummary,
+    MenuItemSpecialAdminView? Special);
 
-public sealed record RecurringSpecialAdminView(
-    Guid SpecialId,
-    MenuTab Tab,
-    Guid SectionId,
-    string SectionName,
-    DayOfWeek DayOfWeek,
-    string DayLabel,
-    string Title,
-    string Description,
-    string TimeNote,
-    string? PriceNote,
-    Guid? LinkedMenuItemId,
-    string? LinkedMenuItemName,
-    int SortOrder,
-    bool IsVisibleToGuests,
-    bool IsArchived,
+public sealed record MenuItemSpecialAdminView(
+    MenuItemSpecialScheduleKind ScheduleKind,
+    DayOfWeek? DayOfWeek,
+    DateOnly StartDate,
+    DateOnly? EndDate,
+    TimeOnly? StartsAt,
+    TimeOnly? EndsAt,
+    bool ClosesNextDay,
+    string BadgeLabel,
+    string ScheduleSummary,
+    string? TimeSummary,
+    string? Callout,
     IReadOnlyList<string> StatusLabels,
     bool IsToday);
 
@@ -110,5 +115,4 @@ public sealed record MenuTabHoursAdminView(
 public sealed record MenuManagementView(
     IReadOnlyList<MenuTabHoursAdminView> Tabs,
     IReadOnlyList<MenuSectionAdminView> Sections,
-    IReadOnlyList<MenuItemAdminView> Items,
-    IReadOnlyList<RecurringSpecialAdminView> RecurringSpecials);
+    IReadOnlyList<MenuItemAdminView> Items);

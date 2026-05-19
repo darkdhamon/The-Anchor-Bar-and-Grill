@@ -19,7 +19,7 @@
             <p class="page-hero__eyebrow">Food &amp; Drink</p>
             <h1>Browse the menu</h1>
             <p class="page-hero__lead">
-                Choose Breakfast, Lunch, Dinner, or Drinks to see the guest-facing sections, recurring specials,
+                Choose Breakfast, Lunch, Dinner, or Drinks to see the guest-facing sections, special items,
                 and service hours that belong to that tab.
             </p>
         </section>
@@ -92,46 +92,13 @@
                         <article class="menu-section @section.AccentClass">
                             <header class="menu-section__header">
                                 <h2>@section.Name</h2>
-                                <p>Recurring specials and menu items are grouped together so guests can scan the whole section at once.</p>
+                                <p>Special items appear first, followed by the regular section lineup so guests can scan the whole section at once.</p>
                             </header>
-
-                            @if (section.Specials.Count > 0)
-                            {
-                                <div class="menu-section__specials">
-                                    @foreach (var special in section.Specials)
-                                    {
-                                        <article class="recurring-special recurring-special--inline @(special.IsToday ? "recurring-special--today" : string.Empty)">
-                                            <div class="recurring-special__header">
-                                                <div>
-                                                    <p class="feature-card__eyebrow">@special.DayLabel</p>
-                                                    <h3>@special.Title</h3>
-                                                </div>
-
-                                                <div class="menu-item__badges">
-                                                    <span class="status-pill status-pill--schedule">@special.DayLabel</span>
-                                                    @if (special.IsToday)
-                                                    {
-                                                        <span class="status-pill status-pill--today">Today</span>
-                                                    }
-                                                </div>
-                                            </div>
-
-                                            <p class="event-card__meta">@special.TimeNote</p>
-                                            <p>@special.Description</p>
-
-                                            <div class="recurring-special__footer">
-                                                <span class="recurring-special__price">@special.PriceNote</span>
-                                                <span class="recurring-special__placement">@special.PlacementSummary</span>
-                                            </div>
-                                        </article>
-                                    }
-                                </div>
-                            }
 
                             <div class="menu-section__items">
                                 @foreach (var item in section.Items)
                                 {
-                                    <article class="menu-item @(item.ImagePath is not null ? "menu-item--with-image" : "menu-item--text-only")">
+                                    <article class="menu-item @(item.ImagePath is not null ? "menu-item--with-image" : "menu-item--text-only") @(item.Special is not null ? "menu-item--special" : string.Empty)">
                                         @if (item.ImagePath is not null)
                                         {
                                             <div class="menu-item__visual">
@@ -140,6 +107,21 @@
                                         }
 
                                         <div class="menu-item__content">
+                                            @if (item.Special is not null)
+                                            {
+                                                <div class="menu-item__badges">
+                                                    <span class="status-pill status-pill--schedule">@item.Special.BadgeLabel</span>
+                                                    @if (item.Special.IsToday)
+                                                    {
+                                                        <span class="status-pill status-pill--today">Today</span>
+                                                    }
+                                                    @if (!string.IsNullOrWhiteSpace(item.Special.Callout))
+                                                    {
+                                                        <span class="status-pill status-pill--limited">@item.Special.Callout</span>
+                                                    }
+                                                </div>
+                                            }
+
                                             <div class="menu-item__title-row">
                                                 <h3>@item.Name</h3>
                                                 <span>@GetPriceSummary(item)</span>
@@ -169,6 +151,16 @@
                                             }
 
                                             <p>@item.Description</p>
+
+                                            @if (item.Special is { } special)
+                                            {
+                                                <p class="event-card__meta">@special.ScheduleSummary</p>
+
+                                                @if (!string.IsNullOrWhiteSpace(special.TimeSummary))
+                                                {
+                                                    <p class="menu-item__offer-range">@special.TimeSummary</p>
+                                                }
+                                            }
 
                                             @if (item.OfferDateSummary is { } offerSummary)
                                             {

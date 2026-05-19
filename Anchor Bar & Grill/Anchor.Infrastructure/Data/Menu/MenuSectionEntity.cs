@@ -17,6 +17,4 @@ public sealed class MenuSectionEntity
     public bool IsArchived { get; set; }
 
     public ICollection<MenuItemEntity> Items { get; set; } = [];
-
-    public ICollection<RecurringSpecialEntity> RecurringSpecials { get; set; } = [];
 }

@@ -31,9 +31,9 @@ public sealed class MenuQueryServiceTests
                         today.AddDays(25),
                         false,
                         [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 9m, 1)],
-                        [MenuTab.Lunch])
+                        [MenuTab.Lunch],
+                        null)
                 ],
-                [],
                 [CreateWindow(MenuTab.Lunch, DayOfWeek.Monday, false, null, null, false)]),
             TabsWithContent = [MenuTab.Lunch]
         };
@@ -72,7 +72,8 @@ public sealed class MenuQueryServiceTests
                         today.AddDays(30),
                         true,
                         [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 11m, 1)],
-                        [MenuTab.Lunch]),
+                        [MenuTab.Lunch],
+                        null),
                     new MenuItemRecord(
                         Guid.NewGuid(),
                         SectionId,
@@ -88,9 +89,9 @@ public sealed class MenuQueryServiceTests
                         today.AddDays(18),
                         false,
                         [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 10m, 1)],
-                        [MenuTab.Lunch])
+                        [MenuTab.Lunch],
+                        null)
                 ],
-                [],
                 [CreateWindow(MenuTab.Lunch, DayOfWeek.Monday, false, null, null, false)]),
             TabsWithContent = [MenuTab.Lunch]
         };
@@ -114,7 +115,7 @@ public sealed class MenuQueryServiceTests
     }
 
     [Fact]
-    public async Task GetPublicMenuAsync_groups_specials_into_their_section_and_marks_today()
+    public async Task GetPublicMenuAsync_places_special_items_first_and_marks_today()
     {
         var today = new DateOnly(2026, 5, 18);
         var repository = new FakeMenuQueryRepository
@@ -138,24 +139,34 @@ public sealed class MenuQueryServiceTests
                         null,
                         false,
                         [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 11m, 1)],
-                        [MenuTab.Dinner])
-                ],
-                [
-                    new MenuRecurringSpecialRecord(
+                        [MenuTab.Dinner],
+                        null),
+                    new MenuItemRecord(
                         Guid.NewGuid(),
-                        MenuTab.Dinner,
                         SectionId,
                         "Burgers",
-                        DayOfWeek.Monday,
+                        MenuFamily.Food,
                         "Monday Night Burgers",
                         "Weeknight burger draw.",
-                        "After 5:00 PM",
-                        "$11 basket special",
                         null,
-                        null,
-                        1,
+                        99,
                         true,
-                        false)
+                        false,
+                        null,
+                        null,
+                        false,
+                        [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 11m, 1)],
+                        [MenuTab.Dinner],
+                        new MenuItemSpecialRecord(
+                            Guid.NewGuid(),
+                            MenuItemSpecialScheduleKind.WeeklyRecurring,
+                            DayOfWeek.Monday,
+                            new DateOnly(2026, 1, 1),
+                            null,
+                            new TimeOnly(17, 0),
+                            null,
+                            false,
+                            "$11 basket special"))
                 ],
                 [CreateWindow(MenuTab.Dinner, DayOfWeek.Monday, true, new TimeOnly(17, 0), new TimeOnly(20, 0), false)]),
             TabsWithContent = [MenuTab.Dinner]
@@ -166,10 +177,58 @@ public sealed class MenuQueryServiceTests
         var result = await service.GetPublicMenuAsync(MenuTab.Dinner, today);
 
         var section = Assert.Single(result.Sections);
-        var special = Assert.Single(section.Specials);
-        Assert.Equal("Monday", special.DayLabel);
+        var firstItem = section.Items[0];
+        Assert.Equal("Monday Night Burgers", firstItem.Name);
+        Assert.NotNull(firstItem.Special);
+        Assert.Equal("Monday", firstItem.Special!.BadgeLabel);
+        Assert.True(firstItem.Special.IsToday);
+    }
+
+    [Fact]
+    public async Task GetHomeSpecialsAsync_projects_special_items_for_homepage()
+    {
+        var today = new DateOnly(2026, 5, 18);
+        var repository = new FakeMenuQueryRepository
+        {
+            HomeSpecialItems =
+            [
+                new MenuItemRecord(
+                    Guid.NewGuid(),
+                    SectionId,
+                    "Burgers",
+                    MenuFamily.Food,
+                    "Monday Night Burgers",
+                    "Weeknight burger draw.",
+                    null,
+                    1,
+                    true,
+                    false,
+                    null,
+                    null,
+                    false,
+                    [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 11m, 1)],
+                    [MenuTab.Dinner],
+                    new MenuItemSpecialRecord(
+                        Guid.NewGuid(),
+                        MenuItemSpecialScheduleKind.WeeklyRecurring,
+                        DayOfWeek.Monday,
+                        new DateOnly(2026, 1, 1),
+                        null,
+                        new TimeOnly(17, 0),
+                        null,
+                        false,
+                        "$11 basket special"))
+            ]
+        };
+
+        var service = new MenuQueryService(repository);
+
+        var result = await service.GetHomeSpecialsAsync(today);
+
+        var special = Assert.Single(result);
+        Assert.Equal("Monday Night Burgers", special.Title);
+        Assert.Equal("$11 basket special", special.Callout);
         Assert.True(special.IsToday);
-        Assert.Equal("Burgers", section.Name);
     }
 
     private static MenuServiceWindowRecord CreateWindow(MenuTab tab, DayOfWeek day, bool isAvailable, TimeOnly? opensAt, TimeOnly? closesAt, bool closesNextDay) =>
@@ -177,22 +236,22 @@ public sealed class MenuQueryServiceTests
 
     private sealed class FakeMenuQueryRepository : IMenuQueryRepository
     {
-        public PublicMenuSnapshot Snapshot { get; set; } = new(MenuTab.Lunch, [], [], [], []);
+        public PublicMenuSnapshot Snapshot { get; set; } = new(MenuTab.Lunch, [], [], []);
 
         public IReadOnlyCollection<MenuTab> TabsWithContent { get; set; } = [];
 
-        public IReadOnlyList<MenuRecurringSpecialRecord> HomeSpecials { get; set; } = [];
+        public IReadOnlyList<MenuItemRecord> HomeSpecialItems { get; set; } = [];
 
         public Task<PublicMenuSnapshot> GetPublicMenuSnapshotAsync(MenuTab tab, DateOnly today, DateOnly comingSoonCutoff, CancellationToken cancellationToken = default) =>
             Task.FromResult(Snapshot);
 
-        public Task<IReadOnlyList<MenuRecurringSpecialRecord>> GetHomeRecurringSpecialsAsync(CancellationToken cancellationToken = default) =>
-            Task.FromResult(HomeSpecials);
+        public Task<IReadOnlyList<MenuItemRecord>> GetHomeSpecialItemsAsync(DateOnly today, DateOnly comingSoonCutoff, CancellationToken cancellationToken = default) =>
+            Task.FromResult(HomeSpecialItems);
 
         public Task<IReadOnlyCollection<MenuTab>> GetTabsWithVisibleContentAsync(DateOnly today, DateOnly comingSoonCutoff, CancellationToken cancellationToken = default) =>
             Task.FromResult(TabsWithContent);
 
         public Task<MenuManagementSnapshot> GetMenuManagementSnapshotAsync(CancellationToken cancellationToken = default) =>
-            Task.FromResult(new MenuManagementSnapshot([], [], [], []));
+            Task.FromResult(new MenuManagementSnapshot([], [], []));
     }
 }

@@ -188,19 +188,18 @@ public sealed class MenuAdminOrderingTests : BunitContext
 
         private readonly List<MenuItemAdminView> items =
         [
-            new(LoadedNachosItemId, AppetizersSectionId, "Appetizers", MenuFamily.Food, "Loaded Nachos", "Shareable opener.", null, 1, true, false, null, null, false, [MenuTab.Lunch], [new MenuItemPriceVariantView("Regular", 10m, 1)], [], null),
-            new(FriedPicklesItemId, AppetizersSectionId, "Appetizers", MenuFamily.Food, "Fried Pickles", "Crisp starter.", null, 2, true, false, null, null, false, [MenuTab.Lunch], [new MenuItemPriceVariantView("Regular", 9m, 1)], [], null),
-            new(CheeseCurdsItemId, AppetizersSectionId, "Appetizers", MenuFamily.Food, "Cheese Curds", "House favorite.", null, 3, true, false, null, null, false, [MenuTab.Lunch], [new MenuItemPriceVariantView("Regular", 11m, 1)], [], null),
-            new(Guid.Parse("F362955C-F9A6-4B22-87A1-0CB1B583F5A7"), WingsSectionId, "Wings", MenuFamily.Food, "Traditional Wings", "Sauced and shareable.", null, 1, true, false, null, null, false, [MenuTab.Lunch], [new MenuItemPriceVariantView("Regular", 14m, 1)], [], null),
-            new(Guid.Parse("4EA66718-BF13-4727-95F9-83D7D5D3BAE9"), BurgersSectionId, "Burgers", MenuFamily.Food, "Anchor Burger", "Griddled classic.", null, 1, true, false, null, null, false, [MenuTab.Lunch], [new MenuItemPriceVariantView("Regular", 13m, 1)], [], null)
+            new(LoadedNachosItemId, AppetizersSectionId, "Appetizers", MenuFamily.Food, "Loaded Nachos", "Shareable opener.", null, 1, true, false, null, null, false, [MenuTab.Lunch], [new MenuItemPriceVariantView("Regular", 10m, 1)], [], null, null),
+            new(FriedPicklesItemId, AppetizersSectionId, "Appetizers", MenuFamily.Food, "Fried Pickles", "Crisp starter.", null, 2, true, false, null, null, false, [MenuTab.Lunch], [new MenuItemPriceVariantView("Regular", 9m, 1)], [], null, null),
+            new(CheeseCurdsItemId, AppetizersSectionId, "Appetizers", MenuFamily.Food, "Cheese Curds", "House favorite.", null, 3, true, false, null, null, false, [MenuTab.Lunch], [new MenuItemPriceVariantView("Regular", 11m, 1)], [], null, null),
+            new(Guid.Parse("F362955C-F9A6-4B22-87A1-0CB1B583F5A7"), WingsSectionId, "Wings", MenuFamily.Food, "Traditional Wings", "Sauced and shareable.", null, 1, true, false, null, null, false, [MenuTab.Lunch], [new MenuItemPriceVariantView("Regular", 14m, 1)], [], null, null),
+            new(Guid.Parse("4EA66718-BF13-4727-95F9-83D7D5D3BAE9"), BurgersSectionId, "Burgers", MenuFamily.Food, "Anchor Burger", "Griddled classic.", null, 1, true, false, null, null, false, [MenuTab.Lunch], [new MenuItemPriceVariantView("Regular", 13m, 1)], [], null, null)
         ];
 
         public MenuManagementView BuildView() =>
             new(
                 BuildHours(),
                 sections.OrderBy(section => section.SortOrder).ThenBy(section => section.Name, StringComparer.OrdinalIgnoreCase).ToArray(),
-                items.OrderBy(item => item.SortOrder).ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase).ToArray(),
-                Array.Empty<RecurringSpecialAdminView>());
+                items.OrderByDescending(item => item.Special is not null).ThenBy(item => item.SortOrder).ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase).ToArray());
 
         public void ReorderSections(IReadOnlyList<SaveMenuSortOrderRequest> requests)
         {
@@ -241,8 +240,8 @@ public sealed class MenuAdminOrderingTests : BunitContext
         public Task<PublicMenuView> GetPublicMenuAsync(MenuTab requestedTab, DateOnly today, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
-        public Task<IReadOnlyList<PublicRecurringSpecialView>> GetHomeRecurringSpecialsAsync(DateOnly today, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<PublicRecurringSpecialView>>([]);
+        public Task<IReadOnlyList<PublicHomeSpecialView>> GetHomeSpecialsAsync(DateOnly today, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<PublicHomeSpecialView>>([]);
 
         public Task<MenuManagementView> GetMenuManagementViewAsync(DateOnly today, CancellationToken cancellationToken = default) =>
             Task.FromResult(store.BuildView());
@@ -255,9 +254,6 @@ public sealed class MenuAdminOrderingTests : BunitContext
 
         public Task<MenuOperationResult> SaveItemAsync(SaveMenuItemRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success(request.ItemId ?? Guid.NewGuid()));
-
-        public Task<MenuOperationResult> SaveRecurringSpecialAsync(SaveRecurringSpecialRequest request, CancellationToken cancellationToken = default) =>
-            Task.FromResult(MenuOperationResult.Success(request.SpecialId ?? Guid.NewGuid()));
 
         public Task<MenuOperationResult> SaveServiceWindowsAsync(SaveMenuServiceWindowRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success());
@@ -274,9 +270,6 @@ public sealed class MenuAdminOrderingTests : BunitContext
             return Task.FromResult(MenuOperationResult.Success());
         }
 
-        public Task<MenuOperationResult> ReorderRecurringSpecialsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default) =>
-            Task.FromResult(MenuOperationResult.Success());
-
         public Task<MenuOperationResult> ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success(sectionId));
 
@@ -288,12 +281,6 @@ public sealed class MenuAdminOrderingTests : BunitContext
 
         public Task<MenuOperationResult> DeleteItemAsync(Guid itemId, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success(itemId));
-
-        public Task<MenuOperationResult> ArchiveRecurringSpecialAsync(Guid specialId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(MenuOperationResult.Success(specialId));
-
-        public Task<MenuOperationResult> DeleteRecurringSpecialAsync(Guid specialId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(MenuOperationResult.Success(specialId));
     }
 
     private sealed class TestAuthenticationStateProvider : AuthenticationStateProvider

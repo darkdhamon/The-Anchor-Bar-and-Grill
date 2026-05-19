@@ -1,5 +1,4 @@
 using Anchor.Domain.Menu;
-using Anchor.Infrastructure.Data;
 using Anchor.Infrastructure.Data.Menu;
 using Anchor.Infrastructure.Tests.Support;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +9,7 @@ public sealed class MenuRepositoriesTests
 {
     private static readonly Guid BurgersSectionId = Guid.Parse("198CCF8A-72FD-4278-A360-F36D5871E58B");
     private static readonly Guid ClassicHamburgerItemId = Guid.Parse("7626D0DF-9F8A-4FE8-9062-3596165E148A");
+    private static readonly Guid MondayNightBurgersItemId = Guid.Parse("33D64E7B-D5B7-481A-97FC-7F250A68C27E");
 
     [Fact]
     public async Task GetPublicMenuSnapshotAsync_returns_seeded_lunch_content_with_price_variants()
@@ -26,7 +26,28 @@ public sealed class MenuRepositoriesTests
         Assert.Contains(snapshot.Sections, section => section.Name == "Appetizers");
         Assert.Contains(snapshot.Items, item => item.Name == "Cheese Curds");
         Assert.Contains(snapshot.Items, item => item.Name == "Seasonal Soup" && item.PriceVariants.Count == 2);
-        Assert.Empty(snapshot.Specials);
+        Assert.DoesNotContain(snapshot.Items, item => item.Special is not null);
+    }
+
+    [Fact]
+    public async Task GetPublicMenuSnapshotAsync_returns_seeded_dinner_special_items()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+        var repository = new MenuQueryRepository(context.DbContext);
+
+        var snapshot = await repository.GetPublicMenuSnapshotAsync(
+            MenuTab.Dinner,
+            new DateOnly(2026, 5, 18),
+            new DateOnly(2026, 6, 17));
+
+        var sectionItems = snapshot.Items
+            .Where(item => item.SectionId == BurgersSectionId)
+            .OrderByDescending(item => item.Special is not null)
+            .ThenBy(item => item.SortOrder)
+            .ToArray();
+
+        Assert.Contains(sectionItems, item => item.ItemId == MondayNightBurgersItemId && item.Special is not null);
+        Assert.True(sectionItems.First().Special is not null);
     }
 
     [Fact]
@@ -42,18 +63,16 @@ public sealed class MenuRepositoriesTests
 
         Assert.Empty(snapshot.Sections);
         Assert.Empty(snapshot.Items);
-        Assert.Empty(snapshot.Specials);
         Assert.Equal(7, snapshot.ServiceWindows.Count);
         Assert.Contains(snapshot.ServiceWindows, window => window.DayOfWeek == DayOfWeek.Friday && window.ClosesNextDay);
     }
 
     [Fact]
-    public async Task GetMenuManagementSnapshotAsync_includes_hidden_and_archived_content()
+    public async Task GetMenuManagementSnapshotAsync_includes_hidden_archived_special_items()
     {
         await using var context = await SqliteIdentityTestContext.CreateAsync();
         var hiddenSectionId = Guid.NewGuid();
         var hiddenItemId = Guid.NewGuid();
-        var hiddenSpecialId = Guid.NewGuid();
 
         context.DbContext.MenuSections.Add(new MenuSectionEntity
         {
@@ -68,24 +87,20 @@ public sealed class MenuRepositoriesTests
         {
             MenuItemId = hiddenItemId,
             MenuSectionId = hiddenSectionId,
-            Name = "Smoked Old Fashioned",
+            Name = "Late Night Old Fashioned",
             Description = "Archived drink profile.",
             SortOrder = 1,
             IsVisibleToGuests = false,
             IsArchived = true
         });
-        context.DbContext.RecurringSpecials.Add(new RecurringSpecialEntity
+        context.DbContext.MenuItemSpecials.Add(new MenuItemSpecialEntity
         {
-            RecurringSpecialId = hiddenSpecialId,
-            Tab = MenuTab.Drinks,
-            MenuSectionId = hiddenSectionId,
+            MenuItemId = hiddenItemId,
+            ScheduleKind = MenuItemSpecialScheduleKind.WeeklyRecurring,
             DayOfWeek = DayOfWeek.Friday,
-            Title = "Late Night Old Fashioned",
-            Description = "After-hours cocktail special.",
-            TimeNote = "After 8:00 PM",
-            SortOrder = 1,
-            IsVisibleToGuests = false,
-            IsArchived = true
+            StartDate = new DateOnly(2026, 1, 1),
+            StartsAt = new TimeOnly(20, 0),
+            Callout = "After 8 PM"
         });
         await context.DbContext.SaveChangesAsync();
 
@@ -93,12 +108,11 @@ public sealed class MenuRepositoriesTests
         var snapshot = await repository.GetMenuManagementSnapshotAsync();
 
         Assert.Contains(snapshot.Sections, section => section.SectionId == hiddenSectionId && section.IsArchived);
-        Assert.Contains(snapshot.Items, item => item.ItemId == hiddenItemId && item.IsArchived);
-        Assert.Contains(snapshot.Specials, special => special.SpecialId == hiddenSpecialId && special.IsArchived);
+        Assert.Contains(snapshot.Items, item => item.ItemId == hiddenItemId && item.IsArchived && item.Special is not null);
     }
 
     [Fact]
-    public async Task UpsertItemAsync_persists_price_variants_and_food_tab_assignments()
+    public async Task UpsertItemAsync_persists_price_variants_food_tab_assignments_and_special_extension()
     {
         await using var context = await SqliteIdentityTestContext.CreateAsync();
         var repository = new MenuManagementRepository(context.DbContext);
@@ -106,7 +120,7 @@ public sealed class MenuRepositoriesTests
             new SaveMenuItemRequest(
                 null,
                 BurgersSectionId,
-                "Test Burger",
+                "Test Burger Night",
                 "Built for repository coverage.",
                 null,
                 99,
@@ -119,28 +133,43 @@ public sealed class MenuRepositoriesTests
                     new SaveMenuItemPriceVariantRequest(null, "Single", 12m, 1),
                     new SaveMenuItemPriceVariantRequest(null, "Double", 15m, 2)
                 ],
-                [MenuTab.Breakfast, MenuTab.Dinner]));
+                [MenuTab.Dinner],
+                new SaveMenuItemSpecialRequest(
+                    MenuItemSpecialScheduleKind.WeeklyRecurring,
+                    DayOfWeek.Monday,
+                    new DateOnly(2026, 1, 1),
+                    null,
+                    new TimeOnly(17, 0),
+                    null,
+                    false,
+                    "$12 basket special")));
         await repository.SaveChangesAsync();
 
         var savedItem = await context.DbContext.MenuItems
             .Include(item => item.PriceVariants)
             .Include(item => item.FoodTabs)
+            .Include(item => item.Special)
             .SingleAsync(item => item.MenuItemId == itemId);
 
-        Assert.Equal("Test Burger", savedItem.Name);
+        Assert.Equal("Test Burger Night", savedItem.Name);
         Assert.Equal(2, savedItem.PriceVariants.Count);
-        Assert.Contains(savedItem.FoodTabs, link => link.Tab == MenuTab.Breakfast);
         Assert.Contains(savedItem.FoodTabs, link => link.Tab == MenuTab.Dinner);
+        Assert.NotNull(savedItem.Special);
+        Assert.Equal(DayOfWeek.Monday, savedItem.Special!.DayOfWeek);
+        Assert.Equal("$12 basket special", savedItem.Special.Callout);
     }
 
     [Fact]
-    public async Task SectionHasDependentsAsync_and_ItemHasLinkedSpecialsAsync_report_seeded_references()
+    public async Task SectionHasDependentsAsync_and_GetItemReferenceAsync_report_seeded_references()
     {
         await using var context = await SqliteIdentityTestContext.CreateAsync();
         var repository = new MenuManagementRepository(context.DbContext);
 
         Assert.True(await repository.SectionHasDependentsAsync(BurgersSectionId));
-        Assert.True(await repository.ItemHasLinkedSpecialsAsync(ClassicHamburgerItemId));
+
+        var reference = await repository.GetItemReferenceAsync(MondayNightBurgersItemId);
+        Assert.NotNull(reference);
+        Assert.True(reference!.HasSpecial);
     }
 
     [Fact]
@@ -185,38 +214,5 @@ public sealed class MenuRepositoriesTests
             .SingleAsync(section => section.MenuSectionId == BurgersSectionId);
 
         Assert.Equal(42, burgers.SortOrder);
-    }
-
-    [Fact]
-    public async Task UpsertRecurringSpecialAsync_persists_linked_menu_item_reference()
-    {
-        await using var context = await SqliteIdentityTestContext.CreateAsync();
-        var repository = new MenuManagementRepository(context.DbContext);
-
-        var specialId = await repository.UpsertRecurringSpecialAsync(
-            new SaveRecurringSpecialRequest(
-                null,
-                MenuTab.Dinner,
-                BurgersSectionId,
-                DayOfWeek.Saturday,
-                "Burger Night",
-                "Choose your burger and fries.",
-                "After 5:00 PM",
-                "$12 combo",
-                ClassicHamburgerItemId,
-                1,
-                true,
-                false));
-        await repository.SaveChangesAsync();
-
-        var special = await context.DbContext.RecurringSpecials
-            .AsNoTracking()
-            .SingleAsync(item => item.RecurringSpecialId == specialId);
-
-        Assert.Equal(MenuTab.Dinner, special.Tab);
-        Assert.Equal(BurgersSectionId, special.MenuSectionId);
-        Assert.Equal("Burger Night", special.Title);
-        Assert.Equal("Choose your burger and fries.", special.Description);
-        Assert.Equal(ClassicHamburgerItemId, special.LinkedMenuItemId);
     }
 }

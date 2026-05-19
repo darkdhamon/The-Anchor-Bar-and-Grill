@@ -6,15 +6,11 @@ public interface IMenuManagementService
 
     Task<MenuOperationResult> SaveItemAsync(SaveMenuItemRequest request, CancellationToken cancellationToken = default);
 
-    Task<MenuOperationResult> SaveRecurringSpecialAsync(SaveRecurringSpecialRequest request, CancellationToken cancellationToken = default);
-
     Task<MenuOperationResult> SaveServiceWindowsAsync(SaveMenuServiceWindowRequest request, CancellationToken cancellationToken = default);
 
     Task<MenuOperationResult> ReorderSectionsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default);
 
     Task<MenuOperationResult> ReorderItemsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default);
-
-    Task<MenuOperationResult> ReorderRecurringSpecialsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default);
 
     Task<MenuOperationResult> ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default);
 
@@ -23,8 +19,4 @@ public interface IMenuManagementService
     Task<MenuOperationResult> ArchiveItemAsync(Guid itemId, CancellationToken cancellationToken = default);
 
     Task<MenuOperationResult> DeleteItemAsync(Guid itemId, CancellationToken cancellationToken = default);
-
-    Task<MenuOperationResult> ArchiveRecurringSpecialAsync(Guid specialId, CancellationToken cancellationToken = default);
-
-    Task<MenuOperationResult> DeleteRecurringSpecialAsync(Guid specialId, CancellationToken cancellationToken = default);
 }

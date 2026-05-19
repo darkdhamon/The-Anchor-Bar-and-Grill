@@ -1,5 +1,6 @@
 using Anchor.Domain.Menu;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace Anchor.Infrastructure.Data.Menu;
 
@@ -18,71 +19,19 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
             .Where(item => item.Section.Family == family)
             .Where(item => item.Section.IsVisibleToGuests && !item.Section.IsArchived)
             .Where(item => item.IsVisibleToGuests && !item.IsArchived)
-            .Where(item => item.OfferEndsOn == null || item.OfferEndsOn >= today)
-            .Where(item => item.OfferStartsOn == null || item.OfferStartsOn <= comingSoonCutoff)
             .Where(item => tab == MenuTab.Drinks
                 ? item.Section.Family == MenuFamily.Drink
                 : item.FoodTabs.Any(link => link.Tab == tab))
-            .Select(item => new MenuItemRecord(
-                item.MenuItemId,
-                item.MenuSectionId,
-                item.Section.Name,
-                item.Section.Family,
-                item.Name,
-                item.Description,
-                item.ImagePath,
-                item.SortOrder,
-                item.IsVisibleToGuests,
-                item.IsArchived,
-                item.OfferStartsOn,
-                item.OfferEndsOn,
-                item.IsSeasonal,
-                item.PriceVariants
-                    .OrderBy(variant => variant.SortOrder)
-                    .Select(variant => new MenuItemPriceVariantRecord(
-                        variant.MenuItemPriceVariantId,
-                        variant.Label,
-                        variant.Amount,
-                        variant.SortOrder))
-                    .ToList(),
-                item.FoodTabs
-                    .OrderBy(link => link.Tab)
-                    .Select(link => link.Tab)
-                    .ToList()))
+            .Where(item => item.Special == null
+                ? (item.OfferEndsOn == null || item.OfferEndsOn >= today)
+                    && (item.OfferStartsOn == null || item.OfferStartsOn <= comingSoonCutoff)
+                : item.Special.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring
+                    ? item.Special.StartDate <= today && (item.Special.EndDate == null || item.Special.EndDate >= today)
+                    : item.Special.StartDate <= comingSoonCutoff && (item.Special.EndDate ?? item.Special.StartDate) >= today)
+            .Select(ItemProjection)
             .ToListAsync(cancellationToken);
 
-        var specials = await dbContext.RecurringSpecials
-            .AsNoTracking()
-            .Where(special => special.Tab == tab)
-            .Where(special => (special.LinkedMenuItemId.HasValue
-                ? special.LinkedMenuItem!.Section.Family
-                : special.Section.Family) == family)
-            .Where(special => special.LinkedMenuItemId == null || !special.LinkedMenuItem!.IsArchived)
-            .Where(special => special.LinkedMenuItemId.HasValue
-                ? special.LinkedMenuItem!.Section.IsVisibleToGuests && !special.LinkedMenuItem.Section.IsArchived
-                : special.Section.IsVisibleToGuests && !special.Section.IsArchived)
-            .Where(special => special.IsVisibleToGuests && !special.IsArchived)
-            .Select(special => new MenuRecurringSpecialRecord(
-                special.RecurringSpecialId,
-                special.Tab,
-                special.LinkedMenuItemId.HasValue ? special.LinkedMenuItem!.MenuSectionId : special.MenuSectionId,
-                special.LinkedMenuItemId.HasValue ? special.LinkedMenuItem!.Section.Name : special.Section.Name,
-                special.DayOfWeek,
-                special.Title,
-                special.Description,
-                special.TimeNote,
-                special.PriceNote,
-                special.LinkedMenuItemId,
-                special.LinkedMenuItem != null ? special.LinkedMenuItem.Name : null,
-                special.SortOrder,
-                special.IsVisibleToGuests,
-                special.IsArchived))
-            .ToListAsync(cancellationToken);
-
-        var visibleSectionIds = items.Select(item => item.SectionId)
-            .Concat(specials.Select(special => special.SectionId))
-            .Distinct()
-            .ToArray();
+        var visibleSectionIds = items.Select(item => item.SectionId).Distinct().ToArray();
 
         var sections = await dbContext.MenuSections
             .AsNoTracking()
@@ -111,34 +60,22 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
                 window.ClosesNextDay))
             .ToListAsync(cancellationToken);
 
-        return new PublicMenuSnapshot(tab, sections, items, specials, windows);
+        return new PublicMenuSnapshot(tab, sections, items, windows);
     }
 
-    public async Task<IReadOnlyList<MenuRecurringSpecialRecord>> GetHomeRecurringSpecialsAsync(CancellationToken cancellationToken = default) =>
-        await dbContext.RecurringSpecials
+    public async Task<IReadOnlyList<MenuItemRecord>> GetHomeSpecialItemsAsync(
+        DateOnly today,
+        DateOnly comingSoonCutoff,
+        CancellationToken cancellationToken = default) =>
+        await dbContext.MenuItems
             .AsNoTracking()
-            .Where(special => special.IsVisibleToGuests && !special.IsArchived)
-            .Where(special => special.LinkedMenuItemId == null || !special.LinkedMenuItem!.IsArchived)
-            .Where(special => special.LinkedMenuItemId.HasValue
-                ? special.LinkedMenuItem!.Section.IsVisibleToGuests && !special.LinkedMenuItem.Section.IsArchived
-                : special.Section.IsVisibleToGuests && !special.Section.IsArchived)
-            .OrderBy(special => special.DayOfWeek)
-            .ThenBy(special => special.SortOrder)
-            .Select(special => new MenuRecurringSpecialRecord(
-                special.RecurringSpecialId,
-                special.Tab,
-                special.LinkedMenuItemId.HasValue ? special.LinkedMenuItem!.MenuSectionId : special.MenuSectionId,
-                special.LinkedMenuItemId.HasValue ? special.LinkedMenuItem!.Section.Name : special.Section.Name,
-                special.DayOfWeek,
-                special.Title,
-                special.Description,
-                special.TimeNote,
-                special.PriceNote,
-                special.LinkedMenuItemId,
-                special.LinkedMenuItem != null ? special.LinkedMenuItem.Name : null,
-                special.SortOrder,
-                special.IsVisibleToGuests,
-                special.IsArchived))
+            .Where(item => item.Special != null)
+            .Where(item => item.Section.IsVisibleToGuests && !item.Section.IsArchived)
+            .Where(item => item.IsVisibleToGuests && !item.IsArchived)
+            .Where(item => item.Special!.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring
+                ? item.Special.StartDate <= today && (item.Special.EndDate == null || item.Special.EndDate >= today)
+                : item.Special.StartDate <= comingSoonCutoff && (item.Special.EndDate ?? item.Special.StartDate) >= today)
+            .Select(ItemProjection)
             .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyCollection<MenuTab>> GetTabsWithVisibleContentAsync(DateOnly today, DateOnly comingSoonCutoff, CancellationToken cancellationToken = default)
@@ -153,22 +90,17 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
                 .Where(item => item.Section.Family == family)
                 .Where(item => item.Section.IsVisibleToGuests && !item.Section.IsArchived)
                 .Where(item => item.IsVisibleToGuests && !item.IsArchived)
-                .Where(item => item.OfferEndsOn == null || item.OfferEndsOn >= today)
-                .Where(item => item.OfferStartsOn == null || item.OfferStartsOn <= comingSoonCutoff)
-                .AnyAsync(item => tab == MenuTab.Drinks
+                .Where(item => tab == MenuTab.Drinks
                     ? item.Section.Family == MenuFamily.Drink
-                    : item.FoodTabs.Any(link => link.Tab == tab), cancellationToken);
+                    : item.FoodTabs.Any(link => link.Tab == tab))
+                .AnyAsync(item => item.Special == null
+                    ? (item.OfferEndsOn == null || item.OfferEndsOn >= today)
+                        && (item.OfferStartsOn == null || item.OfferStartsOn <= comingSoonCutoff)
+                    : item.Special.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring
+                        ? item.Special.StartDate <= today && (item.Special.EndDate == null || item.Special.EndDate >= today)
+                        : item.Special.StartDate <= comingSoonCutoff && (item.Special.EndDate ?? item.Special.StartDate) >= today, cancellationToken);
 
-            var hasSpecials = await dbContext.RecurringSpecials
-                .AsNoTracking()
-                .Where(special => special.Tab == tab)
-                .Where(special => special.LinkedMenuItemId == null || !special.LinkedMenuItem!.IsArchived)
-                .Where(special => special.LinkedMenuItemId.HasValue
-                    ? special.LinkedMenuItem!.Section.IsVisibleToGuests && !special.LinkedMenuItem.Section.IsArchived
-                    : special.Section.IsVisibleToGuests && !special.Section.IsArchived)
-                .AnyAsync(special => special.IsVisibleToGuests && !special.IsArchived, cancellationToken);
-
-            if (hasItems || hasSpecials)
+            if (hasItems)
             {
                 tabs.Add(tab);
             }
@@ -196,53 +128,7 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
             .AsNoTracking()
             .OrderBy(item => item.SortOrder)
             .ThenBy(item => item.Name)
-            .Select(item => new MenuItemRecord(
-                item.MenuItemId,
-                item.MenuSectionId,
-                item.Section.Name,
-                item.Section.Family,
-                item.Name,
-                item.Description,
-                item.ImagePath,
-                item.SortOrder,
-                item.IsVisibleToGuests,
-                item.IsArchived,
-                item.OfferStartsOn,
-                item.OfferEndsOn,
-                item.IsSeasonal,
-                item.PriceVariants
-                    .OrderBy(variant => variant.SortOrder)
-                    .Select(variant => new MenuItemPriceVariantRecord(
-                        variant.MenuItemPriceVariantId,
-                        variant.Label,
-                        variant.Amount,
-                        variant.SortOrder))
-                    .ToList(),
-                item.FoodTabs
-                    .OrderBy(link => link.Tab)
-                    .Select(link => link.Tab)
-                    .ToList()))
-            .ToListAsync(cancellationToken);
-
-        var specials = await dbContext.RecurringSpecials
-            .AsNoTracking()
-            .OrderBy(special => special.DayOfWeek)
-            .ThenBy(special => special.SortOrder)
-            .Select(special => new MenuRecurringSpecialRecord(
-                special.RecurringSpecialId,
-                special.Tab,
-                special.LinkedMenuItemId.HasValue ? special.LinkedMenuItem!.MenuSectionId : special.MenuSectionId,
-                special.LinkedMenuItemId.HasValue ? special.LinkedMenuItem!.Section.Name : special.Section.Name,
-                special.DayOfWeek,
-                special.Title,
-                special.Description,
-                special.TimeNote,
-                special.PriceNote,
-                special.LinkedMenuItemId,
-                special.LinkedMenuItem != null ? special.LinkedMenuItem.Name : null,
-                special.SortOrder,
-                special.IsVisibleToGuests,
-                special.IsArchived))
+            .Select(ItemProjection)
             .ToListAsync(cancellationToken);
 
         var windows = await dbContext.MenuServiceWindows
@@ -258,6 +144,46 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
                 window.ClosesNextDay))
             .ToListAsync(cancellationToken);
 
-        return new MenuManagementSnapshot(sections, items, specials, windows);
+        return new MenuManagementSnapshot(sections, items, windows);
     }
+
+    private static readonly Expression<Func<MenuItemEntity, MenuItemRecord>> ItemProjection = item =>
+        new MenuItemRecord(
+            item.MenuItemId,
+            item.MenuSectionId,
+            item.Section.Name,
+            item.Section.Family,
+            item.Name,
+            item.Description,
+            item.ImagePath,
+            item.SortOrder,
+            item.IsVisibleToGuests,
+            item.IsArchived,
+            item.OfferStartsOn,
+            item.OfferEndsOn,
+            item.IsSeasonal,
+            item.PriceVariants
+                .OrderBy(variant => variant.SortOrder)
+                .Select(variant => new MenuItemPriceVariantRecord(
+                    variant.MenuItemPriceVariantId,
+                    variant.Label,
+                    variant.Amount,
+                    variant.SortOrder))
+                .ToList(),
+            item.FoodTabs
+                .OrderBy(link => link.Tab)
+                .Select(link => link.Tab)
+                .ToList(),
+            item.Special == null
+                ? null
+                : new MenuItemSpecialRecord(
+                    item.Special.MenuItemId,
+                    item.Special.ScheduleKind,
+                    item.Special.DayOfWeek,
+                    item.Special.StartDate,
+                    item.Special.EndDate,
+                    item.Special.StartsAt,
+                    item.Special.EndsAt,
+                    item.Special.ClosesNextDay,
+                    item.Special.Callout));
 }

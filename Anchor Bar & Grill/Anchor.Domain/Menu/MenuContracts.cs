@@ -2,6 +2,17 @@ namespace Anchor.Domain.Menu;
 
 public sealed record MenuItemPriceVariantRecord(Guid PriceVariantId, string Label, decimal Amount, int SortOrder);
 
+public sealed record MenuItemSpecialRecord(
+    Guid MenuItemId,
+    MenuItemSpecialScheduleKind ScheduleKind,
+    DayOfWeek? DayOfWeek,
+    DateOnly StartDate,
+    DateOnly? EndDate,
+    TimeOnly? StartsAt,
+    TimeOnly? EndsAt,
+    bool ClosesNextDay,
+    string? Callout);
+
 public sealed record MenuSectionRecord(
     Guid SectionId,
     string Name,
@@ -25,23 +36,8 @@ public sealed record MenuItemRecord(
     DateOnly? OfferEndsOn,
     bool IsSeasonal,
     IReadOnlyList<MenuItemPriceVariantRecord> PriceVariants,
-    IReadOnlyList<MenuTab> FoodTabs);
-
-public sealed record MenuRecurringSpecialRecord(
-    Guid SpecialId,
-    MenuTab Tab,
-    Guid SectionId,
-    string SectionName,
-    DayOfWeek DayOfWeek,
-    string Title,
-    string Description,
-    string TimeNote,
-    string? PriceNote,
-    Guid? LinkedMenuItemId,
-    string? LinkedMenuItemName,
-    int SortOrder,
-    bool IsVisibleToGuests,
-    bool IsArchived);
+    IReadOnlyList<MenuTab> FoodTabs,
+    MenuItemSpecialRecord? Special);
 
 public sealed record MenuServiceWindowRecord(
     MenuTab Tab,
@@ -55,13 +51,11 @@ public sealed record PublicMenuSnapshot(
     MenuTab Tab,
     IReadOnlyList<MenuSectionRecord> Sections,
     IReadOnlyList<MenuItemRecord> Items,
-    IReadOnlyList<MenuRecurringSpecialRecord> Specials,
     IReadOnlyList<MenuServiceWindowRecord> ServiceWindows);
 
 public sealed record MenuManagementSnapshot(
     IReadOnlyList<MenuSectionRecord> Sections,
     IReadOnlyList<MenuItemRecord> Items,
-    IReadOnlyList<MenuRecurringSpecialRecord> Specials,
     IReadOnlyList<MenuServiceWindowRecord> ServiceWindows);
 
 public sealed record MenuSectionReferenceRecord(Guid SectionId, MenuFamily Family, bool IsArchived);
@@ -73,4 +67,5 @@ public sealed record MenuItemReferenceRecord(
     string Name,
     string Description,
     bool IsArchived,
-    IReadOnlyList<MenuTab> FoodTabs);
+    IReadOnlyList<MenuTab> FoodTabs,
+    bool HasSpecial);

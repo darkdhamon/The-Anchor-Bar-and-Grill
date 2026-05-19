@@ -14,6 +14,16 @@ public sealed record SaveMenuItemPriceVariantRequest(
     decimal Amount,
     int SortOrder);
 
+public sealed record SaveMenuItemSpecialRequest(
+    MenuItemSpecialScheduleKind ScheduleKind,
+    DayOfWeek? DayOfWeek,
+    DateOnly StartDate,
+    DateOnly? EndDate,
+    TimeOnly? StartsAt,
+    TimeOnly? EndsAt,
+    bool ClosesNextDay,
+    string? Callout);
+
 public sealed record SaveMenuItemRequest(
     Guid? ItemId,
     Guid SectionId,
@@ -27,21 +37,8 @@ public sealed record SaveMenuItemRequest(
     DateOnly? OfferEndsOn,
     bool IsSeasonal,
     IReadOnlyList<SaveMenuItemPriceVariantRequest> PriceVariants,
-    IReadOnlyList<MenuTab> FoodTabs);
-
-public sealed record SaveRecurringSpecialRequest(
-    Guid? SpecialId,
-    MenuTab Tab,
-    Guid SectionId,
-    DayOfWeek DayOfWeek,
-    string Title,
-    string Description,
-    string TimeNote,
-    string? PriceNote,
-    Guid? LinkedMenuItemId,
-    int SortOrder,
-    bool IsVisibleToGuests,
-    bool IsArchived);
+    IReadOnlyList<MenuTab> FoodTabs,
+    SaveMenuItemSpecialRequest? Special);
 
 public sealed record SaveMenuServiceWindowDayRequest(
     DayOfWeek DayOfWeek,

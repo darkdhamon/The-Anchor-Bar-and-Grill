@@ -26,21 +26,12 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
                 item.Name,
                 item.Description,
                 item.IsArchived,
-                item.FoodTabs.Select(link => link.Tab).ToList()))
+                item.FoodTabs.Select(link => link.Tab).ToList(),
+                item.Special != null))
             .SingleOrDefaultAsync(cancellationToken);
 
-    public async Task<bool> SectionHasDependentsAsync(Guid sectionId, CancellationToken cancellationToken = default)
-    {
-        if (await dbContext.MenuItems.AnyAsync(item => item.MenuSectionId == sectionId, cancellationToken))
-        {
-            return true;
-        }
-
-        return await dbContext.RecurringSpecials.AnyAsync(special => special.MenuSectionId == sectionId, cancellationToken);
-    }
-
-    public Task<bool> ItemHasLinkedSpecialsAsync(Guid itemId, CancellationToken cancellationToken = default) =>
-        dbContext.RecurringSpecials.AnyAsync(special => special.LinkedMenuItemId == itemId, cancellationToken);
+    public Task<bool> SectionHasDependentsAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
+        dbContext.MenuItems.AnyAsync(item => item.MenuSectionId == sectionId, cancellationToken);
 
     public async Task<Guid> UpsertSectionAsync(SaveMenuSectionRequest request, CancellationToken cancellationToken = default)
     {
@@ -72,6 +63,7 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
             entity = await dbContext.MenuItems
                 .Include(item => item.PriceVariants)
                 .Include(item => item.FoodTabs)
+                .Include(item => item.Special)
                 .SingleAsync(item => item.MenuItemId == itemId, cancellationToken);
         }
         else
@@ -113,35 +105,28 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
             });
         }
 
-        return entity.MenuItemId;
-    }
-
-    public async Task<Guid> UpsertRecurringSpecialAsync(SaveRecurringSpecialRequest request, CancellationToken cancellationToken = default)
-    {
-        RecurringSpecialEntity entity;
-        if (request.SpecialId is { } specialId)
+        if (request.Special is null)
         {
-            entity = await dbContext.RecurringSpecials.SingleAsync(special => special.RecurringSpecialId == specialId, cancellationToken);
+            if (entity.Special is not null)
+            {
+                dbContext.MenuItemSpecials.Remove(entity.Special);
+                entity.Special = null;
+            }
         }
         else
         {
-            entity = new RecurringSpecialEntity { RecurringSpecialId = Guid.NewGuid() };
-            await dbContext.RecurringSpecials.AddAsync(entity, cancellationToken);
+            entity.Special ??= new MenuItemSpecialEntity { MenuItemId = entity.MenuItemId };
+            entity.Special.ScheduleKind = request.Special.ScheduleKind;
+            entity.Special.DayOfWeek = request.Special.DayOfWeek;
+            entity.Special.StartDate = request.Special.StartDate;
+            entity.Special.EndDate = request.Special.EndDate;
+            entity.Special.StartsAt = request.Special.StartsAt;
+            entity.Special.EndsAt = request.Special.EndsAt;
+            entity.Special.ClosesNextDay = request.Special.ClosesNextDay;
+            entity.Special.Callout = request.Special.Callout;
         }
 
-        entity.Tab = request.Tab;
-        entity.MenuSectionId = request.SectionId;
-        entity.DayOfWeek = request.DayOfWeek;
-        entity.Title = request.Title;
-        entity.Description = request.Description;
-        entity.TimeNote = request.TimeNote;
-        entity.PriceNote = request.PriceNote;
-        entity.LinkedMenuItemId = request.LinkedMenuItemId;
-        entity.SortOrder = request.SortOrder;
-        entity.IsVisibleToGuests = request.IsVisibleToGuests;
-        entity.IsArchived = request.IsArchived;
-
-        return entity.RecurringSpecialId;
+        return entity.MenuItemId;
     }
 
     public async Task UpsertServiceWindowsAsync(SaveMenuServiceWindowRequest request, CancellationToken cancellationToken = default)
@@ -200,21 +185,6 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
         }
     }
 
-    public async Task ReorderRecurringSpecialsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default)
-    {
-        dbContext.ChangeTracker.Clear();
-
-        var specialIds = requests.Select(request => request.RecordId).ToArray();
-        var specials = await dbContext.RecurringSpecials
-            .Where(special => specialIds.Contains(special.RecurringSpecialId))
-            .ToDictionaryAsync(special => special.RecurringSpecialId, cancellationToken);
-
-        foreach (var request in requests)
-        {
-            specials[request.RecordId].SortOrder = request.SortOrder;
-        }
-    }
-
     public async Task ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default)
     {
         var section = await dbContext.MenuSections.SingleAsync(item => item.MenuSectionId == sectionId, cancellationToken);
@@ -240,21 +210,9 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
         var item = await dbContext.MenuItems
             .Include(menuItem => menuItem.PriceVariants)
             .Include(menuItem => menuItem.FoodTabs)
+            .Include(menuItem => menuItem.Special)
             .SingleAsync(menuItem => menuItem.MenuItemId == itemId, cancellationToken);
         dbContext.MenuItems.Remove(item);
-    }
-
-    public async Task ArchiveRecurringSpecialAsync(Guid specialId, CancellationToken cancellationToken = default)
-    {
-        var special = await dbContext.RecurringSpecials.SingleAsync(item => item.RecurringSpecialId == specialId, cancellationToken);
-        special.IsArchived = true;
-        special.IsVisibleToGuests = false;
-    }
-
-    public async Task DeleteRecurringSpecialAsync(Guid specialId, CancellationToken cancellationToken = default)
-    {
-        var special = await dbContext.RecurringSpecials.SingleAsync(item => item.RecurringSpecialId == specialId, cancellationToken);
-        dbContext.RecurringSpecials.Remove(special);
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) => dbContext.SaveChangesAsync(cancellationToken);

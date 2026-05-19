@@ -8,30 +8,13 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
         var snapshot = await repository.GetPublicMenuSnapshotAsync(requestedTab, today, comingSoonCutoff, cancellationToken);
         var tabsWithContent = await repository.GetTabsWithVisibleContentAsync(today, comingSoonCutoff, cancellationToken);
 
-        var specialsBySection = snapshot.Specials
-            .GroupBy(special => special.SectionId)
-            .ToDictionary(
-                group => group.Key,
-                group => (IReadOnlyList<PublicRecurringSpecialView>)group
-                    .OrderBy(special => special.SortOrder)
-                    .ThenBy(special => special.Title, StringComparer.OrdinalIgnoreCase)
-                    .Select(special => new PublicRecurringSpecialView(
-                        special.SpecialId,
-                        MenuPresentationRules.GetDayLabel(special.DayOfWeek),
-                        special.Title,
-                        special.Description,
-                        special.TimeNote,
-                        special.PriceNote,
-                        MenuPresentationRules.GetPlacementSummary(special),
-                        special.DayOfWeek == today.DayOfWeek))
-                    .ToArray());
-
         var itemsBySection = snapshot.Items
             .GroupBy(item => item.SectionId)
             .ToDictionary(
                 group => group.Key,
                 group => (IReadOnlyList<PublicMenuItemView>)group
-                    .OrderBy(item => item.SortOrder)
+                    .OrderByDescending(item => item.Special is not null)
+                    .ThenBy(item => item.SortOrder)
                     .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
                     .Select(item => new PublicMenuItemView(
                         item.ItemId,
@@ -44,11 +27,19 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
                             .Select(variant => new MenuItemPriceVariantView(variant.Label, variant.Amount, variant.SortOrder))
                             .ToArray(),
                         MenuPresentationRules.GetPublicStatusLabels(item, today),
-                        MenuPresentationRules.FormatOfferDateSummary(item, today)))
+                        MenuPresentationRules.FormatOfferDateSummary(item, today),
+                        item.Special is null
+                            ? null
+                            : new MenuItemSpecialPublicView(
+                                item.Special.ScheduleKind,
+                                MenuPresentationRules.GetSpecialBadgeLabel(item.Special),
+                                MenuPresentationRules.FormatSpecialScheduleSummary(item.Special),
+                                MenuPresentationRules.FormatSpecialTimeSummary(item.Special),
+                                item.Special.Callout,
+                                MenuPresentationRules.IsSpecialToday(item.Special, today))))
                     .ToArray());
 
-        var visibleSectionIds = new HashSet<Guid>(specialsBySection.Keys);
-        visibleSectionIds.UnionWith(itemsBySection.Keys);
+        var visibleSectionIds = new HashSet<Guid>(itemsBySection.Keys);
 
         var sections = snapshot.Sections
             .Where(section => visibleSectionIds.Contains(section.SectionId))
@@ -58,7 +49,6 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
                 section.SectionId,
                 section.Name,
                 GetAccentClass(index),
-                specialsBySection.GetValueOrDefault(section.SectionId, Array.Empty<PublicRecurringSpecialView>()),
                 itemsBySection.GetValueOrDefault(section.SectionId, Array.Empty<PublicMenuItemView>())))
             .ToArray();
 
@@ -87,19 +77,24 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
         return new PublicMenuView(snapshot.Tab, tabs, serviceHours, sections);
     }
 
-    public async Task<IReadOnlyList<PublicRecurringSpecialView>> GetHomeRecurringSpecialsAsync(DateOnly today, CancellationToken cancellationToken = default) =>
-        (await repository.GetHomeRecurringSpecialsAsync(cancellationToken))
-        .OrderBy(special => Array.IndexOf(MenuPresentationRules.DayOrder.ToArray(), special.DayOfWeek))
-        .ThenBy(special => special.SortOrder)
-        .Select(special => new PublicRecurringSpecialView(
-            special.SpecialId,
-            MenuPresentationRules.GetDayLabel(special.DayOfWeek),
-            special.Title,
-            special.Description,
-            special.TimeNote,
-            special.PriceNote,
-            MenuPresentationRules.GetPlacementSummary(special),
-            special.DayOfWeek == today.DayOfWeek))
+    public async Task<IReadOnlyList<PublicHomeSpecialView>> GetHomeSpecialsAsync(DateOnly today, CancellationToken cancellationToken = default) =>
+        (await repository.GetHomeSpecialItemsAsync(today, today.AddDays(30), cancellationToken))
+        .Where(item => item.Special is not null)
+        .OrderBy(item => item.Special!.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring
+            ? Array.IndexOf(MenuPresentationRules.DayOrder.ToArray(), item.Special.DayOfWeek ?? DayOfWeek.Monday)
+            : 7)
+        .ThenBy(item => item.Special!.StartDate)
+        .ThenBy(item => item.SortOrder)
+        .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
+        .Select(item => new PublicHomeSpecialView(
+            item.ItemId,
+            MenuPresentationRules.GetSpecialBadgeLabel(item.Special!),
+            item.Name,
+            item.Description,
+            MenuPresentationRules.FormatSpecialTimeSummary(item.Special!),
+            item.Special!.Callout,
+            MenuPresentationRules.GetPlacementSummary(item),
+            MenuPresentationRules.IsSpecialToday(item.Special!, today)))
         .ToArray();
 
     public async Task<MenuManagementView> GetMenuManagementViewAsync(DateOnly today, CancellationToken cancellationToken = default)
@@ -142,6 +137,7 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
         var items = snapshot.Items
             .OrderBy(item => item.Family)
             .ThenBy(item => item.SectionName, StringComparer.OrdinalIgnoreCase)
+            .ThenByDescending(item => item.Special is not null)
             .ThenBy(item => item.SortOrder)
             .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
             .Select(item => new MenuItemAdminView(
@@ -165,35 +161,26 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
                     .Select(variant => new MenuItemPriceVariantView(variant.Label, variant.Amount, variant.SortOrder))
                     .ToArray(),
                 MenuPresentationRules.GetAdminStatusLabels(item, today),
-                MenuPresentationRules.FormatOfferDateSummary(item, today)))
+                MenuPresentationRules.FormatOfferDateSummary(item, today),
+                item.Special is null
+                    ? null
+                    : new MenuItemSpecialAdminView(
+                        item.Special.ScheduleKind,
+                        item.Special.DayOfWeek,
+                        item.Special.StartDate,
+                        item.Special.EndDate,
+                        item.Special.StartsAt,
+                        item.Special.EndsAt,
+                        item.Special.ClosesNextDay,
+                        MenuPresentationRules.GetSpecialBadgeLabel(item.Special),
+                        MenuPresentationRules.FormatSpecialScheduleSummary(item.Special),
+                        MenuPresentationRules.FormatSpecialTimeSummary(item.Special),
+                        item.Special.Callout,
+                        MenuPresentationRules.GetAdminStatusLabels(item.Special, today),
+                        MenuPresentationRules.IsSpecialToday(item.Special, today))))
             .ToArray();
 
-        var specials = snapshot.Specials
-            .OrderBy(special => special.Tab)
-            .ThenBy(special => Array.IndexOf(MenuPresentationRules.DayOrder.ToArray(), special.DayOfWeek))
-            .ThenBy(special => special.SortOrder)
-            .ThenBy(special => special.Title, StringComparer.OrdinalIgnoreCase)
-            .Select(special => new RecurringSpecialAdminView(
-                special.SpecialId,
-                special.Tab,
-                special.SectionId,
-                special.SectionName,
-                special.DayOfWeek,
-                MenuPresentationRules.GetDayLabel(special.DayOfWeek),
-                special.Title,
-                special.Description,
-                special.TimeNote,
-                special.PriceNote,
-                special.LinkedMenuItemId,
-                special.LinkedMenuItemName,
-                special.SortOrder,
-                special.IsVisibleToGuests,
-                special.IsArchived,
-                MenuPresentationRules.GetAdminStatusLabels(special, today),
-                special.DayOfWeek == today.DayOfWeek))
-            .ToArray();
-
-        return new MenuManagementView(tabs, sections, items, specials);
+        return new MenuManagementView(tabs, sections, items);
     }
 
     private static string GetAccentClass(int index) =>

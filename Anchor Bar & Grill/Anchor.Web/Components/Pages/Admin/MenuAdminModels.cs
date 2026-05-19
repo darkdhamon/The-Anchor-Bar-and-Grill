@@ -28,20 +28,17 @@ internal enum MenuAdminDetailKind
 {
     None,
     Section,
-    Item,
-    Special
+    Item
 }
 
 internal sealed record MenuAdminBrowserItemViewModel(
     MenuItemAdminView Item,
-    bool IsContextMuted,
-    IReadOnlyList<RecurringSpecialAdminView> Specials);
+    bool IsContextMuted);
 
 internal sealed record MenuAdminBrowserSectionViewModel(
     MenuSectionAdminView Section,
     bool IsContextMuted,
-    IReadOnlyList<MenuAdminBrowserItemViewModel> Items,
-    IReadOnlyList<RecurringSpecialAdminView> DetachedSpecials);
+    IReadOnlyList<MenuAdminBrowserItemViewModel> Items);
 
 internal sealed record MenuAdminHoursSummaryViewModel(
     MenuTab Tab,
@@ -102,31 +99,28 @@ internal sealed class MenuItemFormModel
 
     public bool ShowDinner { get; set; } = true;
 
+    public bool IsSpecial { get; set; }
+
+    public MenuItemSpecialScheduleKind SpecialScheduleKind { get; set; } = MenuItemSpecialScheduleKind.WeeklyRecurring;
+
+    public DayOfWeek SpecialDayOfWeek { get; set; } = DayOfWeek.Monday;
+
+    public string? SpecialStartDateText { get; set; }
+
+    public string? SpecialEndDateText { get; set; }
+
+    public string? SpecialStartsAtText { get; set; }
+
+    public string? SpecialEndsAtText { get; set; }
+
+    public bool SpecialClosesNextDay { get; set; }
+
+    public string? SpecialCallout { get; set; }
+
     public List<MenuItemPriceVariantFormModel> PriceVariants { get; } =
     [
         new()
     ];
-}
-
-internal sealed class MenuRecurringSpecialFormModel
-{
-    public Guid? SpecialId { get; set; }
-
-    public MenuTab Tab { get; set; } = MenuTab.Dinner;
-
-    public DayOfWeek DayOfWeek { get; set; } = DayOfWeek.Monday;
-
-    public string TimeNote { get; set; } = string.Empty;
-
-    public string? PriceNote { get; set; }
-
-    public string? LinkedMenuItemId { get; set; }
-
-    public int SortOrder { get; set; } = 1;
-
-    public bool IsVisibleToGuests { get; set; } = true;
-
-    public bool IsArchived { get; set; }
 }
 
 internal sealed class MenuServiceWindowDayFormModel

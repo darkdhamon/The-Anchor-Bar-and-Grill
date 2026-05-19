@@ -16,7 +16,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<MenuItemTabEntity> MenuItemTabs => Set<MenuItemTabEntity>();
 
-    public DbSet<RecurringSpecialEntity> RecurringSpecials => Set<RecurringSpecialEntity>();
+    public DbSet<MenuItemSpecialEntity> MenuItemSpecials => Set<MenuItemSpecialEntity>();
 
     public DbSet<MenuServiceWindowEntity> MenuServiceWindows => Set<MenuServiceWindowEntity>();
 

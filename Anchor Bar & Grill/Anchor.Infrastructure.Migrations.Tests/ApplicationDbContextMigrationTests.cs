@@ -42,6 +42,7 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Contains("20260515170550_AddAccountConfirmedFlag", appliedMigrations);
             Assert.Contains("20260517015850_AddMenuCatalog", appliedMigrations);
             Assert.Contains("20260518213938_LinkSeededRecurringSpecialsToMenuItems", appliedMigrations);
+            Assert.Contains("20260519134817_RefactorRecurringSpecialsToMenuItemSpecials", appliedMigrations);
             Assert.Empty(pendingMigrations);
             Assert.True(await context.Database.CanConnectAsync());
 
@@ -83,16 +84,19 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Contains("MenuItems", tableNames);
             Assert.Contains("MenuItemPriceVariants", tableNames);
             Assert.Contains("MenuItemTabs", tableNames);
-            Assert.Contains("RecurringSpecials", tableNames);
+            Assert.Contains("MenuItemSpecials", tableNames);
             Assert.Contains("MenuServiceWindows", tableNames);
+            Assert.DoesNotContain("RecurringSpecials", tableNames);
 
             Assert.True(await context.MenuSections.AnyAsync(section => section.Name == "Appetizers"));
             Assert.True(await context.MenuItems.AnyAsync(item => item.Name == "Cheese Curds"));
-            Assert.True(await context.MenuItems.AnyAsync(item => item.MenuItemId == Guid.Parse("9E7F7A6B-C8DB-4E8D-B2EF-A60A40E91F70") && !item.IsVisibleToGuests));
+            Assert.False(await context.MenuItems.AnyAsync(item => item.MenuItemId == Guid.Parse("9E7F7A6B-C8DB-4E8D-B2EF-A60A40E91F70")));
+            Assert.True(await context.MenuItems.AnyAsync(item => item.MenuItemId == Guid.Parse("33D64E7B-D5B7-481A-97FC-7F250A68C27E") && item.Name == "Monday Night Burgers"));
+            Assert.True(await context.MenuItems.AnyAsync(item => item.MenuItemId == Guid.Parse("6BAA63B3-55C9-4E47-8555-803573B9B38D") && item.Name == "Sunday Pork Chop Dinner"));
             Assert.True(await context.MenuItemPriceVariants.AnyAsync(variant => variant.Label == "Bowl" && variant.Amount == 6m));
-            Assert.True(await context.MenuItemTabs.AnyAsync(link => link.MenuItemId == Guid.Parse("7626D0DF-9F8A-4FE8-9062-3596165E148A") && link.Tab == MenuTab.Dinner));
-            Assert.True(await context.RecurringSpecials.AnyAsync(special => special.Title == "Monday Night Burgers"));
-            Assert.True(await context.RecurringSpecials.AnyAsync(special => special.RecurringSpecialId == Guid.Parse("6BAA63B3-55C9-4E47-8555-803573B9B38D") && special.LinkedMenuItemId == Guid.Parse("9E7F7A6B-C8DB-4E8D-B2EF-A60A40E91F70")));
+            Assert.True(await context.MenuItemTabs.AnyAsync(link => link.MenuItemId == Guid.Parse("33D64E7B-D5B7-481A-97FC-7F250A68C27E") && link.Tab == MenuTab.Dinner));
+            Assert.True(await context.MenuItemSpecials.AnyAsync(special => special.MenuItemId == Guid.Parse("33D64E7B-D5B7-481A-97FC-7F250A68C27E") && special.DayOfWeek == DayOfWeek.Monday && special.StartsAt == new TimeOnly(17, 0)));
+            Assert.True(await context.MenuItemSpecials.AnyAsync(special => special.MenuItemId == Guid.Parse("6BAA63B3-55C9-4E47-8555-803573B9B38D") && special.Callout == "$17 dinner plate"));
             Assert.True(await context.MenuServiceWindows.AnyAsync(window => window.Tab == MenuTab.Drinks && window.DayOfWeek == DayOfWeek.Friday && window.ClosesNextDay));
         }
         finally
@@ -189,6 +193,115 @@ public sealed class ApplicationDbContextMigrationTests
         }
 
         return columnNames;
+    }
+
+    [Fact]
+    public async Task RefactorRecurringSpecialsToMenuItemSpecials_promotes_existing_legacy_special_rows()
+    {
+        var databaseName = $"AnchorWebMenu_{Guid.NewGuid():N}";
+        var connectionString = new SqlConnectionStringBuilder
+        {
+            DataSource = @"(localdb)\MSSQLLocalDB",
+            InitialCatalog = databaseName,
+            IntegratedSecurity = true,
+            TrustServerCertificate = true,
+            ConnectTimeout = 30
+        }.ConnectionString;
+
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseSqlServer(connectionString)
+            .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning))
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        await context.Database.EnsureDeletedAsync();
+
+        const string migrationBeforeSpecialRefactor = "20260518213938_LinkSeededRecurringSpecialsToMenuItems";
+        var customSpecialId = Guid.Parse("71E1F47F-2CF1-4FC6-9E59-F6E54E0FF4A2");
+
+        try
+        {
+            await context.Database.MigrateAsync(migrationBeforeSpecialRefactor);
+
+            await context.Database.ExecuteSqlRawAsync(
+                """
+                INSERT INTO RecurringSpecials
+                (
+                    RecurringSpecialId,
+                    Tab,
+                    MenuSectionId,
+                    DayOfWeek,
+                    Title,
+                    Description,
+                    TimeNote,
+                    PriceNote,
+                    LinkedMenuItemId,
+                    SortOrder,
+                    IsVisibleToGuests,
+                    IsArchived
+                )
+                VALUES
+                (
+                    {0},
+                    {1},
+                    {2},
+                    {3},
+                    {4},
+                    {5},
+                    {6},
+                    {7},
+                    {8},
+                    {9},
+                    1,
+                    0
+                );
+                """,
+                customSpecialId,
+                (int)MenuTab.Dinner,
+                Guid.Parse("198CCF8A-72FD-4278-A360-F36D5871E58B"),
+                (int)DayOfWeek.Thursday,
+                "Thursday Burger Blitz",
+                "Custom recurring special saved before the refactor migration.",
+                "5:30 PM - 10:00 PM",
+                "$13 basket special",
+                Guid.Parse("7626D0DF-9F8A-4FE8-9062-3596165E148A"),
+                9);
+
+            await context.Database.MigrateAsync();
+
+            var promotedItem = await context.MenuItems.SingleAsync(item => item.MenuItemId == customSpecialId);
+            var promotedPriceVariants = await context.MenuItemPriceVariants
+                .Where(variant => variant.MenuItemId == customSpecialId)
+                .OrderBy(variant => variant.SortOrder)
+                .ToListAsync();
+            var promotedTabs = await context.MenuItemTabs
+                .Where(link => link.MenuItemId == customSpecialId)
+                .Select(link => link.Tab)
+                .ToListAsync();
+            var promotedSpecial = await context.MenuItemSpecials.SingleAsync(special => special.MenuItemId == customSpecialId);
+
+            Assert.Equal("Thursday Burger Blitz", promotedItem.Name);
+            Assert.Equal("Custom recurring special saved before the refactor migration.", promotedItem.Description);
+            Assert.Equal(Guid.Parse("198CCF8A-72FD-4278-A360-F36D5871E58B"), promotedItem.MenuSectionId);
+            Assert.Equal("images/menu/burgers.svg", promotedItem.ImagePath);
+            Assert.False(promotedItem.IsArchived);
+            Assert.True(promotedItem.IsVisibleToGuests);
+            Assert.Single(promotedPriceVariants);
+            Assert.Equal("Regular", promotedPriceVariants[0].Label);
+            Assert.Equal(11m, promotedPriceVariants[0].Amount);
+            Assert.Equal([MenuTab.Dinner], promotedTabs);
+            Assert.Equal(MenuItemSpecialScheduleKind.WeeklyRecurring, promotedSpecial.ScheduleKind);
+            Assert.Equal(DayOfWeek.Thursday, promotedSpecial.DayOfWeek);
+            Assert.Equal(new DateOnly(2026, 1, 1), promotedSpecial.StartDate);
+            Assert.Equal(new TimeOnly(17, 30), promotedSpecial.StartsAt);
+            Assert.Equal(new TimeOnly(22, 0), promotedSpecial.EndsAt);
+            Assert.False(promotedSpecial.ClosesNextDay);
+            Assert.Equal("$13 basket special", promotedSpecial.Callout);
+        }
+        finally
+        {
+            await context.Database.EnsureDeletedAsync();
+        }
     }
 
     private static async Task<IReadOnlyList<string>> GetTableNamesAsync(string connectionString)

@@ -63,6 +63,11 @@ internal static class MenuPresentationRules
 
     public static string? FormatOfferDateSummary(MenuItemRecord item, DateOnly today)
     {
+        if (item.Special is not null)
+        {
+            return null;
+        }
+
         if (item.OfferStartsOn is null)
         {
             return item.OfferEndsOn is null
@@ -88,6 +93,19 @@ internal static class MenuPresentationRules
 
     public static IReadOnlyList<string> GetPublicStatusLabels(MenuItemRecord item, DateOnly today)
     {
+        if (item.Special is { } special)
+        {
+            List<string> specialLabels = [];
+            if (special.ScheduleKind == MenuItemSpecialScheduleKind.Dated
+                && special.StartDate > today
+                && special.StartDate <= today.AddDays(30))
+            {
+                specialLabels.Add("Coming Soon");
+            }
+
+            return specialLabels;
+        }
+
         List<string> labels = [];
 
         if (item.OfferStartsOn is { } startsOn && startsOn > today && startsOn <= today.AddDays(30))
@@ -107,7 +125,7 @@ internal static class MenuPresentationRules
     {
         List<string> labels = [];
 
-        if (!item.IsVisibleToGuests || item.OfferEndsOn is { } endsOn && endsOn < today || item.IsArchived)
+        if (!item.IsVisibleToGuests || item.IsArchived || item.Special is null && item.OfferEndsOn is { } endsOn && endsOn < today)
         {
             labels.Add("Hidden");
         }
@@ -117,14 +135,25 @@ internal static class MenuPresentationRules
             labels.Add("Archived");
         }
 
-        if (item.OfferEndsOn is { } expiredOn && expiredOn < today)
+        if (item.Special is null && item.OfferEndsOn is { } expiredOn && expiredOn < today)
         {
             labels.Add("Expired");
         }
 
-        foreach (var label in GetPublicStatusLabels(item, today))
+        if (item.Special is not null)
         {
-            labels.Add(label);
+            labels.Add("Special");
+            foreach (var label in GetAdminStatusLabels(item.Special, today))
+            {
+                labels.Add(label);
+            }
+        }
+        else
+        {
+            foreach (var label in GetPublicStatusLabels(item, today))
+            {
+                labels.Add(label);
+            }
         }
 
         return labels.Distinct(StringComparer.Ordinal).ToArray();
@@ -147,23 +176,20 @@ internal static class MenuPresentationRules
         return labels;
     }
 
-    public static IReadOnlyList<string> GetAdminStatusLabels(MenuRecurringSpecialRecord special, DateOnly today)
+    public static IReadOnlyList<string> GetAdminStatusLabels(MenuItemSpecialRecord special, DateOnly today)
     {
         List<string> labels = [];
 
-        if (!special.IsVisibleToGuests || special.IsArchived)
-        {
-            labels.Add("Hidden");
-        }
-
-        if (special.IsArchived)
-        {
-            labels.Add("Archived");
-        }
-
-        if (special.DayOfWeek == today.DayOfWeek)
+        if (IsSpecialToday(special, today))
         {
             labels.Add("Today");
+        }
+
+        if (special.ScheduleKind == MenuItemSpecialScheduleKind.Dated
+            && special.StartDate > today
+            && special.StartDate <= today.AddDays(30))
+        {
+            labels.Add("Coming Soon");
         }
 
         return labels;
@@ -180,10 +206,75 @@ internal static class MenuPresentationRules
         return $"{window.OpensAt.Value.ToString("h:mm tt", UsCulture)} - {window.ClosesAt.Value.ToString("h:mm tt", UsCulture)}{suffix}";
     }
 
-    public static string GetPlacementSummary(MenuRecurringSpecialRecord special) =>
-        string.IsNullOrWhiteSpace(special.LinkedMenuItemName)
-            ? special.SectionName
-            : $"{special.SectionName} - Menu item: {special.LinkedMenuItemName}";
+    public static string GetSpecialBadgeLabel(MenuItemSpecialRecord special) =>
+        special.ScheduleKind switch
+        {
+            MenuItemSpecialScheduleKind.WeeklyRecurring => GetDayLabel(special.DayOfWeek ?? DayOfWeek.Monday),
+            MenuItemSpecialScheduleKind.Dated when special.EndDate is { } endDate && endDate > special.StartDate
+                => $"{special.StartDate:MMM d} - {endDate:MMM d}",
+            _ => $"{special.StartDate:MMM d}"
+        };
+
+    public static string FormatSpecialScheduleSummary(MenuItemSpecialRecord special)
+    {
+        if (special.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring)
+        {
+            var baseSummary = $"Every {GetDayLabel(special.DayOfWeek ?? DayOfWeek.Monday)}";
+            if (special.EndDate is { } endDate)
+            {
+                return $"{baseSummary} through {endDate:MMM d}";
+            }
+
+            return special.StartDate > DateOnly.MinValue
+                ? $"{baseSummary} starting {special.StartDate:MMM d}"
+                : baseSummary;
+        }
+
+        if (special.EndDate is { } datedEnd && datedEnd > special.StartDate)
+        {
+            return $"{special.StartDate:MMM d} - {datedEnd:MMM d}";
+        }
+
+        return $"{special.StartDate:MMM d} only";
+    }
+
+    public static string? FormatSpecialTimeSummary(MenuItemSpecialRecord special)
+    {
+        if (special.StartsAt is null && special.EndsAt is null)
+        {
+            return null;
+        }
+
+        if (special.StartsAt is { } startsAt && special.EndsAt is { } endsAt)
+        {
+            var suffix = special.ClosesNextDay ? " next day" : string.Empty;
+            return $"{startsAt.ToString("h:mm tt", UsCulture)} - {endsAt.ToString("h:mm tt", UsCulture)}{suffix}";
+        }
+
+        if (special.StartsAt is { } startOnly)
+        {
+            return $"After {startOnly.ToString("h:mm tt", UsCulture)}";
+        }
+
+        var endOnly = special.EndsAt!.Value;
+        var endSuffix = special.ClosesNextDay ? " next day" : string.Empty;
+        return $"Until {endOnly.ToString("h:mm tt", UsCulture)}{endSuffix}";
+    }
+
+    public static bool IsSpecialToday(MenuItemSpecialRecord special, DateOnly today)
+    {
+        if (special.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring)
+        {
+            return special.DayOfWeek == today.DayOfWeek
+                && special.StartDate <= today
+                && (special.EndDate is null || special.EndDate >= today);
+        }
+
+        var effectiveEnd = special.EndDate ?? special.StartDate;
+        return special.StartDate <= today && effectiveEnd >= today;
+    }
+
+    public static string GetPlacementSummary(MenuItemRecord item) => item.SectionName;
 
     private static bool Assign(MenuTab value, out MenuTab target)
     {

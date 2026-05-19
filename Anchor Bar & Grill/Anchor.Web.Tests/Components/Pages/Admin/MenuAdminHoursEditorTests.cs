@@ -200,8 +200,8 @@ public sealed class MenuAdminHoursEditorTests : BunitContext
         public Task<PublicMenuView> GetPublicMenuAsync(MenuTab requestedTab, DateOnly today, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
-        public Task<IReadOnlyList<PublicRecurringSpecialView>> GetHomeRecurringSpecialsAsync(DateOnly today, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<PublicRecurringSpecialView>>([]);
+        public Task<IReadOnlyList<PublicHomeSpecialView>> GetHomeSpecialsAsync(DateOnly today, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<PublicHomeSpecialView>>([]);
 
         public Task<MenuManagementView> GetMenuManagementViewAsync(DateOnly today, CancellationToken cancellationToken = default)
         {
@@ -231,7 +231,7 @@ public sealed class MenuAdminHoursEditorTests : BunitContext
                         .ToArray()))
                 .ToArray();
 
-            return Task.FromResult(new MenuManagementView(tabs, sections, [], []));
+            return Task.FromResult(new MenuManagementView(tabs, sections, []));
         }
 
         private static string FormatWindow(MutableMenuHoursStore.WindowState window)
@@ -253,9 +253,6 @@ public sealed class MenuAdminHoursEditorTests : BunitContext
 
         public Task<MenuOperationResult> SaveItemAsync(SaveMenuItemRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success(request.ItemId ?? Guid.NewGuid()));
-
-        public Task<MenuOperationResult> SaveRecurringSpecialAsync(SaveRecurringSpecialRequest request, CancellationToken cancellationToken = default) =>
-            Task.FromResult(MenuOperationResult.Success(request.SpecialId ?? Guid.NewGuid()));
 
         public Task<MenuOperationResult> SaveServiceWindowsAsync(SaveMenuServiceWindowRequest request, CancellationToken cancellationToken = default)
         {
@@ -280,9 +277,6 @@ public sealed class MenuAdminHoursEditorTests : BunitContext
         public Task<MenuOperationResult> ReorderItemsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success());
 
-        public Task<MenuOperationResult> ReorderRecurringSpecialsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default) =>
-            Task.FromResult(MenuOperationResult.Success());
-
         public Task<MenuOperationResult> ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success(sectionId));
 
@@ -294,12 +288,6 @@ public sealed class MenuAdminHoursEditorTests : BunitContext
 
         public Task<MenuOperationResult> DeleteItemAsync(Guid itemId, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success(itemId));
-
-        public Task<MenuOperationResult> ArchiveRecurringSpecialAsync(Guid specialId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(MenuOperationResult.Success(specialId));
-
-        public Task<MenuOperationResult> DeleteRecurringSpecialAsync(Guid specialId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(MenuOperationResult.Success(specialId));
     }
 
     private sealed class MutableMenuHoursStore
