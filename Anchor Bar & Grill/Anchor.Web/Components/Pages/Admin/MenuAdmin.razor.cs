@@ -773,6 +773,11 @@ public partial class MenuAdmin
         await Task.CompletedTask;
     }
 
+    private void HandleItemDescriptionChanged(ChangeEventArgs args)
+    {
+        itemForm.Description = args.Value?.ToString() ?? string.Empty;
+    }
+
     private async Task HandleSpecialToggleChangedAsync(ChangeEventArgs args)
     {
         itemForm.IsSpecial = args.Value is bool selected && selected;

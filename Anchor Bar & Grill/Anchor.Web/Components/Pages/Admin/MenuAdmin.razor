@@ -465,7 +465,10 @@
 
                                 <label class="editor-form__message">
                                     <span>Description (optional)</span>
-                                    <textarea @bind="itemForm.Description" @bind:event="oninput" placeholder="Optional. Describe what guests should know about this item."></textarea>
+                                    <textarea value="@(itemForm.Description ?? string.Empty)"
+                                              @oninput="HandleItemDescriptionChanged"
+                                              @onchange="HandleItemDescriptionChanged"
+                                              placeholder="Optional. Describe what guests should know about this item."></textarea>
                                 </label>
 
                                 <div class="editor-form__message">

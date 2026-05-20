@@ -211,6 +211,29 @@ public sealed class MenuAdminRedesignTests : BunitContext
     }
 
     [Fact]
+    public void Existing_item_accepts_change_style_description_updates()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+        var captureService = new CapturingMenuAdminManagementService();
+        Services.AddSingleton<IMenuManagementService>(captureService);
+
+        var cut = RenderMenuAdmin("/admin/menu?tab=drinks");
+
+        cut.FindAll(".menu-editor-tree__select")
+            .Single(button => button.TextContent.Contains("Old Fashioned", StringComparison.OrdinalIgnoreCase))
+            .Click();
+
+        cut.Find("textarea").Change("Voice typed description");
+
+        cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Save item", StringComparison.Ordinal))
+            .Click();
+
+        Assert.NotNull(captureService.LastSaveItemRequest);
+        Assert.Equal("Voice typed description", captureService.LastSaveItemRequest!.Description);
+    }
+
+    [Fact]
     public void Thrown_item_save_errors_render_as_inline_status_messages()
     {
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
