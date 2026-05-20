@@ -100,6 +100,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - The Menu Editor browser now keeps one item list per section and adds `All`, `Standard`, and `Specials` content filters plus `Active`, `Both`, and `Archived` archive-state browsing so staff can review the right slice of the catalog faster
 - Menu Editor reordering now uses dedicated sort-order updates for sections and items, while keeping special items grouped ahead of standard items on the public menu
 - Menu item descriptions are optional, so simple entries like soft drinks can be saved without filler copy, and item-save errors now render inside the detail panel near the save button
+- Existing menu-item edits now reuse their current price-variant records instead of rebuilding them on every save, which prevents the editor from dropping the circuit on no-op or small follow-up edits
 - The shared site shell now uses fluid desktop width instead of a fixed centered column, and the public menu plus Menu Editor add larger-screen layout rules so wide displays can show more useful content at once
 - Public menu hours now collapse repeated daily schedules into grouped ranges such as `Daily`, `Monday-Friday`, or `Sunday-Thursday`, while still surfacing today's hours in a compact highlight
 - Non-editor elements such as navigation targets and post-navigation page headings suppress the default browser focus outline, while editor fields keep their normal editing focus behavior

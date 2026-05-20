@@ -3,6 +3,7 @@ using Anchor.Domain.Menu;
 using Anchor.Web.Components.Pages;
 using Anchor.Web.Components.Shared;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Logging;
 
 namespace Anchor.Web.Components.Pages.Admin;
 
@@ -50,6 +51,9 @@ public partial class MenuAdmin
 
     [Inject]
     private NavigationManager NavigationManager { get; set; } = null!;
+
+    [Inject]
+    private ILogger<MenuAdmin> Logger { get; set; } = null!;
 
     [SupplyParameterFromQuery(Name = "tab")]
     private string? RequestedEditorTab { get; set; }
@@ -509,60 +513,68 @@ public partial class MenuAdmin
 
     private async Task SaveItemAsync()
     {
-        var sectionId = ParseGuid(itemForm.SectionId);
-        if (sectionId is null)
+        try
         {
-            statusMessage = "Error: Choose a section before saving the menu item.";
-            return;
-        }
-
-        if (!TryParseOptionalDate(itemForm.OfferStartsOnText, "Offer start date", out var offerStartsOn, out var dateError)
-            || !TryParseOptionalDate(itemForm.OfferEndsOnText, "Offer end date", out var offerEndsOn, out dateError))
-        {
-            statusMessage = $"Error: {dateError}";
-            return;
-        }
-
-        if (!TryBuildPriceVariants(itemForm.PriceVariants, out var priceVariants, out var priceError))
-        {
-            statusMessage = $"Error: {priceError}";
-            return;
-        }
-
-        SaveMenuItemSpecialRequest? specialRequest = null;
-        if (itemForm.IsSpecial)
-        {
-            if (!TryBuildSpecialRequest(out specialRequest, out var specialError))
+            var sectionId = ParseGuid(itemForm.SectionId);
+            if (sectionId is null)
             {
-                statusMessage = $"Error: {specialError}";
+                statusMessage = "Error: Choose a section before saving the menu item.";
                 return;
             }
+
+            if (!TryParseOptionalDate(itemForm.OfferStartsOnText, "Offer start date", out var offerStartsOn, out var dateError)
+                || !TryParseOptionalDate(itemForm.OfferEndsOnText, "Offer end date", out var offerEndsOn, out dateError))
+            {
+                statusMessage = $"Error: {dateError}";
+                return;
+            }
+
+            if (!TryBuildPriceVariants(itemForm.PriceVariants, out var priceVariants, out var priceError))
+            {
+                statusMessage = $"Error: {priceError}";
+                return;
+            }
+
+            SaveMenuItemSpecialRequest? specialRequest = null;
+            if (itemForm.IsSpecial)
+            {
+                if (!TryBuildSpecialRequest(out specialRequest, out var specialError))
+                {
+                    statusMessage = $"Error: {specialError}";
+                    return;
+                }
+            }
+
+            var currentItemId = itemForm.ItemId;
+            var result = await MenuManagementService.SaveItemAsync(
+                new SaveMenuItemRequest(
+                    itemForm.ItemId,
+                    sectionId.Value,
+                    itemForm.Name,
+                    itemForm.Description,
+                    itemForm.ImagePath,
+                    itemForm.SortOrder,
+                    itemForm.IsVisibleToGuests,
+                    itemForm.IsArchived,
+                    itemForm.IsSpecial ? null : offerStartsOn,
+                    itemForm.IsSpecial ? null : offerEndsOn,
+                    itemForm.IsSpecial ? false : itemForm.IsSeasonal,
+                    priceVariants,
+                    GetItemEditorFamily() == MenuFamily.Food ? GetSelectedFoodTabs().ToArray() : Array.Empty<MenuTab>(),
+                    specialRequest));
+
+            if (!await HandleOperationResultAsync(result, currentItemId is null ? "Menu item created." : "Menu item updated."))
+            {
+                return;
+            }
+
+            TrySelectItemById(result.EntityId ?? currentItemId);
         }
-
-        var currentItemId = itemForm.ItemId;
-        var result = await MenuManagementService.SaveItemAsync(
-            new SaveMenuItemRequest(
-                itemForm.ItemId,
-                sectionId.Value,
-                itemForm.Name,
-                itemForm.Description,
-                itemForm.ImagePath,
-                itemForm.SortOrder,
-                itemForm.IsVisibleToGuests,
-                itemForm.IsArchived,
-                itemForm.IsSpecial ? null : offerStartsOn,
-                itemForm.IsSpecial ? null : offerEndsOn,
-                itemForm.IsSpecial ? false : itemForm.IsSeasonal,
-                priceVariants,
-                GetItemEditorFamily() == MenuFamily.Food ? GetSelectedFoodTabs().ToArray() : Array.Empty<MenuTab>(),
-                specialRequest));
-
-        if (!await HandleOperationResultAsync(result, currentItemId is null ? "Menu item created." : "Menu item updated."))
+        catch (Exception exception)
         {
-            return;
+            Logger.LogError(exception, "Menu item save failed for item {ItemId}", itemForm.ItemId);
+            statusMessage = "Error: We couldn't save the menu item. Refresh the page and try again.";
         }
-
-        TrySelectItemById(result.EntityId ?? currentItemId);
     }
 
     private bool TryBuildPriceVariants(

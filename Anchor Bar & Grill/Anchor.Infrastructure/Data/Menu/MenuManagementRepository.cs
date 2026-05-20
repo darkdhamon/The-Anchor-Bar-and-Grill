@@ -83,27 +83,8 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
         entity.OfferEndsOn = request.OfferEndsOn;
         entity.IsSeasonal = request.IsSeasonal;
 
-        entity.PriceVariants.Clear();
-        foreach (var variant in request.PriceVariants)
-        {
-            entity.PriceVariants.Add(new MenuItemPriceVariantEntity
-            {
-                MenuItemPriceVariantId = variant.PriceVariantId ?? Guid.NewGuid(),
-                Label = variant.Label,
-                Amount = variant.Amount,
-                SortOrder = variant.SortOrder
-            });
-        }
-
-        entity.FoodTabs.Clear();
-        foreach (var tab in request.FoodTabs.Distinct())
-        {
-            entity.FoodTabs.Add(new MenuItemTabEntity
-            {
-                MenuItemId = entity.MenuItemId,
-                Tab = tab
-            });
-        }
+        SyncPriceVariants(entity, request.PriceVariants);
+        SyncFoodTabs(entity, request.FoodTabs);
 
         if (request.Special is null)
         {
@@ -127,6 +108,69 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
         }
 
         return entity.MenuItemId;
+    }
+
+    private static void SyncPriceVariants(MenuItemEntity entity, IReadOnlyList<SaveMenuItemPriceVariantRequest> requestedVariants)
+    {
+        var existingVariants = entity.PriceVariants
+            .OrderBy(variant => variant.SortOrder)
+            .ThenBy(variant => variant.MenuItemPriceVariantId)
+            .ToArray();
+        var orderedRequestedVariants = requestedVariants
+            .OrderBy(variant => variant.SortOrder)
+            .ToArray();
+
+        var sharedCount = Math.Min(existingVariants.Length, orderedRequestedVariants.Length);
+        for (var index = 0; index < sharedCount; index++)
+        {
+            var existingVariant = existingVariants[index];
+            var requestedVariant = orderedRequestedVariants[index];
+
+            existingVariant.Label = requestedVariant.Label;
+            existingVariant.Amount = requestedVariant.Amount;
+            existingVariant.SortOrder = requestedVariant.SortOrder;
+        }
+
+        for (var index = sharedCount; index < existingVariants.Length; index++)
+        {
+            entity.PriceVariants.Remove(existingVariants[index]);
+        }
+
+        for (var index = sharedCount; index < orderedRequestedVariants.Length; index++)
+        {
+            var requestedVariant = orderedRequestedVariants[index];
+            entity.PriceVariants.Add(new MenuItemPriceVariantEntity
+            {
+                MenuItemPriceVariantId = requestedVariant.PriceVariantId ?? Guid.NewGuid(),
+                Label = requestedVariant.Label,
+                Amount = requestedVariant.Amount,
+                SortOrder = requestedVariant.SortOrder
+            });
+        }
+    }
+
+    private static void SyncFoodTabs(MenuItemEntity entity, IReadOnlyList<MenuTab> requestedTabs)
+    {
+        var requestedTabSet = requestedTabs
+            .Distinct()
+            .ToHashSet();
+        var existingTabs = entity.FoodTabs
+            .Select(link => link.Tab)
+            .ToHashSet();
+
+        foreach (var link in entity.FoodTabs.Where(link => !requestedTabSet.Contains(link.Tab)).ToArray())
+        {
+            entity.FoodTabs.Remove(link);
+        }
+
+        foreach (var tab in requestedTabSet.Where(tab => !existingTabs.Contains(tab)))
+        {
+            entity.FoodTabs.Add(new MenuItemTabEntity
+            {
+                MenuItemId = entity.MenuItemId,
+                Tab = tab
+            });
+        }
     }
 
     public async Task UpsertServiceWindowsAsync(SaveMenuServiceWindowRequest request, CancellationToken cancellationToken = default)

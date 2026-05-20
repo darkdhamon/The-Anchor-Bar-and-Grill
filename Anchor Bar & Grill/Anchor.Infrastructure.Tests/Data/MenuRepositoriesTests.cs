@@ -160,6 +160,53 @@ public sealed class MenuRepositoriesTests
     }
 
     [Fact]
+    public async Task UpsertItemAsync_updates_existing_item_without_replacing_price_variant_ids()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+        var repository = new MenuManagementRepository(context.DbContext);
+
+        var existingVariantIds = await context.DbContext.MenuItemPriceVariants
+            .Where(variant => variant.MenuItemId == ClassicHamburgerItemId)
+            .Select(variant => variant.MenuItemPriceVariantId)
+            .OrderBy(id => id)
+            .ToArrayAsync();
+
+        await repository.UpsertItemAsync(
+            new SaveMenuItemRequest(
+                ClassicHamburgerItemId,
+                BurgersSectionId,
+                "Classic Hamburger",
+                "Updated burger description.",
+                null,
+                7,
+                true,
+                false,
+                null,
+                null,
+                false,
+                [
+                    new SaveMenuItemPriceVariantRequest(null, "Regular", 13m, 1)
+                ],
+                [MenuTab.Lunch, MenuTab.Dinner],
+                null));
+        await repository.SaveChangesAsync();
+
+        var savedItem = await context.DbContext.MenuItems
+            .Include(item => item.PriceVariants)
+            .Include(item => item.FoodTabs)
+            .SingleAsync(item => item.MenuItemId == ClassicHamburgerItemId);
+        var savedVariantIds = savedItem.PriceVariants
+            .Select(variant => variant.MenuItemPriceVariantId)
+            .OrderBy(id => id)
+            .ToArray();
+
+        Assert.Equal(existingVariantIds, savedVariantIds);
+        Assert.Equal("Updated burger description.", savedItem.Description);
+        Assert.Equal(13m, savedItem.PriceVariants.Single().Amount);
+        Assert.Equal([MenuTab.Lunch, MenuTab.Dinner], savedItem.FoodTabs.Select(link => link.Tab).OrderBy(tab => tab).ToArray());
+    }
+
+    [Fact]
     public async Task SectionHasDependentsAsync_and_GetItemReferenceAsync_report_seeded_references()
     {
         await using var context = await SqliteIdentityTestContext.CreateAsync();
