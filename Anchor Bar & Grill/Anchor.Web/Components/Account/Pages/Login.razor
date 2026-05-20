@@ -38,12 +38,12 @@
                 <div class="editor-form__grid">
                     <label>
                         Email
-                        <InputText @bind-Value="Input.Email" id="Input.Email" class="account-form__input" autocomplete="username webauthn" aria-required="true" placeholder="name@example.com" />
+                        <CommitAwareInputText @bind-Value="Input.Email" id="Input.Email" class="account-form__input" autocomplete="username webauthn" aria-required="true" placeholder="name@example.com" />
                         <ValidationMessage For="() => Input.Email" class="validation-message" />
                     </label>
                     <label>
                         Password
-                        <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="account-form__input" autocomplete="current-password" aria-required="true" placeholder="Password" />
+                        <CommitAwareInputText Type="password" @bind-Value="Input.Password" id="Input.Password" class="account-form__input" autocomplete="current-password" aria-required="true" placeholder="Password" />
                         <ValidationMessage For="() => Input.Password" class="validation-message" />
                     </label>
                     <label class="editor-form__toggle">

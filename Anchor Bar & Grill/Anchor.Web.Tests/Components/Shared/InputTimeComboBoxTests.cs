@@ -105,6 +105,23 @@ public sealed class InputTimeComboBoxTests : BunitContext
         });
     }
 
+    [Fact]
+    public void Change_then_blur_normalizes_committed_time_input()
+    {
+        var model = new TimeInputModel();
+        var cut = RenderTimeComboBox(model);
+        var input = cut.Find("input");
+
+        input.Change("1300");
+        input.TriggerEvent("onblur", new FocusEventArgs());
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Equal("1:00 PM", model.Value);
+            Assert.Equal("1:00 PM", input.GetAttribute("value"));
+        });
+    }
+
     private IRenderedComponent<InputTimeComboBox> RenderTimeComboBox(TimeInputModel model)
     {
         return Render<InputTimeComboBox>(parameters => parameters

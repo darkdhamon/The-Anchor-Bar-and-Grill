@@ -370,7 +370,7 @@
                             <div class="editor-form__grid">
                                 <label>
                                     <span>Section name</span>
-                                    <input type="text" @bind="sectionForm.Name" @bind:event="oninput" placeholder="Appetizers, Wings, Cocktails..." />
+                                    <CommitAwareInputText @bind-Value="sectionForm.Name" placeholder="Appetizers, Wings, Cocktails..." />
                                 </label>
 
                                 <label>
@@ -455,20 +455,18 @@
 
                                 <label>
                                     <span>Name</span>
-                                    <input type="text" @bind="itemForm.Name" @bind:event="oninput" placeholder="Classic hamburger, wing night, old fashioned..." />
+                                    <CommitAwareInputText @bind-Value="itemForm.Name" placeholder="Classic hamburger, wing night, old fashioned..." />
                                 </label>
 
                                 <label>
                                     <span>Image path or URL</span>
-                                    <input type="text" @bind="itemForm.ImagePath" @bind:event="oninput" placeholder="/images/menu/wings.jpg" />
+                                    <CommitAwareInputText @bind-Value="itemForm.ImagePath" placeholder="/images/menu/wings.jpg" />
                                 </label>
 
                                 <label class="editor-form__message">
                                     <span>Description (optional)</span>
-                                    <textarea value="@(itemForm.Description ?? string.Empty)"
-                                              @oninput="HandleItemDescriptionChanged"
-                                              @onchange="HandleItemDescriptionChanged"
-                                              placeholder="Optional. Describe what guests should know about this item."></textarea>
+                                    <CommitAwareTextArea @bind-Value="itemForm.Description"
+                                                         placeholder="Optional. Describe what guests should know about this item."></CommitAwareTextArea>
                                 </label>
 
                                 <div class="editor-form__message">
@@ -479,11 +477,11 @@
                                             <div class="menu-editor-price-row">
                                                 <label>
                                                     <span>Label</span>
-                                                    <input type="text" @bind="variant.Label" @bind:event="oninput" placeholder="Regular, Basket, Single..." />
+                                                    <CommitAwareInputText @bind-Value="variant.Label" placeholder="Regular, Basket, Single..." />
                                                 </label>
                                                 <label>
                                                     <span>Amount</span>
-                                                    <input type="text" @bind="variant.AmountText" @bind:event="oninput" placeholder="9.00" />
+                                                    <CommitAwareInputText @bind-Value="variant.AmountText" placeholder="9.00" />
                                                 </label>
                                                 <button type="button"
                                                         class="menu-editor-tree__icon-button"
@@ -552,12 +550,12 @@
                                 {
                                     <label>
                                         <span>Offer start date</span>
-                                        <input type="text" @bind="itemForm.OfferStartsOnText" @bind:event="oninput" placeholder="YYYY-MM-DD" />
+                                        <CommitAwareInputText @bind-Value="itemForm.OfferStartsOnText" placeholder="YYYY-MM-DD" />
                                     </label>
 
                                     <label>
                                         <span>Offer end date</span>
-                                        <input type="text" @bind="itemForm.OfferEndsOnText" @bind:event="oninput" placeholder="YYYY-MM-DD" />
+                                        <CommitAwareInputText @bind-Value="itemForm.OfferEndsOnText" placeholder="YYYY-MM-DD" />
                                     </label>
 
                                     <div class="editor-form__toggle">
@@ -602,12 +600,12 @@
 
                                             <label>
                                                 <span>Start date</span>
-                                                <input type="text" @bind="itemForm.SpecialStartDateText" @bind:event="oninput" placeholder="YYYY-MM-DD" />
+                                                <CommitAwareInputText @bind-Value="itemForm.SpecialStartDateText" placeholder="YYYY-MM-DD" />
                                             </label>
 
                                             <label>
                                                 <span>End date</span>
-                                                <input type="text" @bind="itemForm.SpecialEndDateText" @bind:event="oninput" placeholder="YYYY-MM-DD" />
+                                                <CommitAwareInputText @bind-Value="itemForm.SpecialEndDateText" placeholder="YYYY-MM-DD" />
                                             </label>
 
                                             <div>
@@ -638,7 +636,7 @@
 
                                             <label class="editor-form__message">
                                                 <span>Short callout</span>
-                                                <input type="text" @bind="itemForm.SpecialCallout" @bind:event="oninput" placeholder="After 5 PM, while supplies last, bar-only..." />
+                                                <CommitAwareInputText @bind-Value="itemForm.SpecialCallout" placeholder="After 5 PM, while supplies last, bar-only..." />
                                             </label>
                                         </div>
                                     </div>

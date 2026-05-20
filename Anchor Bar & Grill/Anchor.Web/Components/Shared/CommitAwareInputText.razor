@@ -1,0 +1,9 @@
+@inherits CommitAwareInputTextBase
+
+<input @attributes="AdditionalAttributes"
+       name="@NameAttributeValue"
+       class="@CssClass"
+       type="@Type"
+       value="@CurrentValueAsString"
+       @oninput="HandleValueChanged"
+       @onchange="HandleValueChanged" />
