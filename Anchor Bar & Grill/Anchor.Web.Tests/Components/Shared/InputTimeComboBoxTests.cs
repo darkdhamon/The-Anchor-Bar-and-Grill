@@ -84,6 +84,27 @@ public sealed class InputTimeComboBoxTests : BunitContext
         });
     }
 
+    [Fact]
+    public void Clearing_a_focused_value_keeps_the_input_blank_until_commit()
+    {
+        var model = new TimeInputModel
+        {
+            Value = "11:00 AM"
+        };
+
+        var cut = RenderTimeComboBox(model);
+        var input = cut.Find("input");
+
+        input.Focus();
+        input.Input(string.Empty);
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Equal(string.Empty, model.Value);
+            Assert.Equal(string.Empty, input.GetAttribute("value"));
+        });
+    }
+
     private IRenderedComponent<InputTimeComboBox> RenderTimeComboBox(TimeInputModel model)
     {
         return Render<InputTimeComboBox>(parameters => parameters

@@ -93,6 +93,19 @@ public partial class MenuAdmin
 
     private bool HoursHaveUnsavedChanges => BuildHoursSnapshot(serviceWindowForm) != hoursSnapshot;
 
+    private bool HoursHaveValidationErrors => !TryValidateHoursForm(serviceWindowForm, out _);
+
+    private bool CanSaveHours => HoursHaveUnsavedChanges && !HoursHaveValidationErrors;
+
+    private string HoursEditorStateLabel =>
+        !HoursHaveUnsavedChanges
+            ? "Saved state"
+            : CanSaveHours
+                ? "Ready to save"
+                : "Complete required times";
+
+    private string? DetailStatusMessage => selectedEditorTab == MenuEditorTab.Hours ? null : statusMessage;
+
     private bool CurrentDetailHasUnsavedChanges =>
         detailKind switch
         {
@@ -629,6 +642,20 @@ public partial class MenuAdmin
 
     private async Task SaveServiceHoursAsync()
     {
+        if (!CanSaveHours)
+        {
+            if (TryValidateHoursForm(serviceWindowForm, out var validationError))
+            {
+                statusMessage = "Error: Make a change before saving service hours.";
+            }
+            else
+            {
+                statusMessage = $"Error: {validationError}";
+            }
+
+            return;
+        }
+
         var dayRequests = new List<SaveMenuServiceWindowDayRequest>(serviceWindowForm.Days.Count);
 
         foreach (var day in serviceWindowForm.Days.OrderBy(item => Array.IndexOf(OrderedDays, item.DayOfWeek)))
@@ -1247,6 +1274,26 @@ public partial class MenuAdmin
     private static string? FormatDate(DateOnly? value) => value?.ToString("yyyy-MM-dd", InvariantCulture);
 
     private static string? FormatTime(TimeOnly? value) => value is null ? null : FlexibleTimeText.FormatDisplay(value.Value);
+
+    private static bool TryValidateHoursForm(MenuServiceWindowFormModel model, out string? error)
+    {
+        foreach (var day in model.Days)
+        {
+            if (!day.IsAvailable)
+            {
+                continue;
+            }
+
+            if (!TryParseRequiredTime(day.OpensAtText, $"{GetDayLabel(day.DayOfWeek)} opening time", out _, out error)
+                || !TryParseRequiredTime(day.ClosesAtText, $"{GetDayLabel(day.DayOfWeek)} closing time", out _, out error))
+            {
+                return false;
+            }
+        }
+
+        error = null;
+        return true;
+    }
 
     private static bool TryParseRequiredDate(string? value, string fieldName, out DateOnly? date, out string? error)
     {

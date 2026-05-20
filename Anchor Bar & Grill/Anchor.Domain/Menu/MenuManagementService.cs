@@ -72,9 +72,9 @@ public sealed class MenuManagementService(
         }
 
         var normalizedDescription = request.Description.Trim();
-        if (string.IsNullOrWhiteSpace(normalizedDescription))
+        if (normalizedDescription.Length > 1000)
         {
-            return MenuOperationResult.Failure("Menu item description is required.");
+            return MenuOperationResult.Failure("Menu item description cannot be longer than 1000 characters.");
         }
 
         var normalizedPriceVariants = request.PriceVariants

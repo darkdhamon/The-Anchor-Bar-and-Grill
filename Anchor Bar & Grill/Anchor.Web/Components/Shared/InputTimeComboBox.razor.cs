@@ -12,7 +12,6 @@ public class InputTimeComboBoxBase : InputBase<string?>, IAsyncDisposable
     private IJSObjectReference? module;
     private bool isFocused;
     private bool shouldScrollMenu;
-    private string? lastBoundValue;
     protected ElementReference inputRef;
     protected ElementReference menuRef;
     protected bool isOpen;
@@ -50,12 +49,9 @@ public class InputTimeComboBoxBase : InputBase<string?>, IAsyncDisposable
         timeOptions = BuildOptions(IncrementMinutes);
 
         var currentBoundValue = Value ?? string.Empty;
-        if (!isFocused || !string.Equals(currentBoundValue, lastBoundValue, StringComparison.Ordinal))
-        {
-            displayValue = FlexibleTimeText.NormalizeDisplay(currentBoundValue);
-        }
-
-        lastBoundValue = currentBoundValue;
+        displayValue = isFocused
+            ? currentBoundValue
+            : FlexibleTimeText.NormalizeDisplay(currentBoundValue);
 
         if (Disabled)
         {

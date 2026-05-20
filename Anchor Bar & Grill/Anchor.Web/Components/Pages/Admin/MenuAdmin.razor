@@ -136,7 +136,7 @@
                 <section class="admin-card">
                     <div class="admin-card__header">
                         <h2>Edit @GetTabLabel(serviceWindowForm.Tab) hours</h2>
-                        <span class="admin-card__badge">@(HoursHaveUnsavedChanges ? "Unsaved changes" : "Saved state")</span>
+                        <span class="admin-card__badge">@HoursEditorStateLabel</span>
                     </div>
 
                     <div class="menu-hours-tab-row">
@@ -186,7 +186,10 @@
                     </div>
 
                     <div class="action-row action-row--wrap">
-                        <button type="button" class="action-button action-button--primary" @onclick="SaveServiceHoursAsync">
+                        <button type="button"
+                                class="action-button action-button--primary"
+                                disabled="@(!CanSaveHours)"
+                                @onclick="SaveServiceHoursAsync">
                             Save @GetTabLabel(serviceWindowForm.Tab) hours
                         </button>
                         <button type="button" class="action-button action-button--secondary" @onclick="() => ResetHoursForm(serviceWindowForm.Tab)">
@@ -194,7 +197,7 @@
                         </button>
                     </div>
 
-                    <p class="admin-field-note">Type shorthand like <code>1300</code>, <code>930</code>, or <code>1pm</code>, or open the list for a nearby half-hour pick. Use <strong>Closes next day</strong> when the tab stays open past midnight.</p>
+                    <p class="admin-field-note">Type shorthand like <code>1300</code>, <code>930</code>, or <code>1pm</code>, or open the list for a nearby half-hour pick. Save stays disabled until every available day has valid opening and closing times. Use <strong>Closes next day</strong> when the tab stays open past midnight.</p>
                 </section>
             </div>
         }
@@ -367,7 +370,7 @@
                             <div class="editor-form__grid">
                                 <label>
                                     <span>Section name</span>
-                                    <input type="text" @bind="sectionForm.Name" placeholder="Appetizers, Wings, Cocktails..." />
+                                    <input type="text" @bind="sectionForm.Name" @bind:event="oninput" placeholder="Appetizers, Wings, Cocktails..." />
                                 </label>
 
                                 <label>
@@ -452,17 +455,17 @@
 
                                 <label>
                                     <span>Name</span>
-                                    <input type="text" @bind="itemForm.Name" placeholder="Classic hamburger, wing night, old fashioned..." />
+                                    <input type="text" @bind="itemForm.Name" @bind:event="oninput" placeholder="Classic hamburger, wing night, old fashioned..." />
                                 </label>
 
                                 <label>
                                     <span>Image path or URL</span>
-                                    <input type="text" @bind="itemForm.ImagePath" placeholder="/images/menu/wings.jpg" />
+                                    <input type="text" @bind="itemForm.ImagePath" @bind:event="oninput" placeholder="/images/menu/wings.jpg" />
                                 </label>
 
                                 <label class="editor-form__message">
-                                    <span>Description</span>
-                                    <textarea @bind="itemForm.Description" placeholder="Describe what guests should know about this item."></textarea>
+                                    <span>Description (optional)</span>
+                                    <textarea @bind="itemForm.Description" @bind:event="oninput" placeholder="Optional. Describe what guests should know about this item."></textarea>
                                 </label>
 
                                 <div class="editor-form__message">
@@ -473,11 +476,11 @@
                                             <div class="menu-editor-price-row">
                                                 <label>
                                                     <span>Label</span>
-                                                    <input type="text" @bind="variant.Label" placeholder="Regular, Basket, Single..." />
+                                                    <input type="text" @bind="variant.Label" @bind:event="oninput" placeholder="Regular, Basket, Single..." />
                                                 </label>
                                                 <label>
                                                     <span>Amount</span>
-                                                    <input type="text" @bind="variant.AmountText" placeholder="9.00" />
+                                                    <input type="text" @bind="variant.AmountText" @bind:event="oninput" placeholder="9.00" />
                                                 </label>
                                                 <button type="button"
                                                         class="menu-editor-tree__icon-button"
@@ -546,12 +549,12 @@
                                 {
                                     <label>
                                         <span>Offer start date</span>
-                                        <input type="text" @bind="itemForm.OfferStartsOnText" placeholder="YYYY-MM-DD" />
+                                        <input type="text" @bind="itemForm.OfferStartsOnText" @bind:event="oninput" placeholder="YYYY-MM-DD" />
                                     </label>
 
                                     <label>
                                         <span>Offer end date</span>
-                                        <input type="text" @bind="itemForm.OfferEndsOnText" placeholder="YYYY-MM-DD" />
+                                        <input type="text" @bind="itemForm.OfferEndsOnText" @bind:event="oninput" placeholder="YYYY-MM-DD" />
                                     </label>
 
                                     <div class="editor-form__toggle">
@@ -596,12 +599,12 @@
 
                                             <label>
                                                 <span>Start date</span>
-                                                <input type="text" @bind="itemForm.SpecialStartDateText" placeholder="YYYY-MM-DD" />
+                                                <input type="text" @bind="itemForm.SpecialStartDateText" @bind:event="oninput" placeholder="YYYY-MM-DD" />
                                             </label>
 
                                             <label>
                                                 <span>End date</span>
-                                                <input type="text" @bind="itemForm.SpecialEndDateText" placeholder="YYYY-MM-DD" />
+                                                <input type="text" @bind="itemForm.SpecialEndDateText" @bind:event="oninput" placeholder="YYYY-MM-DD" />
                                             </label>
 
                                             <div>
@@ -632,7 +635,7 @@
 
                                             <label class="editor-form__message">
                                                 <span>Short callout</span>
-                                                <input type="text" @bind="itemForm.SpecialCallout" placeholder="After 5 PM, while supplies last, bar-only..." />
+                                                <input type="text" @bind="itemForm.SpecialCallout" @bind:event="oninput" placeholder="After 5 PM, while supplies last, bar-only..." />
                                             </label>
                                         </div>
                                     </div>
@@ -643,6 +646,8 @@
                             {
                                 <p class="admin-field-note">Click delete again to permanently remove this item. Special items are deleted as a whole item record together with their special extension.</p>
                             }
+
+                            <StatusMessage Message="@DetailStatusMessage" />
 
                             <div class="action-row action-row--wrap">
                                 <button type="button" class="action-button action-button--primary" @onclick="SaveItemAsync">

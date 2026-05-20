@@ -94,10 +94,12 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - Menu status labels are computed at request time from offer dates rather than stored as long-lived status flags
 - Menu sections, items, special-item schedule extensions, and service windows all follow the repository pattern and are covered by unit tests plus migration-chain tests
 - The Menu Editor now uses a shared time-combobox input for service hours, so staff can type shorthand like `1300` or `1pm`, pick from the reusable time list, and still keep Lunch, Dinner, Breakfast, and Drinks hours isolated cleanly across tab switches and saves
+- The shared time-combobox now keeps cleared or partially edited hour values intact while staff are typing, and the Hours save action stays disabled until every available day has valid opening and closing times
 - The Menu Editor now separates `Food`, `Drinks`, and `Hours` into a tabbed admin console, with archive-state browsing, greyed archived records, contextual create actions, and a section-tree browser paired with a focused detail panel
 - The Menu Editor now uses one shared item form for both standard items and special items, with an `Is special` toggle that reveals the schedule-extension fields only when they are needed
 - The Menu Editor browser now keeps one item list per section and adds `All`, `Standard`, and `Specials` content filters plus `Active`, `Both`, and `Archived` archive-state browsing so staff can review the right slice of the catalog faster
 - Menu Editor reordering now uses dedicated sort-order updates for sections and items, while keeping special items grouped ahead of standard items on the public menu
+- Menu item descriptions are optional, so simple entries like soft drinks can be saved without filler copy, and item-save errors now render inside the detail panel near the save button
 - The shared site shell now uses fluid desktop width instead of a fixed centered column, and the public menu plus Menu Editor add larger-screen layout rules so wide displays can show more useful content at once
 - Public menu hours now collapse repeated daily schedules into grouped ranges such as `Daily`, `Monday-Friday`, or `Sunday-Thursday`, while still surfacing today's hours in a compact highlight
 - Non-editor elements such as navigation targets and post-navigation page headings suppress the default browser focus outline, while editor fields keep their normal editing focus behavior

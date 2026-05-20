@@ -97,6 +97,34 @@ public sealed class MenuManagementServiceTests
     }
 
     [Fact]
+    public async Task SaveItemAsync_allows_blank_description()
+    {
+        var repository = CreateRepositoryWithFoodSection();
+        var service = CreateService(repository);
+
+        var result = await service.SaveItemAsync(
+            new SaveMenuItemRequest(
+                null,
+                FoodSectionId,
+                "Pepsi",
+                string.Empty,
+                null,
+                1,
+                true,
+                false,
+                null,
+                null,
+                false,
+                [new SaveMenuItemPriceVariantRequest(null, "Regular", 3m, 1)],
+                [MenuTab.Lunch],
+                null));
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(repository.LastItemRequest);
+        Assert.Equal(string.Empty, repository.LastItemRequest!.Description);
+    }
+
+    [Fact]
     public async Task SaveItemAsync_requires_weekday_for_weekly_specials()
     {
         var repository = CreateRepositoryWithFoodSection();

@@ -151,6 +151,65 @@ public sealed class MenuAdminRedesignTests : BunitContext
         Assert.False(mealCheckboxes[2].HasAttribute("checked"));
     }
 
+    [Fact]
+    public void Item_save_failures_render_inside_the_detail_panel()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+        Services.AddSingleton<IMenuManagementService>(new FailingMenuAdminManagementService());
+
+        var cut = RenderMenuAdmin("/admin/menu?tab=drinks");
+
+        cut.FindAll(".menu-editor-tree__select")
+            .Single(button => button.TextContent.Contains("Cocktails", StringComparison.OrdinalIgnoreCase))
+            .Click();
+
+        cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Add item", StringComparison.Ordinal))
+            .Click();
+
+        cut.Find("input[placeholder='Classic hamburger, wing night, old fashioned...']").Input("Pepsi");
+        cut.FindAll(".menu-editor-price-row input")[0].Input("Regular");
+        cut.FindAll(".menu-editor-price-row input")[1].Input("3.00");
+
+        cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Create item", StringComparison.Ordinal))
+            .Click();
+
+        var detailAlert = cut.Find(".menu-editor-detail .alert-danger");
+
+        Assert.Contains("Description is optional", detailAlert.TextContent, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Create_item_uses_current_textbox_values_without_needing_blur()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+        var captureService = new CapturingMenuAdminManagementService();
+        Services.AddSingleton<IMenuManagementService>(captureService);
+
+        var cut = RenderMenuAdmin("/admin/menu?tab=drinks");
+
+        cut.FindAll(".menu-editor-tree__select")
+            .Single(button => button.TextContent.Contains("Cocktails", StringComparison.OrdinalIgnoreCase))
+            .Click();
+
+        cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Add item", StringComparison.Ordinal))
+            .Click();
+
+        cut.Find("input[placeholder='Classic hamburger, wing night, old fashioned...']").Input("Pepsi");
+        cut.FindAll(".menu-editor-price-row input")[0].Input("Regular");
+        cut.FindAll(".menu-editor-price-row input")[1].Input("3.00");
+
+        cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Create item", StringComparison.Ordinal))
+            .Click();
+
+        Assert.NotNull(captureService.LastSaveItemRequest);
+        Assert.Equal("Pepsi", captureService.LastSaveItemRequest!.Name);
+        Assert.Equal(string.Empty, captureService.LastSaveItemRequest.Description);
+    }
+
     private IRenderedComponent<ContainerFragment> RenderMenuAdmin(string uri)
     {
         Services.GetRequiredService<NavigationManager>().NavigateTo(uri);
@@ -346,6 +405,71 @@ public sealed class MenuAdminRedesignTests : BunitContext
 
         public Task<MenuOperationResult> SaveItemAsync(SaveMenuItemRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success(request.ItemId ?? Guid.NewGuid()));
+
+        public Task<MenuOperationResult> SaveServiceWindowsAsync(SaveMenuServiceWindowRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success());
+
+        public Task<MenuOperationResult> ReorderSectionsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success());
+
+        public Task<MenuOperationResult> ReorderItemsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success());
+
+        public Task<MenuOperationResult> ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(sectionId));
+
+        public Task<MenuOperationResult> DeleteSectionAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(sectionId));
+
+        public Task<MenuOperationResult> ArchiveItemAsync(Guid itemId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(itemId));
+
+        public Task<MenuOperationResult> DeleteItemAsync(Guid itemId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(itemId));
+    }
+
+    private sealed class FailingMenuAdminManagementService : IMenuManagementService
+    {
+        public Task<MenuOperationResult> SaveSectionAsync(SaveMenuSectionRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(request.SectionId ?? Guid.NewGuid()));
+
+        public Task<MenuOperationResult> SaveItemAsync(SaveMenuItemRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Failure("Description is optional. This is the inline item-save test failure."));
+
+        public Task<MenuOperationResult> SaveServiceWindowsAsync(SaveMenuServiceWindowRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success());
+
+        public Task<MenuOperationResult> ReorderSectionsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success());
+
+        public Task<MenuOperationResult> ReorderItemsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success());
+
+        public Task<MenuOperationResult> ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(sectionId));
+
+        public Task<MenuOperationResult> DeleteSectionAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(sectionId));
+
+        public Task<MenuOperationResult> ArchiveItemAsync(Guid itemId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(itemId));
+
+        public Task<MenuOperationResult> DeleteItemAsync(Guid itemId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(itemId));
+    }
+
+    private sealed class CapturingMenuAdminManagementService : IMenuManagementService
+    {
+        public SaveMenuItemRequest? LastSaveItemRequest { get; private set; }
+
+        public Task<MenuOperationResult> SaveSectionAsync(SaveMenuSectionRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(request.SectionId ?? Guid.NewGuid()));
+
+        public Task<MenuOperationResult> SaveItemAsync(SaveMenuItemRequest request, CancellationToken cancellationToken = default)
+        {
+            LastSaveItemRequest = request;
+            return Task.FromResult(MenuOperationResult.Success(request.ItemId ?? Guid.NewGuid()));
+        }
 
         public Task<MenuOperationResult> SaveServiceWindowsAsync(SaveMenuServiceWindowRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success());

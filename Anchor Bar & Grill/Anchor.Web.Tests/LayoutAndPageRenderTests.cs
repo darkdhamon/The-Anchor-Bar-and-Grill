@@ -283,6 +283,17 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     }
 
     [Fact]
+    public void MenuPage_Skips_Blank_Item_Descriptions()
+    {
+        Services.AddSingleton<IMenuQueryService>(new EmptyDescriptionMenuQueryService());
+
+        var cut = Render<Menu>();
+
+        Assert.Contains("Pepsi", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(cut.FindAll(".menu-item__content p"));
+    }
+
+    [Fact]
     public void EventsPage_RendersUpcomingCalendarContent()
     {
         var cut = Render<Events>();
@@ -1037,6 +1048,49 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         public Task<MenuOperationResult> DeleteItemAsync(Guid itemId, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success(itemId));
 
+    }
+
+    private sealed class EmptyDescriptionMenuQueryService : IMenuQueryService
+    {
+        public Task<PublicMenuView> GetPublicMenuAsync(MenuTab requestedTab, DateOnly today, CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<MenuTabLinkView> tabs =
+            [
+                new(MenuTab.Lunch, "Lunch", "lunch", true, true)
+            ];
+
+            IReadOnlyList<MenuServiceWindowView> hours =
+            [
+                new(DayOfWeek.Monday, "Monday", true, "11:00 AM - 5:00 PM", true, new TimeOnly(11, 0), new TimeOnly(17, 0), false)
+            ];
+
+            IReadOnlyList<PublicMenuSectionView> sections =
+            [
+                new(
+                    Guid.Parse("31CF1B24-8435-4D22-A7C1-C9039F21C37D"),
+                    "Soft Drinks",
+                    "accent-blue",
+                    [
+                        new(
+                            Guid.Parse("634A9095-9BBA-46CD-A409-15717A90A11E"),
+                            "Pepsi",
+                            string.Empty,
+                            null,
+                            [new MenuItemPriceVariantView("Regular", 3m, 1)],
+                            [],
+                            null,
+                            null)
+                    ])
+            ];
+
+            return Task.FromResult(new PublicMenuView(MenuTab.Lunch, tabs, hours, sections));
+        }
+
+        public Task<IReadOnlyList<PublicHomeSpecialView>> GetHomeSpecialsAsync(DateOnly today, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<PublicHomeSpecialView>>([]);
+
+        public Task<MenuManagementView> GetMenuManagementViewAsync(DateOnly today, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
     }
 
     private sealed class TestAuthenticationStateProvider : AuthenticationStateProvider

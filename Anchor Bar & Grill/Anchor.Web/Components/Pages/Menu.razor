@@ -150,7 +150,10 @@
                                                 </div>
                                             }
 
-                                            <p>@item.Description</p>
+                                            @if (!string.IsNullOrWhiteSpace(item.Description))
+                                            {
+                                                <p>@item.Description</p>
+                                            }
 
                                             @if (item.Special is { } special)
                                             {

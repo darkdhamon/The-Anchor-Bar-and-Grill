@@ -133,6 +133,33 @@ public sealed class MenuAdminHoursEditorTests : BunitContext
         cut.WaitForAssertion(() => Assert.Equal("1:00 PM", GetOpenTimeValue(cut, DayOfWeek.Tuesday)));
     }
 
+    [Fact]
+    public void Save_hours_is_disabled_until_available_rows_have_valid_times()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+
+        var cut = RenderMenuAdmin();
+        var openInput = GetTimeInputs(cut, DayOfWeek.Tuesday)[0];
+
+        openInput.Focus();
+        openInput.Input(string.Empty);
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Equal(string.Empty, GetOpenTimeValue(cut, DayOfWeek.Tuesday));
+            Assert.True(GetSaveHoursButton(cut).HasAttribute("disabled"));
+            Assert.Contains("Complete required times", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        });
+
+        openInput.Input("1230");
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Equal("1230", GetOpenTimeValue(cut, DayOfWeek.Tuesday));
+            Assert.False(GetSaveHoursButton(cut).HasAttribute("disabled"));
+        });
+    }
+
     private IRenderedComponent<ContainerFragment> RenderMenuAdmin()
     {
         var cut = Render(builder =>
@@ -162,10 +189,12 @@ public sealed class MenuAdminHoursEditorTests : BunitContext
 
     private static void ClickSaveHours(IRenderedComponent<ContainerFragment> cut)
     {
-        cut.FindAll("button")
-            .Single(button => string.Equals(button.TextContent.Trim(), "Save Lunch hours", StringComparison.Ordinal))
-            .Click();
+        GetSaveHoursButton(cut).Click();
     }
+
+    private static AngleSharp.Dom.IElement GetSaveHoursButton(IRenderedComponent<ContainerFragment> cut) =>
+        cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Save Lunch hours", StringComparison.Ordinal));
 
     private static string? GetOpenTimeValue(IRenderedComponent<ContainerFragment> cut, DayOfWeek dayOfWeek) =>
         GetTimeInputs(cut, dayOfWeek)[0].GetAttribute("value");
