@@ -7,7 +7,7 @@ public partial class Menu
 {
     private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
     private PublicMenuView? menuView;
-    private MenuHoursCardView menuHoursCard = new("Not served", Array.Empty<MenuHoursDisplayRow>());
+    private IReadOnlyDictionary<MenuTab, MenuHoursCardView> tabHoursCards = new Dictionary<MenuTab, MenuHoursCardView>();
 
     [Inject]
     private IMenuQueryService MenuQueryService { get; set; } = null!;
@@ -18,7 +18,9 @@ public partial class Menu
     protected override async Task OnParametersSetAsync()
     {
         menuView = await MenuQueryService.GetPublicMenuAsync(ParseTab(RequestedTab), today);
-        menuHoursCard = MenuHoursPresentation.Create(menuView.ServiceHours);
+        tabHoursCards = menuView.Tabs.ToDictionary(
+            tab => tab.Tab,
+            tab => MenuHoursPresentation.Create(tab.ServiceHours));
     }
 
     private static MenuTab ParseTab(string? value) =>
@@ -31,6 +33,11 @@ public partial class Menu
         };
 
     private static string GetTabHref(string queryValue) => $"/menu?tab={Uri.EscapeDataString(queryValue)}";
+
+    private MenuHoursCardView GetTabHoursCard(MenuTab tab) =>
+        tabHoursCards.TryGetValue(tab, out var card)
+            ? card
+            : new MenuHoursCardView("Not served", Array.Empty<MenuHoursDisplayRow>());
 
     private static string GetBadgeClass(string label) =>
         label switch
@@ -49,16 +56,6 @@ public partial class Menu
             MenuTab.Dinner => "Dinner",
             MenuTab.Drinks => "Drinks",
             _ => "Lunch"
-        };
-
-    private static string GetSelectedTabDescription(MenuTab tab) =>
-        tab switch
-        {
-            MenuTab.Breakfast => "Start the morning view with the items staff has chosen to feature on the breakfast tab.",
-            MenuTab.Lunch => "Lunch brings together the everyday anchor menu guests expect to find first.",
-            MenuTab.Dinner => "Dinner highlights the same food catalog with evening-ready specials woven into their sections.",
-            MenuTab.Drinks => "Drinks stays ready for a separate beverage lineup and later-night service windows.",
-            _ => "Browse the menu by tab."
         };
 
     private static string GetEmptyStateTitle(MenuTab tab) =>

@@ -109,6 +109,20 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
         return tabs;
     }
 
+    public async Task<IReadOnlyList<MenuServiceWindowRecord>> GetPublicServiceWindowsAsync(CancellationToken cancellationToken = default) =>
+        await dbContext.MenuServiceWindows
+            .AsNoTracking()
+            .OrderBy(window => window.Tab)
+            .ThenBy(window => window.DayOfWeek)
+            .Select(window => new MenuServiceWindowRecord(
+                window.Tab,
+                window.DayOfWeek,
+                window.IsAvailable,
+                window.OpensAt,
+                window.ClosesAt,
+                window.ClosesNextDay))
+            .ToListAsync(cancellationToken);
+
     public async Task<MenuManagementSnapshot> GetMenuManagementSnapshotAsync(CancellationToken cancellationToken = default)
     {
         var sections = await dbContext.MenuSections

@@ -10,6 +10,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - Database-backed public menu page inspired by the existing printed menu
 - Fixed public menu tabs for `Breakfast`, `Lunch`, `Dinner`, and `Drinks`
 - Structured per-tab menu hours, including after-midnight drink service windows
+- Guest-facing menu sidebar that lists all four services with their serving hours at a glance
 - Shared food catalog where food items can appear on multiple meal tabs while drink items stay inside the Drinks tab
 - Special menu items that render inline inside the public menu section they belong to, with specials ordered before the standard section lineup
 - Optional menu-item image support in the public menu and menu editor
@@ -109,6 +110,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - Existing menu-item edits now reuse their current price-variant records instead of rebuilding them on every save, which prevents the editor from dropping the circuit on no-op or small follow-up edits
 - The shared site shell now uses fluid desktop width instead of a fixed centered column, and the public menu plus Menu Editor add larger-screen layout rules so wide displays can show more useful content at once
 - Public menu hours now collapse repeated daily schedules into grouped ranges such as `Daily`, `Monday-Friday`, or `Sunday-Thursday`, while still surfacing today's hours in a compact highlight
+- The public menu now uses a left sidebar for tab selection and service-hour scanning, while menu categories open as accordion sections with the first category expanded by default
 - Non-editor elements such as navigation targets and post-navigation page headings suppress the default browser focus outline, while editor fields keep their normal editing focus behavior
 - Account pages continue to use the server-routed Identity flow, so auth navigation should bypass interactive routing when needed
 - Test coverage now spans domain policy/bootstrap logic, menu-domain rules, repository behavior, layout and page rendering, themed account-route integration, and the full migration chain for the Identity and menu schema

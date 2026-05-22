@@ -7,6 +7,7 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
         var comingSoonCutoff = today.AddDays(30);
         var snapshot = await repository.GetPublicMenuSnapshotAsync(requestedTab, today, comingSoonCutoff, cancellationToken);
         var tabsWithContent = await repository.GetTabsWithVisibleContentAsync(today, comingSoonCutoff, cancellationToken);
+        var allServiceWindows = await repository.GetPublicServiceWindowsAsync(cancellationToken);
 
         var itemsBySection = snapshot.Items
             .GroupBy(item => item.SectionId)
@@ -52,27 +53,23 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
                 itemsBySection.GetValueOrDefault(section.SectionId, Array.Empty<PublicMenuItemView>())))
             .ToArray();
 
+        var serviceHoursByTab = allServiceWindows
+            .GroupBy(window => window.Tab)
+            .ToDictionary(
+                group => group.Key,
+                group => BuildServiceHours(group, today));
+
         var tabs = Enum.GetValues<MenuTab>()
             .Select(tab => new MenuTabLinkView(
                 tab,
                 MenuPresentationRules.GetTabLabel(tab),
                 MenuPresentationRules.GetTabQueryValue(tab),
                 tab == requestedTab,
-                tabsWithContent.Contains(tab)))
+                tabsWithContent.Contains(tab),
+                serviceHoursByTab.GetValueOrDefault(tab, Array.Empty<MenuServiceWindowView>())))
             .ToArray();
 
-        var serviceHours = snapshot.ServiceWindows
-            .OrderBy(window => Array.IndexOf(MenuPresentationRules.DayOrder.ToArray(), window.DayOfWeek))
-            .Select(window => new MenuServiceWindowView(
-                window.DayOfWeek,
-                MenuPresentationRules.GetDayLabel(window.DayOfWeek),
-                window.IsAvailable,
-                MenuPresentationRules.FormatServiceWindow(window),
-                window.DayOfWeek == today.DayOfWeek,
-                window.OpensAt,
-                window.ClosesAt,
-                window.ClosesNextDay))
-            .ToArray();
+        var serviceHours = BuildServiceHours(snapshot.ServiceWindows, today);
 
         return new PublicMenuView(snapshot.Tab, tabs, serviceHours, sections);
     }
@@ -191,4 +188,18 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
             2 => "accent-gold",
             _ => "accent-magenta"
         };
+
+    private static IReadOnlyList<MenuServiceWindowView> BuildServiceHours(IEnumerable<MenuServiceWindowRecord> windows, DateOnly today) =>
+        windows
+            .OrderBy(window => Array.IndexOf(MenuPresentationRules.DayOrder.ToArray(), window.DayOfWeek))
+            .Select(window => new MenuServiceWindowView(
+                window.DayOfWeek,
+                MenuPresentationRules.GetDayLabel(window.DayOfWeek),
+                window.IsAvailable,
+                MenuPresentationRules.FormatServiceWindow(window),
+                window.DayOfWeek == today.DayOfWeek,
+                window.OpensAt,
+                window.ClosesAt,
+                window.ClosesNextDay))
+            .ToArray();
 }

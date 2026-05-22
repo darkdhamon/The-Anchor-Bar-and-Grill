@@ -19,164 +19,161 @@
             <p class="page-hero__eyebrow">Food &amp; Drink</p>
             <h1>Browse the menu</h1>
             <p class="page-hero__lead">
-                Choose Breakfast, Lunch, Dinner, or Drinks to see the guest-facing sections, special items,
-                and service hours that belong to that tab.
+                Choose Breakfast, Lunch, Dinner, or Drinks from the sidebar to jump between service windows
+                and the menu sections guests can order from right now.
             </p>
         </section>
 
         <section class="section-shell">
-            <div class="menu-tab-strip" aria-label="Menu tabs">
-                @foreach (var tab in menuView.Tabs)
-                {
-                    <a class="menu-tab-link @(tab.IsSelected ? "menu-tab-link--selected" : string.Empty)"
-                       href="@GetTabHref(tab.QueryValue)"
-                       data-enhance-nav="false">
-                        <span>@tab.Label</span>
+            <div class="menu-layout">
+                <aside class="feature-card feature-card--tight menu-sidebar" aria-label="Menu navigation">
+                    <div class="menu-sidebar__header">
+                        <p class="feature-card__eyebrow">Serving windows</p>
+                        <h2>Browse by service</h2>
+                    </div>
 
-                        @if (!tab.HasVisibleContent)
+                    <nav class="menu-sidebar__nav" aria-label="Menu tabs">
+                        @foreach (var tab in menuView.Tabs)
                         {
-                            <span class="menu-tab-link__hint">Coming soon</span>
+                            var sidebarHours = GetTabHoursCard(tab.Tab);
+
+                            <a class="menu-tab-link @(tab.IsSelected ? "menu-tab-link--selected" : string.Empty)"
+                               href="@GetTabHref(tab.QueryValue)"
+                               data-enhance-nav="false">
+                                <div class="menu-tab-link__topline">
+                                    <span class="menu-tab-link__label">@tab.Label</span>
+
+                                    @if (!tab.HasVisibleContent)
+                                    {
+                                        <span class="menu-tab-link__hint">Coming soon</span>
+                                    }
+                                </div>
+
+                                <div class="menu-tab-link__today">
+                                    <span class="menu-tab-link__today-label">Today</span>
+                                    <strong class="menu-tab-link__today-value">@sidebarHours.TodaySummary</strong>
+                                </div>
+
+                                <div class="menu-tab-link__hours">
+                                    @foreach (var row in sidebarHours.Rows)
+                                    {
+                                        <span class="menu-tab-link__hours-row">
+                                            <span class="menu-tab-link__hours-label">@row.Label</span>
+                                            <span class="menu-tab-link__hours-summary">@row.Summary</span>
+                                        </span>
+                                    }
+                                </div>
+                            </a>
                         }
-                    </a>
-                }
-            </div>
+                    </nav>
+                </aside>
 
-            <div class="menu-overview-grid">
-                <article class="feature-card feature-card--tight">
-                    <p class="feature-card__eyebrow">@GetSelectedTabLabel(menuView.SelectedTab)</p>
-                    <h2>@GetSelectedTabLabel(menuView.SelectedTab)</h2>
-                    <p>@GetSelectedTabDescription(menuView.SelectedTab)</p>
-                </article>
-
-                <article class="feature-card feature-card--tight menu-hours-card">
-                <div class="menu-hours-card__header">
-                    <div>
-                        <p class="feature-card__eyebrow">Weekly availability</p>
-                        <h2>@GetSelectedTabLabel(menuView.SelectedTab) hours</h2>
-                    </div>
-                    <div class="hours-today-badge" aria-label="Today's hours">
-                        <span class="hours-today-badge__label">Today</span>
-                        <strong class="hours-today-badge__value">@menuHoursCard.TodaySummary</strong>
-                    </div>
-                </div>
-
-                <div class="hours-list">
-                    @foreach (var row in menuHoursCard.Rows)
+                <div class="menu-content-stack">
+                    @if (menuView.Sections.Count == 0)
                     {
-                        <div class="hours-row">
-                            <span class="hours-row__label">@row.Label</span>
-                            <span class="hours-row__summary">@row.Summary</span>
+                        <article class="feature-card menu-empty-state">
+                            <p class="feature-card__eyebrow">@GetSelectedTabLabel(menuView.SelectedTab)</p>
+                            <h2>@GetEmptyStateTitle(menuView.SelectedTab)</h2>
+                            <p>@GetEmptyStateDescription(menuView.SelectedTab)</p>
+                        </article>
+                    }
+                    else
+                    {
+                        <div class="menu-accordion">
+                            @foreach (var section in menuView.Sections.Select((value, index) => new { value, index }))
+                            {
+                                <details class="menu-accordion__section menu-section @section.value.AccentClass" open="@(section.index == 0 ? "open" : null)">
+                                    <summary class="menu-section__summary">
+                                        <div class="menu-section__summary-copy">
+                                            <h2>@section.value.Name</h2>
+                                            <span class="menu-section__count">@(section.value.Items.Count == 1 ? "1 item" : $"{section.value.Items.Count} items")</span>
+                                        </div>
+                                    </summary>
+
+                                    <div class="menu-section__items">
+                                        @foreach (var item in section.value.Items)
+                                        {
+                                            <article class="menu-item @(item.ImagePath is not null ? "menu-item--with-image" : "menu-item--text-only") @(item.Special is not null ? "menu-item--special" : string.Empty)">
+                                                @if (item.ImagePath is not null)
+                                                {
+                                                    <div class="menu-item__visual">
+                                                        <img class="menu-item__image" src="@item.ImagePath" alt="@item.Name" />
+                                                    </div>
+                                                }
+
+                                                <div class="menu-item__content">
+                                                    @if (item.Special is not null)
+                                                    {
+                                                        <div class="menu-item__badges">
+                                                            <span class="status-pill status-pill--schedule">@item.Special.BadgeLabel</span>
+                                                            @if (item.Special.IsToday)
+                                                            {
+                                                                <span class="status-pill status-pill--today">Today</span>
+                                                            }
+                                                            @if (!string.IsNullOrWhiteSpace(item.Special.Callout))
+                                                            {
+                                                                <span class="status-pill status-pill--limited">@item.Special.Callout</span>
+                                                            }
+                                                        </div>
+                                                    }
+
+                                                    <div class="menu-item__title-row">
+                                                        <h3>@item.Name</h3>
+                                                        <span>@GetPriceSummary(item)</span>
+                                                    </div>
+
+                                                    @if (item.PriceVariants.Count > 1)
+                                                    {
+                                                        <div class="menu-item__price-stack">
+                                                            @foreach (var variant in item.PriceVariants)
+                                                            {
+                                                                <div class="menu-item__price-line">
+                                                                    <span class="menu-item__price-label">@variant.Label</span>
+                                                                    <span class="menu-item__price-value">@variant.PriceDisplay</span>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    }
+
+                                                    @if (item.StatusLabels.Count > 0)
+                                                    {
+                                                        <div class="menu-item__badges">
+                                                            @foreach (var label in item.StatusLabels)
+                                                            {
+                                                                <span class="status-pill @(GetBadgeClass(label))">@label</span>
+                                                            }
+                                                        </div>
+                                                    }
+
+                                                    @if (!string.IsNullOrWhiteSpace(item.Description))
+                                                    {
+                                                        <p>@item.Description</p>
+                                                    }
+
+                                                    @if (item.Special is { } special)
+                                                    {
+                                                        <p class="event-card__meta">@special.ScheduleSummary</p>
+
+                                                        @if (!string.IsNullOrWhiteSpace(special.TimeSummary))
+                                                        {
+                                                            <p class="menu-item__offer-range">@special.TimeSummary</p>
+                                                        }
+                                                    }
+
+                                                    @if (item.OfferDateSummary is { } offerSummary)
+                                                    {
+                                                        <p class="menu-item__offer-range">@offerSummary</p>
+                                                    }
+                                                </div>
+                                            </article>
+                                        }
+                                    </div>
+                                </details>
+                            }
                         </div>
                     }
                 </div>
-            </article>
             </div>
         </section>
-
-        @if (menuView.Sections.Count == 0)
-        {
-            <section class="section-shell">
-                <article class="feature-card menu-empty-state">
-                    <p class="feature-card__eyebrow">@GetSelectedTabLabel(menuView.SelectedTab)</p>
-                    <h2>@GetEmptyStateTitle(menuView.SelectedTab)</h2>
-                    <p>@GetEmptyStateDescription(menuView.SelectedTab)</p>
-                </article>
-            </section>
-        }
-        else
-        {
-            <section class="section-shell">
-                <div class="menu-grid">
-                    @foreach (var section in menuView.Sections)
-                    {
-                        <article class="menu-section @section.AccentClass">
-                            <header class="menu-section__header">
-                                <h2>@section.Name</h2>
-                                <p>Special items appear first, followed by the regular section lineup so guests can scan the whole section at once.</p>
-                            </header>
-
-                            <div class="menu-section__items">
-                                @foreach (var item in section.Items)
-                                {
-                                    <article class="menu-item @(item.ImagePath is not null ? "menu-item--with-image" : "menu-item--text-only") @(item.Special is not null ? "menu-item--special" : string.Empty)">
-                                        @if (item.ImagePath is not null)
-                                        {
-                                            <div class="menu-item__visual">
-                                                <img class="menu-item__image" src="@item.ImagePath" alt="@item.Name" />
-                                            </div>
-                                        }
-
-                                        <div class="menu-item__content">
-                                            @if (item.Special is not null)
-                                            {
-                                                <div class="menu-item__badges">
-                                                    <span class="status-pill status-pill--schedule">@item.Special.BadgeLabel</span>
-                                                    @if (item.Special.IsToday)
-                                                    {
-                                                        <span class="status-pill status-pill--today">Today</span>
-                                                    }
-                                                    @if (!string.IsNullOrWhiteSpace(item.Special.Callout))
-                                                    {
-                                                        <span class="status-pill status-pill--limited">@item.Special.Callout</span>
-                                                    }
-                                                </div>
-                                            }
-
-                                            <div class="menu-item__title-row">
-                                                <h3>@item.Name</h3>
-                                                <span>@GetPriceSummary(item)</span>
-                                            </div>
-
-                                            @if (item.PriceVariants.Count > 1)
-                                            {
-                                                <div class="menu-item__price-stack">
-                                                    @foreach (var variant in item.PriceVariants)
-                                                    {
-                                                        <div class="menu-item__price-line">
-                                                            <span class="menu-item__price-label">@variant.Label</span>
-                                                            <span class="menu-item__price-value">@variant.PriceDisplay</span>
-                                                        </div>
-                                                    }
-                                                </div>
-                                            }
-
-                                            @if (item.StatusLabels.Count > 0)
-                                            {
-                                                <div class="menu-item__badges">
-                                                    @foreach (var label in item.StatusLabels)
-                                                    {
-                                                        <span class="status-pill @(GetBadgeClass(label))">@label</span>
-                                                    }
-                                                </div>
-                                            }
-
-                                            @if (!string.IsNullOrWhiteSpace(item.Description))
-                                            {
-                                                <p>@item.Description</p>
-                                            }
-
-                                            @if (item.Special is { } special)
-                                            {
-                                                <p class="event-card__meta">@special.ScheduleSummary</p>
-
-                                                @if (!string.IsNullOrWhiteSpace(special.TimeSummary))
-                                                {
-                                                    <p class="menu-item__offer-range">@special.TimeSummary</p>
-                                                }
-                                            }
-
-                                            @if (item.OfferDateSummary is { } offerSummary)
-                                            {
-                                                <p class="menu-item__offer-range">@offerSummary</p>
-                                            }
-                                        </div>
-                                    </article>
-                                }
-                            </div>
-                        </article>
-                    }
-                </div>
-            </section>
-        }
     }
 </div>

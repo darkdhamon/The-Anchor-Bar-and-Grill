@@ -2,7 +2,13 @@ using System.Globalization;
 
 namespace Anchor.Domain.Menu;
 
-public sealed record MenuTabLinkView(MenuTab Tab, string Label, string QueryValue, bool IsSelected, bool HasVisibleContent);
+public sealed record MenuTabLinkView(
+    MenuTab Tab,
+    string Label,
+    string QueryValue,
+    bool IsSelected,
+    bool HasVisibleContent,
+    IReadOnlyList<MenuServiceWindowView> ServiceHours);
 
 public sealed record MenuServiceWindowView(
     DayOfWeek DayOfWeek,

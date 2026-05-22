@@ -18,5 +18,7 @@ public interface IMenuQueryRepository
         DateOnly comingSoonCutoff,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<MenuServiceWindowRecord>> GetPublicServiceWindowsAsync(CancellationToken cancellationToken = default);
+
     Task<MenuManagementSnapshot> GetMenuManagementSnapshotAsync(CancellationToken cancellationToken = default);
 }

@@ -249,19 +249,22 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     public void MenuPage_DefaultsToLunchAndShowsServiceBackedSections()
     {
         var cut = Render<Menu>();
-        var hoursCard = cut.Find(".menu-hours-card").TextContent;
+        var sidebar = cut.Find(".menu-sidebar").TextContent;
+        var accordions = cut.FindAll(".menu-accordion__section");
 
         Assert.NotNull(cut.Find(".menu-page"));
         Assert.Contains("Browse the menu", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Lunch hours", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Browse by service", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Appetizers", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Choose Breakfast, Lunch, Dinner, or Drinks", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Today", hoursCard, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Tuesday-Saturday", hoursCard, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Not served", hoursCard, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Today highlighted", hoursCard, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(3, cut.FindAll(".hours-row").Count);
+        Assert.Contains("Choose Breakfast, Lunch, Dinner, or Drinks from the sidebar", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Today", sidebar, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Tuesday-Saturday", sidebar, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Not served", sidebar, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Lunch brings together", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(2, accordions.Count);
+        Assert.True(accordions[0].HasAttribute("open"));
+        Assert.False(accordions[1].HasAttribute("open"));
         Assert.NotEmpty(cut.FindAll(".menu-item__image"));
         Assert.NotEmpty(cut.FindAll(".menu-item--text-only"));
         Assert.Contains("Coming Soon", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -278,7 +281,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         var cut = Render<Menu>();
 
         Assert.Contains("Drink hours are live", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Drink hours", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Drinks", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Appetizers", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -778,17 +781,17 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         {
             var tabs = new[]
             {
-                CreateTabLink(MenuTab.Breakfast, requestedTab, false),
-                CreateTabLink(MenuTab.Lunch, requestedTab, true),
-                CreateTabLink(MenuTab.Dinner, requestedTab, true),
-                CreateTabLink(MenuTab.Drinks, requestedTab, false)
+                CreateTabLink(MenuTab.Breakfast, requestedTab, false, today),
+                CreateTabLink(MenuTab.Lunch, requestedTab, true, today),
+                CreateTabLink(MenuTab.Dinner, requestedTab, true, today),
+                CreateTabLink(MenuTab.Drinks, requestedTab, false, today)
             };
 
             return requestedTab switch
             {
                 MenuTab.Dinner => Task.FromResult(CreateDinnerMenu(today, tabs)),
-                MenuTab.Drinks => Task.FromResult(CreateEmptyMenu(MenuTab.Drinks, "Drinks hours", tabs, today)),
-                MenuTab.Breakfast => Task.FromResult(CreateEmptyMenu(MenuTab.Breakfast, "Breakfast hours", tabs, today)),
+                MenuTab.Drinks => Task.FromResult(CreateEmptyMenu(MenuTab.Drinks, tabs, today)),
+                MenuTab.Breakfast => Task.FromResult(CreateEmptyMenu(MenuTab.Breakfast, tabs, today)),
                 _ => Task.FromResult(CreateLunchMenu(today, tabs))
             };
         }
@@ -932,7 +935,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
             return new PublicMenuView(MenuTab.Dinner, tabs, hours, sections);
         }
 
-        private static PublicMenuView CreateEmptyMenu(MenuTab tab, string heading, IReadOnlyList<MenuTabLinkView> tabs, DateOnly today)
+        private static PublicMenuView CreateEmptyMenu(MenuTab tab, IReadOnlyList<MenuTabLinkView> tabs, DateOnly today)
         {
             IReadOnlyList<MenuServiceWindowView> hours = tab == MenuTab.Drinks
                 ? CreateHours(
@@ -958,8 +961,55 @@ public sealed class LayoutAndPageRenderTests : BunitContext
             return new PublicMenuView(tab, tabs, hours, []);
         }
 
-        private static MenuTabLinkView CreateTabLink(MenuTab tab, MenuTab requestedTab, bool hasVisibleContent) =>
-            new(tab, GetTabLabel(tab), GetQueryValue(tab), requestedTab == tab, hasVisibleContent);
+        private static MenuTabLinkView CreateTabLink(MenuTab tab, MenuTab requestedTab, bool hasVisibleContent, DateOnly today) =>
+            new(tab, GetTabLabel(tab), GetQueryValue(tab), requestedTab == tab, hasVisibleContent, CreateHoursForTab(tab, today));
+
+        private static IReadOnlyList<MenuServiceWindowView> CreateHoursForTab(MenuTab tab, DateOnly today) =>
+            tab switch
+            {
+                MenuTab.Drinks => CreateHours(
+                    today,
+                    new Dictionary<DayOfWeek, (bool IsAvailable, TimeOnly? OpensAt, TimeOnly? ClosesAt, bool ClosesNextDay)>
+                    {
+                        [DayOfWeek.Monday] = (true, new TimeOnly(16, 0), new TimeOnly(21, 0), false),
+                        [DayOfWeek.Tuesday] = (true, new TimeOnly(11, 0), new TimeOnly(22, 0), false),
+                        [DayOfWeek.Wednesday] = (true, new TimeOnly(11, 0), new TimeOnly(22, 0), false),
+                        [DayOfWeek.Thursday] = (true, new TimeOnly(11, 0), new TimeOnly(22, 0), false),
+                        [DayOfWeek.Friday] = (true, new TimeOnly(11, 0), new TimeOnly(0, 0), true),
+                        [DayOfWeek.Saturday] = (true, new TimeOnly(10, 0), new TimeOnly(0, 0), true),
+                        [DayOfWeek.Sunday] = (true, new TimeOnly(10, 0), new TimeOnly(21, 0), false)
+                    }),
+                MenuTab.Breakfast => CreateHours(
+                    today,
+                    new Dictionary<DayOfWeek, (bool IsAvailable, TimeOnly? OpensAt, TimeOnly? ClosesAt, bool ClosesNextDay)>
+                    {
+                        [DayOfWeek.Saturday] = (true, new TimeOnly(10, 0), new TimeOnly(13, 0), false),
+                        [DayOfWeek.Sunday] = (true, new TimeOnly(10, 0), new TimeOnly(13, 0), false)
+                    }),
+                MenuTab.Dinner => CreateHours(
+                    today,
+                    new Dictionary<DayOfWeek, (bool IsAvailable, TimeOnly? OpensAt, TimeOnly? ClosesAt, bool ClosesNextDay)>
+                    {
+                        [DayOfWeek.Monday] = (true, new TimeOnly(17, 0), new TimeOnly(20, 0), false),
+                        [DayOfWeek.Tuesday] = (true, new TimeOnly(16, 0), new TimeOnly(21, 0), false),
+                        [DayOfWeek.Wednesday] = (true, new TimeOnly(16, 0), new TimeOnly(21, 0), false),
+                        [DayOfWeek.Thursday] = (true, new TimeOnly(16, 0), new TimeOnly(21, 0), false),
+                        [DayOfWeek.Friday] = (true, new TimeOnly(16, 0), new TimeOnly(22, 0), false),
+                        [DayOfWeek.Saturday] = (true, new TimeOnly(16, 0), new TimeOnly(22, 0), false),
+                        [DayOfWeek.Sunday] = (true, new TimeOnly(15, 0), new TimeOnly(20, 0), false)
+                    }),
+                _ => CreateHours(
+                    today,
+                    new Dictionary<DayOfWeek, (bool IsAvailable, TimeOnly? OpensAt, TimeOnly? ClosesAt, bool ClosesNextDay)>
+                    {
+                        [DayOfWeek.Tuesday] = (true, new TimeOnly(11, 0), new TimeOnly(16, 0), false),
+                        [DayOfWeek.Wednesday] = (true, new TimeOnly(11, 0), new TimeOnly(16, 0), false),
+                        [DayOfWeek.Thursday] = (true, new TimeOnly(11, 0), new TimeOnly(16, 0), false),
+                        [DayOfWeek.Friday] = (true, new TimeOnly(11, 0), new TimeOnly(16, 0), false),
+                        [DayOfWeek.Saturday] = (true, new TimeOnly(11, 0), new TimeOnly(16, 0), false),
+                        [DayOfWeek.Sunday] = (true, new TimeOnly(11, 0), new TimeOnly(15, 0), false)
+                    })
+            };
 
         private static IReadOnlyList<MenuServiceWindowView> CreateHours(
             DateOnly today,
@@ -1054,14 +1104,14 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     {
         public Task<PublicMenuView> GetPublicMenuAsync(MenuTab requestedTab, DateOnly today, CancellationToken cancellationToken = default)
         {
-            IReadOnlyList<MenuTabLinkView> tabs =
-            [
-                new(MenuTab.Lunch, "Lunch", "lunch", true, true)
-            ];
-
             IReadOnlyList<MenuServiceWindowView> hours =
             [
                 new(DayOfWeek.Monday, "Monday", true, "11:00 AM - 5:00 PM", true, new TimeOnly(11, 0), new TimeOnly(17, 0), false)
+            ];
+
+            IReadOnlyList<MenuTabLinkView> tabs =
+            [
+                new(MenuTab.Lunch, "Lunch", "lunch", true, true, hours)
             ];
 
             IReadOnlyList<PublicMenuSectionView> sections =

@@ -185,6 +185,60 @@ public sealed class MenuQueryServiceTests
     }
 
     [Fact]
+    public async Task GetPublicMenuAsync_projects_sidebar_hours_for_each_tab_link()
+    {
+        var today = new DateOnly(2026, 5, 18);
+        var repository = new FakeMenuQueryRepository
+        {
+            Snapshot = new PublicMenuSnapshot(
+                MenuTab.Lunch,
+                [new MenuSectionRecord(SectionId, "Appetizers", MenuFamily.Food, 1, true, false)],
+                [],
+                [CreateWindow(MenuTab.Lunch, DayOfWeek.Monday, true, new TimeOnly(11, 0), new TimeOnly(16, 0), false)]),
+            TabsWithContent = [MenuTab.Lunch, MenuTab.Dinner],
+            PublicServiceWindows =
+            [
+                CreateWindow(MenuTab.Breakfast, DayOfWeek.Monday, false, null, null, false),
+                CreateWindow(MenuTab.Lunch, DayOfWeek.Monday, true, new TimeOnly(11, 0), new TimeOnly(16, 0), false),
+                CreateWindow(MenuTab.Dinner, DayOfWeek.Monday, true, new TimeOnly(17, 0), new TimeOnly(21, 0), false),
+                CreateWindow(MenuTab.Drinks, DayOfWeek.Monday, true, new TimeOnly(16, 0), new TimeOnly(23, 0), false)
+            ]
+        };
+
+        var service = new MenuQueryService(repository);
+
+        var result = await service.GetPublicMenuAsync(MenuTab.Lunch, today);
+
+        Assert.Collection(
+            result.Tabs.OrderBy(tab => tab.Tab).ToArray(),
+            breakfast =>
+            {
+                Assert.Equal(MenuTab.Breakfast, breakfast.Tab);
+                Assert.Single(breakfast.ServiceHours);
+                Assert.Equal("Not served", breakfast.ServiceHours[0].Summary);
+            },
+            lunch =>
+            {
+                Assert.Equal(MenuTab.Lunch, lunch.Tab);
+                Assert.Single(lunch.ServiceHours);
+                Assert.Equal("11:00 AM - 4:00 PM", lunch.ServiceHours[0].Summary);
+                Assert.True(lunch.IsSelected);
+            },
+            dinner =>
+            {
+                Assert.Equal(MenuTab.Dinner, dinner.Tab);
+                Assert.Single(dinner.ServiceHours);
+                Assert.Equal("5:00 PM - 9:00 PM", dinner.ServiceHours[0].Summary);
+            },
+            drinks =>
+            {
+                Assert.Equal(MenuTab.Drinks, drinks.Tab);
+                Assert.Single(drinks.ServiceHours);
+                Assert.Equal("4:00 PM - 11:00 PM", drinks.ServiceHours[0].Summary);
+            });
+    }
+
+    [Fact]
     public async Task GetHomeSpecialsAsync_projects_special_items_for_homepage()
     {
         var today = new DateOnly(2026, 5, 18);
@@ -242,6 +296,8 @@ public sealed class MenuQueryServiceTests
 
         public IReadOnlyList<MenuItemRecord> HomeSpecialItems { get; set; } = [];
 
+        public IReadOnlyList<MenuServiceWindowRecord> PublicServiceWindows { get; set; } = [];
+
         public Task<PublicMenuSnapshot> GetPublicMenuSnapshotAsync(MenuTab tab, DateOnly today, DateOnly comingSoonCutoff, CancellationToken cancellationToken = default) =>
             Task.FromResult(Snapshot);
 
@@ -250,6 +306,9 @@ public sealed class MenuQueryServiceTests
 
         public Task<IReadOnlyCollection<MenuTab>> GetTabsWithVisibleContentAsync(DateOnly today, DateOnly comingSoonCutoff, CancellationToken cancellationToken = default) =>
             Task.FromResult(TabsWithContent);
+
+        public Task<IReadOnlyList<MenuServiceWindowRecord>> GetPublicServiceWindowsAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(PublicServiceWindows);
 
         public Task<MenuManagementSnapshot> GetMenuManagementSnapshotAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(new MenuManagementSnapshot([], [], []));
