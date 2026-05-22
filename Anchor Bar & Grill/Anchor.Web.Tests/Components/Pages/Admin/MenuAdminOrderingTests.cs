@@ -237,6 +237,9 @@ public sealed class MenuAdminOrderingTests : BunitContext
 
     private sealed class MutableMenuTreeQueryService(MutableMenuTreeStore store) : IMenuQueryService
     {
+        public Task<MenuTab> GetSuggestedPublicTabAsync(DateOnly today, TimeOnly currentTime, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
         public Task<PublicMenuView> GetPublicMenuAsync(MenuTab requestedTab, DateOnly today, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 

@@ -6,6 +6,20 @@ namespace Anchor.Infrastructure.Data.Menu;
 
 public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQueryRepository
 {
+    public async Task<IReadOnlyList<MenuServiceWindowRecord>> GetPublicServiceWindowsAsync(CancellationToken cancellationToken = default) =>
+        await dbContext.MenuServiceWindows
+            .AsNoTracking()
+            .OrderBy(window => window.Tab)
+            .ThenBy(window => window.DayOfWeek)
+            .Select(window => new MenuServiceWindowRecord(
+                window.Tab,
+                window.DayOfWeek,
+                window.IsAvailable,
+                window.OpensAt,
+                window.ClosesAt,
+                window.ClosesNextDay))
+            .ToListAsync(cancellationToken);
+
     public async Task<PublicMenuSnapshot> GetPublicMenuSnapshotAsync(
         MenuTab tab,
         DateOnly today,

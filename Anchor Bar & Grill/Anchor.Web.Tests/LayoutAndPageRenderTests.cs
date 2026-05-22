@@ -21,6 +21,8 @@ namespace Anchor.Web.Tests;
 public sealed class LayoutAndPageRenderTests : BunitContext
 {
     private readonly TestAuthenticationStateProvider authStateProvider;
+    private readonly FakeMenuQueryService menuQueryService;
+    private readonly FixedTimeProvider timeProvider;
 
     public LayoutAndPageRenderTests()
     {
@@ -38,7 +40,10 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         authStateProvider = new TestAuthenticationStateProvider();
         Services.AddSingleton<AuthenticationStateProvider>(authStateProvider);
         Services.AddCascadingAuthenticationState();
-        Services.AddSingleton<IMenuQueryService>(new FakeMenuQueryService());
+        menuQueryService = new FakeMenuQueryService();
+        timeProvider = new FixedTimeProvider(new DateTimeOffset(2026, 5, 21, 12, 0, 0, TimeSpan.FromHours(-5)));
+        Services.AddSingleton<TimeProvider>(timeProvider);
+        Services.AddSingleton<IMenuQueryService>(menuQueryService);
         Services.AddSingleton<IMenuManagementService>(new FakeMenuManagementService());
     }
 
@@ -246,8 +251,10 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     }
 
     [Fact]
-    public void MenuPage_DefaultsToLunchAndShowsServiceBackedSections()
+    public void MenuPage_UsesSuggestedDefaultTabAndShowsServiceBackedSections()
     {
+        menuQueryService.SuggestedTab = MenuTab.Lunch;
+
         var cut = Render<Menu>();
         var sidebar = cut.Find(".menu-sidebar").TextContent;
         var hoursCard = cut.Find(".menu-hours-card").TextContent;
@@ -276,8 +283,23 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     }
 
     [Fact]
+    public void MenuPage_UsesNextSuggestedServiceWhenNoTabIsRequested()
+    {
+        menuQueryService.SuggestedTab = MenuTab.Dinner;
+        timeProvider.SetLocalNow(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.FromHours(-5)));
+
+        var cut = Render<Menu>();
+        var hoursCard = cut.Find(".menu-hours-card").TextContent;
+
+        Assert.Contains("Dinner hours", hoursCard, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Monday Night Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Appetizers", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void MenuPage_UsesQueryStringTabSelectionAndShowsEmptyDrinksState()
     {
+        menuQueryService.SuggestedTab = MenuTab.Dinner;
         var navigationManager = Services.GetRequiredService<NavigationManager>();
         navigationManager.NavigateTo("http://localhost/menu?tab=drinks");
 
@@ -593,6 +615,11 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         private static readonly Guid AppetizersSectionId = Guid.Parse("24F84594-8F35-480E-B0F3-8E605E436511");
         private static readonly Guid BurgersSectionId = Guid.Parse("1164E8D0-64EE-4CFD-BDE8-B00BC01F72F4");
         private static readonly Guid DrinksSectionId = Guid.Parse("50293894-B6D4-4E6B-B242-C225E0D0B650");
+
+        public MenuTab SuggestedTab { get; set; } = MenuTab.Lunch;
+
+        public Task<MenuTab> GetSuggestedPublicTabAsync(DateOnly today, TimeOnly currentTime, CancellationToken cancellationToken = default) =>
+            Task.FromResult(SuggestedTab);
 
         public Task<IReadOnlyList<PublicHomeSpecialView>> GetHomeSpecialsAsync(DateOnly today, CancellationToken cancellationToken = default)
         {
@@ -1059,6 +1086,9 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 
     private sealed class EmptyDescriptionMenuQueryService : IMenuQueryService
     {
+        public Task<MenuTab> GetSuggestedPublicTabAsync(DateOnly today, TimeOnly currentTime, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuTab.Lunch);
+
         public Task<PublicMenuView> GetPublicMenuAsync(MenuTab requestedTab, DateOnly today, CancellationToken cancellationToken = default)
         {
             IReadOnlyList<MenuServiceWindowView> hours =
@@ -1098,6 +1128,23 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 
         public Task<MenuManagementView> GetMenuManagementViewAsync(DateOnly today, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
+    }
+
+    private sealed class FixedTimeProvider(DateTimeOffset localNow) : TimeProvider
+    {
+        private readonly TimeZoneInfo localTimeZone = TimeZoneInfo.CreateCustomTimeZone(
+            "Test/Local",
+            localNow.Offset,
+            "Test/Local",
+            "Test/Local");
+
+        private DateTimeOffset currentLocalNow = localNow;
+
+        public override TimeZoneInfo LocalTimeZone => localTimeZone;
+
+        public override DateTimeOffset GetUtcNow() => currentLocalNow.ToUniversalTime();
+
+        public void SetLocalNow(DateTimeOffset localNow) => currentLocalNow = localNow;
     }
 
     private sealed class TestAuthenticationStateProvider : AuthenticationStateProvider

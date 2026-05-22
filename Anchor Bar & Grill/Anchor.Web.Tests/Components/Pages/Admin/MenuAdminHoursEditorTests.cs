@@ -226,6 +226,9 @@ public sealed class MenuAdminHoursEditorTests : BunitContext
     {
         private static readonly Guid FoodSectionId = Guid.Parse("A10F7FBA-0D4F-45E1-9E9A-53CF736F867D");
 
+        public Task<MenuTab> GetSuggestedPublicTabAsync(DateOnly today, TimeOnly currentTime, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
         public Task<PublicMenuView> GetPublicMenuAsync(MenuTab requestedTab, DateOnly today, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 

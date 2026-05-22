@@ -303,6 +303,9 @@ public sealed class MenuAdminRedesignTests : BunitContext
         private static readonly Guid DrinkItemId = Guid.Parse("0A5B6B42-778E-49D3-8568-9AB1A785432D");
         private static readonly DateOnly Today = new(2026, 5, 18);
 
+        public Task<MenuTab> GetSuggestedPublicTabAsync(DateOnly today, TimeOnly currentTime, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
         public Task<PublicMenuView> GetPublicMenuAsync(MenuTab requestedTab, DateOnly today, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 

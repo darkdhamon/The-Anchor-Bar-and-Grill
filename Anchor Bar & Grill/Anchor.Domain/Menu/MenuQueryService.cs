@@ -2,6 +2,12 @@ namespace Anchor.Domain.Menu;
 
 public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQueryService
 {
+    public async Task<MenuTab> GetSuggestedPublicTabAsync(DateOnly today, TimeOnly currentTime, CancellationToken cancellationToken = default) =>
+        PublicMenuTabSelectionRules.GetSuggestedTab(
+            await repository.GetPublicServiceWindowsAsync(cancellationToken),
+            today,
+            currentTime);
+
     public async Task<PublicMenuView> GetPublicMenuAsync(MenuTab requestedTab, DateOnly today, CancellationToken cancellationToken = default)
     {
         var comingSoonCutoff = today.AddDays(30);

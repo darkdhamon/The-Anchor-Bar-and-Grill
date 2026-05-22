@@ -2,6 +2,8 @@ namespace Anchor.Domain.Menu;
 
 public interface IMenuQueryRepository
 {
+    Task<IReadOnlyList<MenuServiceWindowRecord>> GetPublicServiceWindowsAsync(CancellationToken cancellationToken = default);
+
     Task<PublicMenuSnapshot> GetPublicMenuSnapshotAsync(
         MenuTab tab,
         DateOnly today,

@@ -231,6 +231,64 @@ public sealed class MenuQueryServiceTests
         Assert.True(special.IsToday);
     }
 
+    [Fact]
+    public async Task GetSuggestedPublicTabAsync_prefers_the_active_food_service_over_drinks()
+    {
+        var repository = new FakeMenuQueryRepository
+        {
+            ServiceWindows =
+            [
+                CreateWindow(MenuTab.Lunch, DayOfWeek.Wednesday, true, new TimeOnly(11, 0), new TimeOnly(16, 0), false),
+                CreateWindow(MenuTab.Drinks, DayOfWeek.Wednesday, true, new TimeOnly(11, 0), new TimeOnly(22, 0), false)
+            ]
+        };
+
+        var service = new MenuQueryService(repository);
+
+        var result = await service.GetSuggestedPublicTabAsync(new DateOnly(2026, 5, 20), new TimeOnly(12, 30));
+
+        Assert.Equal(MenuTab.Lunch, result);
+    }
+
+    [Fact]
+    public async Task GetSuggestedPublicTabAsync_returns_next_opening_when_no_service_is_active()
+    {
+        var repository = new FakeMenuQueryRepository
+        {
+            ServiceWindows =
+            [
+                CreateWindow(MenuTab.Dinner, DayOfWeek.Monday, true, new TimeOnly(17, 0), new TimeOnly(20, 0), false),
+                CreateWindow(MenuTab.Drinks, DayOfWeek.Monday, false, null, null, false),
+                CreateWindow(MenuTab.Breakfast, DayOfWeek.Tuesday, true, new TimeOnly(10, 0), new TimeOnly(13, 0), false)
+            ]
+        };
+
+        var service = new MenuQueryService(repository);
+
+        var result = await service.GetSuggestedPublicTabAsync(new DateOnly(2026, 5, 18), new TimeOnly(9, 0));
+
+        Assert.Equal(MenuTab.Dinner, result);
+    }
+
+    [Fact]
+    public async Task GetSuggestedPublicTabAsync_treats_overnight_windows_as_active_after_midnight()
+    {
+        var repository = new FakeMenuQueryRepository
+        {
+            ServiceWindows =
+            [
+                CreateWindow(MenuTab.Drinks, DayOfWeek.Friday, true, new TimeOnly(11, 0), new TimeOnly(2, 0), true),
+                CreateWindow(MenuTab.Dinner, DayOfWeek.Saturday, true, new TimeOnly(16, 0), new TimeOnly(22, 0), false)
+            ]
+        };
+
+        var service = new MenuQueryService(repository);
+
+        var result = await service.GetSuggestedPublicTabAsync(new DateOnly(2026, 5, 23), new TimeOnly(1, 0));
+
+        Assert.Equal(MenuTab.Drinks, result);
+    }
+
     private static MenuServiceWindowRecord CreateWindow(MenuTab tab, DayOfWeek day, bool isAvailable, TimeOnly? opensAt, TimeOnly? closesAt, bool closesNextDay) =>
         new(tab, day, isAvailable, opensAt, closesAt, closesNextDay);
 
@@ -241,6 +299,11 @@ public sealed class MenuQueryServiceTests
         public IReadOnlyCollection<MenuTab> TabsWithContent { get; set; } = [];
 
         public IReadOnlyList<MenuItemRecord> HomeSpecialItems { get; set; } = [];
+
+        public IReadOnlyList<MenuServiceWindowRecord> ServiceWindows { get; set; } = [];
+
+        public Task<IReadOnlyList<MenuServiceWindowRecord>> GetPublicServiceWindowsAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(ServiceWindows);
 
         public Task<PublicMenuSnapshot> GetPublicMenuSnapshotAsync(MenuTab tab, DateOnly today, DateOnly comingSoonCutoff, CancellationToken cancellationToken = default) =>
             Task.FromResult(Snapshot);

@@ -5,30 +5,48 @@ namespace Anchor.Web.Components.Pages;
 
 public partial class Menu
 {
-    private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
     private PublicMenuView? menuView;
     private MenuHoursCardView menuHoursCard = new("Not served", Array.Empty<MenuHoursDisplayRow>());
 
     [Inject]
     private IMenuQueryService MenuQueryService { get; set; } = null!;
 
+    [Inject]
+    private TimeProvider TimeProvider { get; set; } = null!;
+
     [SupplyParameterFromQuery(Name = "tab")]
     private string? RequestedTab { get; set; }
 
     protected override async Task OnParametersSetAsync()
     {
-        menuView = await MenuQueryService.GetPublicMenuAsync(ParseTab(RequestedTab), today);
+        var now = TimeProvider.GetLocalNow();
+        var today = DateOnly.FromDateTime(now.DateTime);
+        var currentTime = TimeOnly.FromDateTime(now.DateTime);
+        var selectedTab = TryParseRequestedTab(RequestedTab, out var requestedTab)
+            ? requestedTab
+            : await MenuQueryService.GetSuggestedPublicTabAsync(today, currentTime);
+
+        menuView = await MenuQueryService.GetPublicMenuAsync(selectedTab, today);
         menuHoursCard = MenuHoursPresentation.Create(menuView.ServiceHours);
     }
 
-    private static MenuTab ParseTab(string? value) =>
-        value?.Trim().ToLowerInvariant() switch
+    private static bool TryParseRequestedTab(string? value, out MenuTab tab)
+    {
+        tab = MenuTab.Lunch;
+        if (string.IsNullOrWhiteSpace(value))
         {
-            "breakfast" => MenuTab.Breakfast,
-            "dinner" => MenuTab.Dinner,
-            "drinks" => MenuTab.Drinks,
-            _ => MenuTab.Lunch
+            return false;
+        }
+
+        return value.Trim().ToLowerInvariant() switch
+        {
+            "breakfast" => Assign(MenuTab.Breakfast, out tab),
+            "lunch" => Assign(MenuTab.Lunch, out tab),
+            "dinner" => Assign(MenuTab.Dinner, out tab),
+            "drinks" => Assign(MenuTab.Drinks, out tab),
+            _ => false
         };
+    }
 
     private static string GetTabHref(string queryValue) => $"/menu?tab={Uri.EscapeDataString(queryValue)}";
 
@@ -73,4 +91,10 @@ public partial class Menu
         item.PriceVariants.Count == 1
             ? item.PriceVariants[0].PriceDisplay
             : string.Join(" / ", item.PriceVariants.Select(variant => variant.PriceDisplay));
+
+    private static bool Assign(MenuTab value, out MenuTab target)
+    {
+        target = value;
+        return true;
+    }
 }

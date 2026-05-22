@@ -36,6 +36,7 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorizationBuilder()
     .AddAnchorAuthorizationPolicies();
 
+builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.Configure<AnchorIdentityOptions>(builder.Configuration.GetSection(AnchorIdentityConfigurationKeys.SectionName));
 builder.Services.AddAnchorDomainServices();
 builder.Services.AddGitHubIssueServices(builder.Configuration);
