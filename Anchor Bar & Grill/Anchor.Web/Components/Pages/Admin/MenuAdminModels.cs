@@ -33,6 +33,7 @@ internal enum MenuAdminDetailKind
 
 internal sealed record MenuAdminBrowserItemViewModel(
     MenuItemAdminView Item,
+    Guid SectionId,
     bool IsContextMuted);
 
 internal sealed record MenuAdminBrowserSectionViewModel(
@@ -45,13 +46,30 @@ internal sealed record MenuAdminHoursSummaryViewModel(
     string Label,
     MenuHoursCardView Card);
 
+internal sealed record MenuAdminDuplicateItemPromptViewModel(
+    Guid ItemId,
+    string Name,
+    MenuFamily Family,
+    bool IsArchived,
+    bool IsSpecial);
+
 internal sealed class MenuSectionFormModel
 {
     public Guid? SectionId { get; set; }
 
     public string Name { get; set; } = string.Empty;
 
+    public string? Callout { get; set; }
+
     public MenuFamily Family { get; set; } = MenuFamily.Food;
+
+    public bool ShowBreakfast { get; set; }
+
+    public bool ShowLunch { get; set; } = true;
+
+    public bool ShowDinner { get; set; } = true;
+
+    public bool ShowDrinks { get; set; }
 
     public int SortOrder { get; set; } = 1;
 
@@ -75,8 +93,6 @@ internal sealed class MenuItemFormModel
 {
     public Guid? ItemId { get; set; }
 
-    public string? SectionId { get; set; }
-
     public string Name { get; set; } = string.Empty;
 
     public string Description { get; set; } = string.Empty;
@@ -94,6 +110,14 @@ internal sealed class MenuItemFormModel
     public string? OfferEndsOnText { get; set; }
 
     public bool IsSeasonal { get; set; }
+
+    public bool UseSectionVisibility { get; set; } = true;
+
+    public HashSet<Guid> SelectedSectionIds { get; } = [];
+
+    public Dictionary<Guid, int> SectionSortOrders { get; } = [];
+
+    public Guid? ActiveSectionId { get; set; }
 
     public bool ShowBreakfast { get; set; }
 

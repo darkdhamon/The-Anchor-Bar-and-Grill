@@ -30,12 +30,13 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
 
         var items = await dbContext.MenuItems
             .AsNoTracking()
-            .Where(item => item.Section.Family == family)
-            .Where(item => item.Section.IsVisibleToGuests && !item.Section.IsArchived)
             .Where(item => item.IsVisibleToGuests && !item.IsArchived)
-            .Where(item => tab == MenuTab.Drinks
-                ? item.Section.Family == MenuFamily.Drink
-                : item.FoodTabs.Any(link => link.Tab == tab))
+            .Where(item => item.SectionAssignments.Any(assignment =>
+                assignment.Section.Family == family
+                && assignment.Section.IsVisibleToGuests
+                && !assignment.Section.IsArchived
+                && assignment.Section.MenuTabs.Any(link => link.Tab == tab)))
+            .Where(item => item.UsesSectionVisibility || item.MenuTabs.Any(link => link.Tab == tab))
             .Where(item => item.Special == null
                 ? (item.OfferEndsOn == null || item.OfferEndsOn >= today)
                     && (item.OfferStartsOn == null || item.OfferStartsOn <= comingSoonCutoff)
@@ -45,7 +46,11 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
             .Select(ItemProjection)
             .ToListAsync(cancellationToken);
 
-        var visibleSectionIds = items.Select(item => item.SectionId).Distinct().ToArray();
+        var visibleSectionIds = items
+            .SelectMany(item => item.SectionAssignments)
+            .Select(assignment => assignment.SectionId)
+            .Distinct()
+            .ToArray();
 
         var sections = await dbContext.MenuSections
             .AsNoTracking()
@@ -55,7 +60,12 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
             .Select(section => new MenuSectionRecord(
                 section.MenuSectionId,
                 section.Name,
+                section.Callout,
                 section.Family,
+                section.MenuTabs
+                    .OrderBy(link => link.Tab)
+                    .Select(link => link.Tab)
+                    .ToList(),
                 section.SortOrder,
                 section.IsVisibleToGuests,
                 section.IsArchived))
@@ -84,8 +94,10 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
         await dbContext.MenuItems
             .AsNoTracking()
             .Where(item => item.Special != null)
-            .Where(item => item.Section.IsVisibleToGuests && !item.Section.IsArchived)
             .Where(item => item.IsVisibleToGuests && !item.IsArchived)
+            .Where(item => item.SectionAssignments.Any(assignment =>
+                assignment.Section.IsVisibleToGuests
+                && !assignment.Section.IsArchived))
             .Where(item => item.Special!.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring
                 ? item.Special.StartDate <= today && (item.Special.EndDate == null || item.Special.EndDate >= today)
                 : item.Special.StartDate <= comingSoonCutoff && (item.Special.EndDate ?? item.Special.StartDate) >= today)
@@ -101,12 +113,13 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
 
             var hasItems = await dbContext.MenuItems
                 .AsNoTracking()
-                .Where(item => item.Section.Family == family)
-                .Where(item => item.Section.IsVisibleToGuests && !item.Section.IsArchived)
                 .Where(item => item.IsVisibleToGuests && !item.IsArchived)
-                .Where(item => tab == MenuTab.Drinks
-                    ? item.Section.Family == MenuFamily.Drink
-                    : item.FoodTabs.Any(link => link.Tab == tab))
+                .Where(item => item.SectionAssignments.Any(assignment =>
+                    assignment.Section.Family == family
+                    && assignment.Section.IsVisibleToGuests
+                    && !assignment.Section.IsArchived
+                    && assignment.Section.MenuTabs.Any(link => link.Tab == tab)))
+                .Where(item => item.UsesSectionVisibility || item.MenuTabs.Any(link => link.Tab == tab))
                 .AnyAsync(item => item.Special == null
                     ? (item.OfferEndsOn == null || item.OfferEndsOn >= today)
                         && (item.OfferStartsOn == null || item.OfferStartsOn <= comingSoonCutoff)
@@ -132,7 +145,12 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
             .Select(section => new MenuSectionRecord(
                 section.MenuSectionId,
                 section.Name,
+                section.Callout,
                 section.Family,
+                section.MenuTabs
+                    .OrderBy(link => link.Tab)
+                    .Select(link => link.Tab)
+                    .ToList(),
                 section.SortOrder,
                 section.IsVisibleToGuests,
                 section.IsArchived))
@@ -164,9 +182,9 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
     private static readonly Expression<Func<MenuItemEntity, MenuItemRecord>> ItemProjection = item =>
         new MenuItemRecord(
             item.MenuItemId,
-            item.MenuSectionId,
-            item.Section.Name,
-            item.Section.Family,
+            item.SectionAssignments
+                .Select(assignment => assignment.Section.Family)
+                .FirstOrDefault(),
             item.Name,
             item.Description,
             item.ImagePath,
@@ -184,7 +202,17 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
                     variant.Amount,
                     variant.SortOrder))
                 .ToList(),
-            item.FoodTabs
+            item.SectionAssignments
+                .OrderBy(assignment => assignment.SortOrder)
+                .ThenBy(assignment => assignment.Section.SortOrder)
+                .ThenBy(assignment => assignment.Section.Name)
+                .Select(assignment => new MenuItemSectionAssignmentRecord(
+                    assignment.MenuSectionId,
+                    assignment.Section.Name,
+                    assignment.SortOrder))
+                .ToList(),
+            item.UsesSectionVisibility,
+            item.MenuTabs
                 .OrderBy(link => link.Tab)
                 .Select(link => link.Tab)
                 .ToList(),

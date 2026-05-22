@@ -274,7 +274,11 @@ internal static class MenuPresentationRules
         return special.StartDate <= today && effectiveEnd >= today;
     }
 
-    public static string GetPlacementSummary(MenuItemRecord item) => item.SectionName;
+    public static string GetPlacementSummary(MenuItemRecord item) =>
+        string.Join(", ",
+            item.SectionAssignments
+                .Select(assignment => assignment.SectionName)
+                .Distinct(StringComparer.OrdinalIgnoreCase));
 
     private static bool Assign(MenuTab value, out MenuTab target)
     {

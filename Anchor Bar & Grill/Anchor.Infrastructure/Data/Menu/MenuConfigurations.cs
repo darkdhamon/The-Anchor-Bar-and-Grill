@@ -11,10 +11,13 @@ public sealed class MenuSectionEntityConfiguration : IEntityTypeConfiguration<Me
         builder.ToTable("MenuSections");
         builder.HasKey(section => section.MenuSectionId);
         builder.Property(section => section.Name).HasMaxLength(100).IsRequired();
+        builder.Property(section => section.NormalizedName).HasMaxLength(100).IsRequired();
+        builder.Property(section => section.Callout).HasMaxLength(200);
         builder.Property(section => section.Family).IsRequired();
         builder.Property(section => section.SortOrder).IsRequired();
         builder.Property(section => section.IsVisibleToGuests).IsRequired();
         builder.Property(section => section.IsArchived).IsRequired();
+        builder.HasIndex(section => section.NormalizedName).IsUnique();
         builder.HasData(MenuSeedData.Sections);
     }
 }
@@ -26,14 +29,13 @@ public sealed class MenuItemEntityConfiguration : IEntityTypeConfiguration<MenuI
         builder.ToTable("MenuItems");
         builder.HasKey(item => item.MenuItemId);
         builder.Property(item => item.Name).HasMaxLength(150).IsRequired();
+        builder.Property(item => item.NormalizedName).HasMaxLength(150).IsRequired();
         builder.Property(item => item.Description).HasMaxLength(1000).IsRequired();
         builder.Property(item => item.ImagePath).HasMaxLength(300);
         builder.Property(item => item.OfferStartsOn).HasColumnType("date");
         builder.Property(item => item.OfferEndsOn).HasColumnType("date");
-        builder.HasOne(item => item.Section)
-            .WithMany(section => section.Items)
-            .HasForeignKey(item => item.MenuSectionId)
-            .OnDelete(DeleteBehavior.Restrict);
+        builder.Property(item => item.UsesSectionVisibility).IsRequired();
+        builder.HasIndex(item => item.NormalizedName).IsUnique();
         builder.HasOne(item => item.Special)
             .WithOne(special => special.Item)
             .HasForeignKey<MenuItemSpecialEntity>(special => special.MenuItemId)
@@ -58,6 +60,25 @@ public sealed class MenuItemPriceVariantEntityConfiguration : IEntityTypeConfigu
     }
 }
 
+public sealed class MenuItemSectionAssignmentEntityConfiguration : IEntityTypeConfiguration<MenuItemSectionAssignmentEntity>
+{
+    public void Configure(EntityTypeBuilder<MenuItemSectionAssignmentEntity> builder)
+    {
+        builder.ToTable("MenuItemSectionAssignments");
+        builder.HasKey(assignment => new { assignment.MenuItemId, assignment.MenuSectionId });
+        builder.Property(assignment => assignment.SortOrder).IsRequired();
+        builder.HasOne(assignment => assignment.Item)
+            .WithMany(item => item.SectionAssignments)
+            .HasForeignKey(assignment => assignment.MenuItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(assignment => assignment.Section)
+            .WithMany(section => section.ItemAssignments)
+            .HasForeignKey(assignment => assignment.MenuSectionId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.HasData(MenuSeedData.ItemSectionAssignments);
+    }
+}
+
 public sealed class MenuItemTabEntityConfiguration : IEntityTypeConfiguration<MenuItemTabEntity>
 {
     public void Configure(EntityTypeBuilder<MenuItemTabEntity> builder)
@@ -65,10 +86,24 @@ public sealed class MenuItemTabEntityConfiguration : IEntityTypeConfiguration<Me
         builder.ToTable("MenuItemTabs");
         builder.HasKey(link => new { link.MenuItemId, link.Tab });
         builder.HasOne(link => link.Item)
-            .WithMany(item => item.FoodTabs)
+            .WithMany(item => item.MenuTabs)
             .HasForeignKey(link => link.MenuItemId)
             .OnDelete(DeleteBehavior.Cascade);
-        builder.HasData(MenuSeedData.FoodItemTabs);
+        builder.HasData(MenuSeedData.ItemMenuTabs);
+    }
+}
+
+public sealed class MenuSectionTabEntityConfiguration : IEntityTypeConfiguration<MenuSectionTabEntity>
+{
+    public void Configure(EntityTypeBuilder<MenuSectionTabEntity> builder)
+    {
+        builder.ToTable("MenuSectionTabs");
+        builder.HasKey(link => new { link.MenuSectionId, link.Tab });
+        builder.HasOne(link => link.Section)
+            .WithMany(section => section.MenuTabs)
+            .HasForeignKey(link => link.MenuSectionId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasData(MenuSeedData.SectionMenuTabs);
     }
 }
 

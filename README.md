@@ -11,11 +11,11 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - Fixed public menu tabs for `Breakfast`, `Lunch`, `Dinner`, and `Drinks`
 - Structured per-tab menu hours, including after-midnight drink service windows
 - Guest-facing menu sidebar for `Breakfast`, `Lunch`, `Dinner`, and `Drinks`, paired with an active-service hours panel
-- Shared food catalog where food items can appear on multiple meal tabs while drink items stay inside the Drinks tab
-- Special menu items that render inline inside the public menu section they belong to, with specials ordered before the standard section lineup
+- Shared food catalog where sections define their default service visibility, food items can belong to multiple sections, and item-level menu visibility can narrow those section defaults while drink items stay inside the Drinks tab
+- Special menu items that render inline inside the public menu section they belong to, with specials ordered before the standard section lineup and duplicated into a top-level `Specials` accordion for the active menu when specials exist
 - Optional menu-item image support in the public menu and menu editor
 - Optional offer start/end dates for menu items, with guest-facing `Coming Soon`, `Seasonal`, and `Limited Time` labels derived at runtime
-- Database-backed Menu Editor with dedicated `Food`, `Drinks`, and `Hours` workspaces, section-tree browsing, item-backed special offers, archive-aware filters, content filters, and service-hour management
+- Database-backed Menu Editor with dedicated `Food`, `Drinks`, and `Hours` workspaces, section-tree browsing, item-backed special offers, section callouts, archive-aware filters, content filters, duplicate-name protection, and service-hour management
 - Events mockup page that lists all upcoming events, including recurring schedules, optional event images, and richer cadence examples such as every other week or the third Friday of the month
 - About mockup page for the restaurant story and guest experience
 - Contact mockup page for location, phone, hours, dynamic social media links, and guest inquiry layout
@@ -104,15 +104,18 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - The shared time-combobox now keeps cleared or partially edited hour values intact while staff are typing, and the Hours save action stays disabled until every available day has valid opening and closing times
 - The Menu Editor now separates `Food`, `Drinks`, and `Hours` into a tabbed admin console, with archive-state browsing, greyed archived records, contextual create actions, and a section-tree browser paired with a focused detail panel
 - The Menu Editor now uses one shared item form for both standard items and special items, with an `Is special` toggle that reveals the schedule-extension fields only when they are needed
+- Food sections now store their own default menu visibility, food items can be assigned to multiple sections, and item-level menu visibility can optionally narrow the section defaults so one item can appear in different sections for different services
 - The Menu Editor browser now keeps one item list per section and adds `All`, `Standard`, and `Specials` content filters plus `Active`, `Both`, and `Archived` archive-state browsing so staff can review the right slice of the catalog faster
-- Menu Editor reordering now uses dedicated sort-order updates for sections and items, while keeping special items grouped ahead of standard items on the public menu
+- Sections now support optional guest-facing callout text, and empty sections stay hidden from guests while the editor keeps the selected empty section plus newly created empty sections visible for staff
+- Menu Editor reordering now uses dedicated sort-order updates for sections and for each item-section assignment, while keeping special items grouped ahead of standard items on the public menu
 - Menu item descriptions are optional, so simple entries like soft drinks can be saved without filler copy, and item-save errors now render inside the detail panel near the save button
+- Menu section names and menu item names are now unique after trimming and case normalization, and the editor prompts staff to switch into an existing item when they blur a duplicate item name
 - Existing menu items now preserve their current price-variant identities when staff add another size or serving option, so expanding an item from one price to multiple prices saves cleanly instead of colliding with stale variant rows
 - Editable text-entry fields across the account pages, User Management, and Menu Editor now accept both live keystrokes and committed text-entry events, so Windows voice dictation and similar accessibility input tools behave consistently instead of only working in some forms
 - Existing menu-item edits now reuse their current price-variant records instead of rebuilding them on every save, which prevents the editor from dropping the circuit on no-op or small follow-up edits
 - The shared site shell now uses fluid desktop width instead of a fixed centered column, and the public menu plus Menu Editor add larger-screen layout rules so wide displays can show more useful content at once
 - Public menu hours now collapse repeated daily schedules into grouped ranges such as `Daily`, `Monday-Friday`, or `Sunday-Thursday`, and the row that includes today is highlighted instead of repeating a separate today's-hours callout
-- The public menu now uses a left sidebar for service selection, keeps the active menu's weekly hours directly beneath those sidebar choices, defaults to the service that is open now or the next one to open when guests arrive without a `tab` query string, pins the sidebar beneath the sticky site header on larger screens, and opens menu categories as accordion sections with the first category expanded by default
+- The public menu now uses a left sidebar for service selection, keeps the active menu's weekly hours directly beneath those sidebar choices, defaults to the service that is open now or the next one to open when guests arrive without a `tab` query string, pins the sidebar beneath the sticky site header on larger screens, opens menu categories as accordion sections with the first category expanded by default, and surfaces special items in a dedicated top-level `Specials` accordion while still leaving them inside their home sections
 - Non-editor elements such as navigation targets and post-navigation page headings suppress the default browser focus outline, while editor fields keep their normal editing focus behavior
 - Account pages continue to use the server-routed Identity flow, so auth navigation should bypass interactive routing when needed
 - Test coverage now spans domain policy/bootstrap logic, menu-domain rules, repository behavior, layout and page rendering, themed account-route integration, and the full migration chain for the Identity and menu schema

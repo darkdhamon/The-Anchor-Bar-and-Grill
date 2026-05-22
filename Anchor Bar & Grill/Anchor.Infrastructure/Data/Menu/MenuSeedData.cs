@@ -4,6 +4,8 @@ namespace Anchor.Infrastructure.Data.Menu;
 
 internal static class MenuSeedData
 {
+    private sealed record SeedMenuItem(Guid SectionId, int SectionSortOrder, MenuItemEntity Entity);
+
     private static readonly Guid DinnerSpecialsSectionId = Guid.Parse("0E4DE526-5921-4C3B-8985-D83344642A41");
     private static readonly Guid AppetizersSectionId = Guid.Parse("D67BD219-6D64-4A08-8CE4-D036A0C7B16D");
     private static readonly Guid WingsSectionId = Guid.Parse("4A3A2D15-2AF0-44A7-84C8-67B603A3DDB4");
@@ -17,7 +19,7 @@ internal static class MenuSeedData
     private static readonly DateOnly OfferReferenceDate = new(2026, 5, 17);
     private static readonly DateOnly SpecialStartDate = new(2026, 1, 1);
 
-    private static MenuItemEntity CreateItem(
+    private static SeedMenuItem CreateItem(
         Guid itemId,
         Guid sectionId,
         string name,
@@ -27,19 +29,41 @@ internal static class MenuSeedData
         DateOnly? startsOn,
         DateOnly? endsOn,
         bool isSeasonal) =>
+        new(
+            sectionId,
+            sortOrder,
+            new MenuItemEntity
+            {
+                MenuItemId = itemId,
+                Name = name,
+                NormalizedName = MenuNameRules.NormalizeForLookup(name),
+                Description = description,
+                ImagePath = imagePath,
+                SortOrder = sortOrder,
+                IsVisibleToGuests = true,
+                IsArchived = false,
+                OfferStartsOn = startsOn,
+                OfferEndsOn = endsOn,
+                IsSeasonal = isSeasonal,
+                UsesSectionVisibility = false
+            });
+
+    private static MenuSectionEntity Section(
+        Guid sectionId,
+        string name,
+        MenuFamily family,
+        int sortOrder,
+        string? callout = null) =>
         new()
         {
-            MenuItemId = itemId,
             MenuSectionId = sectionId,
             Name = name,
-            Description = description,
-            ImagePath = imagePath,
+            NormalizedName = MenuNameRules.NormalizeForLookup(name),
+            Callout = callout,
+            Family = family,
             SortOrder = sortOrder,
             IsVisibleToGuests = true,
-            IsArchived = false,
-            OfferStartsOn = startsOn,
-            OfferEndsOn = endsOn,
-            IsSeasonal = isSeasonal
+            IsArchived = false
         };
 
     private static MenuItemPriceVariantEntity Price(Guid variantId, Guid itemId, string label, decimal amount, int sortOrder) =>
@@ -52,7 +76,20 @@ internal static class MenuSeedData
             SortOrder = sortOrder
         };
 
+    private static MenuItemSectionAssignmentEntity Assignment(Guid itemId, Guid sectionId, int sortOrder) => new()
+    {
+        MenuItemId = itemId,
+        MenuSectionId = sectionId,
+        SortOrder = sortOrder
+    };
+
     private static MenuItemTabEntity Tab(Guid itemId, MenuTab tab) => new() { MenuItemId = itemId, Tab = tab };
+
+    private static MenuSectionTabEntity SectionTab(Guid sectionId, MenuTab tab) => new()
+    {
+        MenuSectionId = sectionId,
+        Tab = tab
+    };
 
     private static MenuItemSpecialEntity WeeklySpecial(
         Guid itemId,
@@ -80,18 +117,18 @@ internal static class MenuSeedData
 
     public static IReadOnlyList<MenuSectionEntity> Sections { get; } =
     [
-        new() { MenuSectionId = DinnerSpecialsSectionId, Name = "Dinner Specials", Family = MenuFamily.Food, SortOrder = 0, IsVisibleToGuests = true, IsArchived = false },
-        new() { MenuSectionId = AppetizersSectionId, Name = "Appetizers", Family = MenuFamily.Food, SortOrder = 1, IsVisibleToGuests = true, IsArchived = false },
-        new() { MenuSectionId = WingsSectionId, Name = "Wings", Family = MenuFamily.Food, SortOrder = 2, IsVisibleToGuests = true, IsArchived = false },
-        new() { MenuSectionId = SoupsSectionId, Name = "Soups & Salads", Family = MenuFamily.Food, SortOrder = 3, IsVisibleToGuests = true, IsArchived = false },
-        new() { MenuSectionId = SandwichesSectionId, Name = "Sandwiches", Family = MenuFamily.Food, SortOrder = 4, IsVisibleToGuests = true, IsArchived = false },
-        new() { MenuSectionId = BurgersSectionId, Name = "Burgers", Family = MenuFamily.Food, SortOrder = 5, IsVisibleToGuests = true, IsArchived = false },
-        new() { MenuSectionId = WrapsSectionId, Name = "Wraps", Family = MenuFamily.Food, SortOrder = 6, IsVisibleToGuests = true, IsArchived = false },
-        new() { MenuSectionId = KidsSectionId, Name = "Kids Menu", Family = MenuFamily.Food, SortOrder = 7, IsVisibleToGuests = true, IsArchived = false },
-        new() { MenuSectionId = DessertsSectionId, Name = "Desserts", Family = MenuFamily.Food, SortOrder = 8, IsVisibleToGuests = true, IsArchived = false }
+        Section(DinnerSpecialsSectionId, "Dinner Specials", MenuFamily.Food, 0),
+        Section(AppetizersSectionId, "Appetizers", MenuFamily.Food, 1),
+        Section(WingsSectionId, "Wings", MenuFamily.Food, 2),
+        Section(SoupsSectionId, "Soups & Salads", MenuFamily.Food, 3),
+        Section(SandwichesSectionId, "Sandwiches", MenuFamily.Food, 4),
+        Section(BurgersSectionId, "Burgers", MenuFamily.Food, 5),
+        Section(WrapsSectionId, "Wraps", MenuFamily.Food, 6),
+        Section(KidsSectionId, "Kids Menu", MenuFamily.Food, 7),
+        Section(DessertsSectionId, "Desserts", MenuFamily.Food, 8)
     ];
 
-    public static IReadOnlyList<MenuItemEntity> Items { get; } =
+    private static IReadOnlyList<SeedMenuItem> ItemSeeds { get; } =
     [
         CreateItem(Guid.Parse("C88652A0-C9F2-4A7D-B4AC-8DDBFC9FF4E5"), AppetizersSectionId, "Cheese Curds", "Crisp white cheddar curds with your choice of dipping sauce.", "images/menu/appetizers.svg", 1, null, null, false),
         CreateItem(Guid.Parse("5C3A9530-0F24-4D62-883B-F01B0A4286C2"), AppetizersSectionId, "Mini Tacos", "Served with salsa and sour cream.", null, 2, OfferStartingIn(14), null, false),
@@ -127,6 +164,11 @@ internal static class MenuSeedData
         CreateItem(Guid.Parse("88BB945A-B7B4-4725-972B-60A042E524E9"), SandwichesSectionId, "Friday Fish Fry", "A Friday dinner anchor that deserves a permanent home in the guest menu flow.", null, 4, null, null, false),
         CreateItem(Guid.Parse("6BAA63B3-55C9-4E47-8555-803573B9B38D"), DinnerSpecialsSectionId, "Sunday Pork Chop Dinner", "A hearty end-of-week dinner special that should read as a repeatable tradition.", null, 5, null, null, false)
     ];
+
+    public static IReadOnlyList<MenuItemEntity> Items { get; } = ItemSeeds.Select(seed => seed.Entity).ToArray();
+
+    public static IReadOnlyList<MenuItemSectionAssignmentEntity> ItemSectionAssignments { get; } =
+        ItemSeeds.Select(seed => Assignment(seed.Entity.MenuItemId, seed.SectionId, seed.SectionSortOrder)).ToArray();
 
     public static IReadOnlyList<MenuItemPriceVariantEntity> PriceVariants { get; } =
     [
@@ -166,7 +208,7 @@ internal static class MenuSeedData
         Price(Guid.Parse("BEE6DB9D-89D6-41E4-9356-EEB370C1AFD8"), Guid.Parse("6BAA63B3-55C9-4E47-8555-803573B9B38D"), "Regular", 17m, 1)
     ];
 
-    public static IReadOnlyList<MenuItemTabEntity> FoodItemTabs { get; } =
+    public static IReadOnlyList<MenuItemTabEntity> ItemMenuTabs { get; } =
         Items.SelectMany(item => item.MenuItemId switch
         {
             var id when id == Guid.Parse("33D64E7B-D5B7-481A-97FC-7F250A68C27E")
@@ -177,6 +219,28 @@ internal static class MenuSeedData
                 => new[] { Tab(item.MenuItemId, MenuTab.Dinner) },
             _ => new[] { Tab(item.MenuItemId, MenuTab.Lunch), Tab(item.MenuItemId, MenuTab.Dinner) }
         }).ToArray();
+
+    public static IReadOnlyList<MenuSectionTabEntity> SectionMenuTabs { get; } =
+    [
+        SectionTab(DinnerSpecialsSectionId, MenuTab.Dinner),
+
+        SectionTab(AppetizersSectionId, MenuTab.Lunch),
+        SectionTab(AppetizersSectionId, MenuTab.Dinner),
+        SectionTab(WingsSectionId, MenuTab.Lunch),
+        SectionTab(WingsSectionId, MenuTab.Dinner),
+        SectionTab(SoupsSectionId, MenuTab.Lunch),
+        SectionTab(SoupsSectionId, MenuTab.Dinner),
+        SectionTab(SandwichesSectionId, MenuTab.Lunch),
+        SectionTab(SandwichesSectionId, MenuTab.Dinner),
+        SectionTab(BurgersSectionId, MenuTab.Lunch),
+        SectionTab(BurgersSectionId, MenuTab.Dinner),
+        SectionTab(WrapsSectionId, MenuTab.Lunch),
+        SectionTab(WrapsSectionId, MenuTab.Dinner),
+        SectionTab(KidsSectionId, MenuTab.Lunch),
+        SectionTab(KidsSectionId, MenuTab.Dinner),
+        SectionTab(DessertsSectionId, MenuTab.Lunch),
+        SectionTab(DessertsSectionId, MenuTab.Dinner)
+    ];
 
     public static IReadOnlyList<MenuItemSpecialEntity> Specials { get; } =
     [

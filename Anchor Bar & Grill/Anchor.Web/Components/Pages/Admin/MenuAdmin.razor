@@ -82,9 +82,12 @@
                     </p>
                 }
                 <ul class="menu-editor-intro__list">
+                    <li>Sections can include optional public callout text, choose their default menu visibility, and guests only see sections that currently have visible items.</li>
+                    <li>Food items can belong to more than one section at the same time. Use the section checklist to place an item anywhere it should appear, then use <strong>Use section menu defaults</strong> or the item visibility checkboxes to decide which services may show that item.</li>
+                    <li>Section names and menu item names must stay unique. If a typed item name already exists, the detail panel offers to switch into that record instead of saving a duplicate.</li>
                     <li>Archive is the safe removal path. Delete still exists, but it always requires a second confirmation.</li>
                     <li>The browser uses Active, Both, and Archived modes plus All, Standard, and Specials filters to focus the current catalog slice.</li>
-                    <li>Move buttons and drag-and-drop both reorder sections and item groups. Special items only reorder with other special items so the public menu keeps specials first.</li>
+                    <li>Move buttons and drag-and-drop both reorder sections and item groups. Item ordering is stored per section assignment, so the same item can sit at different positions in different sections. Special items only reorder with other special items so the public menu keeps specials first.</li>
                 </ul>
             </div>
         </section>
@@ -263,7 +266,13 @@
                                          @ondrop="() => DropSectionAsync(browserSection.Section)">
                                         <button type="button" class="menu-editor-tree__select" @onclick="() => SelectSection(browserSection.Section)">
                                             <span class="menu-editor-tree__title">@browserSection.Section.Name</span>
-                                            <span class="menu-editor-tree__subtitle">@GetFamilyLabel(browserSection.Section.Family) section</span>
+                                            <span class="menu-editor-tree__subtitle">
+                                                @GetFamilyLabel(browserSection.Section.Family) section
+                                                @if (!string.IsNullOrWhiteSpace(browserSection.Section.Callout))
+                                                {
+                                                    <span> | @browserSection.Section.Callout</span>
+                                                }
+                                            </span>
                                         </button>
 
                                         <div class="menu-editor-tree__chips">
@@ -302,10 +311,10 @@
                                             {
                                                 <div class="@GetTreeRowClass(MenuAdminDetailKind.Item, itemEntry.Item.ItemId, itemEntry.Item.IsArchived, itemEntry.Item.IsVisibleToGuests, itemEntry.IsContextMuted)"
                                                      draggable="true"
-                                                     @ondragstart="() => BeginItemDrag(itemEntry.Item)"
+                                                     @ondragstart="() => BeginItemDrag(itemEntry)"
                                                      @ondragover:preventDefault
-                                                     @ondrop="() => DropItemAsync(itemEntry.Item)">
-                                                    <button type="button" class="menu-editor-tree__select" @onclick="() => SelectItem(itemEntry.Item)">
+                                                     @ondrop="() => DropItemAsync(itemEntry)">
+                                                    <button type="button" class="menu-editor-tree__select" @onclick="() => SelectItem(itemEntry)">
                                                         <span class="menu-editor-tree__title">@itemEntry.Item.Name</span>
                                                         <span class="menu-editor-tree__subtitle">@GetItemBrowserSubtitle(itemEntry.Item)</span>
                                                     </button>
@@ -326,15 +335,15 @@
                                                         <button type="button"
                                                                 class="menu-editor-tree__icon-button"
                                                                 title="Move item up"
-                                                                disabled="@(!CanMoveItem(itemEntry.Item, -1))"
-                                                                @onclick="() => MoveItemAsync(itemEntry.Item, -1)">
+                                                                disabled="@(!CanMoveItem(itemEntry, -1))"
+                                                                @onclick="() => MoveItemAsync(itemEntry, -1)">
                                                             Up
                                                         </button>
                                                         <button type="button"
                                                                 class="menu-editor-tree__icon-button"
                                                                 title="Move item down"
-                                                                disabled="@(!CanMoveItem(itemEntry.Item, 1))"
-                                                                @onclick="() => MoveItemAsync(itemEntry.Item, 1)">
+                                                                disabled="@(!CanMoveItem(itemEntry, 1))"
+                                                                @onclick="() => MoveItemAsync(itemEntry, 1)">
                                                             Down
                                                         </button>
                                                     </div>
@@ -370,13 +379,47 @@
                                     <CommitAwareInputText @bind-Value="sectionForm.Name" placeholder="Appetizers, Wings, Cocktails..." />
                                 </label>
 
+                                <label class="editor-form__message">
+                                    <span>Section callout (optional)</span>
+                                    <CommitAwareTextArea @bind-Value="sectionForm.Callout"
+                                                         placeholder="Includes choice of Bloody Mary or Screwdriver"></CommitAwareTextArea>
+                                </label>
+
                                 <label>
                                     <span>Family</span>
-                                    <select @bind="sectionForm.Family">
+                                    <select value="@sectionForm.Family" @onchange="HandleSectionFamilyChangedAsync">
                                         <option value="@MenuFamily.Food">Food</option>
                                         <option value="@MenuFamily.Drink">Drink</option>
                                     </select>
                                 </label>
+
+                                <div class="editor-form__message">
+                                    <span>Default menu visibility</span>
+                                    <div class="menu-editor-checkbox-stack">
+                                        @if (sectionForm.Family == MenuFamily.Food)
+                                        {
+                                            <label class="editor-form__toggle-row">
+                                                <input type="checkbox" @bind="sectionForm.ShowBreakfast" />
+                                                <span>Breakfast</span>
+                                            </label>
+                                            <label class="editor-form__toggle-row">
+                                                <input type="checkbox" @bind="sectionForm.ShowLunch" />
+                                                <span>Lunch</span>
+                                            </label>
+                                            <label class="editor-form__toggle-row">
+                                                <input type="checkbox" @bind="sectionForm.ShowDinner" />
+                                                <span>Dinner</span>
+                                            </label>
+                                        }
+                                        else
+                                        {
+                                            <label class="editor-form__toggle-row">
+                                                <input type="checkbox" @bind="sectionForm.ShowDrinks" />
+                                                <span>Drinks</span>
+                                            </label>
+                                        }
+                                    </div>
+                                </div>
 
                                 <label>
                                     <span>Sort order</span>
@@ -388,7 +431,7 @@
                                         <input type="checkbox" @bind="sectionForm.IsVisibleToGuests" />
                                         <span>
                                             Show this section to guests
-                                            <small>Hidden sections stay available in the editor so staff can continue staging content.</small>
+                                            <small>Guests only see sections that currently have visible items. Newly created empty sections still stay visible here so you can keep building them out.</small>
                                         </span>
                                     </label>
                                 </div>
@@ -435,25 +478,50 @@
                     {
                         <div class="editor-form">
                             <div class="editor-form__grid">
-                                <label>
-                                    <span>Section</span>
-                                    <select value="@itemForm.SectionId" @onchange="HandleItemSectionChangedAsync">
+                                <div class="editor-form__message">
+                                    <span>Sections</span>
+                                    <div class="menu-editor-checkbox-stack">
                                         @foreach (var section in ItemSectionOptions)
                                         {
-                                            <option value="@section.SectionId">@section.Name</option>
+                                            <label class="editor-form__toggle-row">
+                                                <input type="checkbox"
+                                                       checked="@itemForm.SelectedSectionIds.Contains(section.SectionId)"
+                                                       @onchange="args => HandleItemSectionSelectionChangedAsync(section.SectionId, args)" />
+                                                <span>@section.Name</span>
+                                            </label>
                                         }
-                                    </select>
-                                </label>
+                                    </div>
+                                </div>
 
                                 <label>
                                     <span>Sort order</span>
-                                    <input type="number" @bind="itemForm.SortOrder" />
+                                    <input type="number" @bind="itemForm.SortOrder" @bind:after="HandleItemSortOrderChangedAsync" />
                                 </label>
 
                                 <label>
                                     <span>Name</span>
-                                    <CommitAwareInputText @bind-Value="itemForm.Name" placeholder="Classic hamburger, wing night, old fashioned..." />
+                                    <CommitAwareInputText @bind-Value="itemForm.Name"
+                                                         OnBlur="HandleItemNameBlurAsync"
+                                                         placeholder="Classic hamburger, wing night, old fashioned..." />
                                 </label>
+
+                                @if (DuplicateItemPrompt is not null)
+                                {
+                                    <div class="editor-form__message">
+                                        <p class="admin-field-note">
+                                            A menu item named <strong>@DuplicateItemPrompt.Name</strong> already exists.
+                                            Would you like to edit the existing item instead?
+                                        </p>
+                                        <div class="action-row action-row--wrap">
+                                            <button type="button" class="action-button action-button--secondary" @onclick="EditExistingDuplicateItem">
+                                                Edit existing item
+                                            </button>
+                                            <button type="button" class="action-button action-button--secondary" @onclick="DismissDuplicateItemPrompt">
+                                                Keep typing
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
 
                                 <label>
                                     <span>Image path or URL</span>
@@ -495,18 +563,28 @@
                                 @if (GetItemEditorFamily() == MenuFamily.Food)
                                 {
                                     <div class="editor-form__message">
-                                        <span>Guest tabs</span>
+                                        <label class="editor-form__toggle-row">
+                                            <input type="checkbox" @bind="itemForm.UseSectionVisibility" />
+                                            <span>
+                                                Use section menu defaults
+                                                <small>Turn this off to narrow the item to specific menus only.</small>
+                                            </span>
+                                        </label>
+                                    </div>
+
+                                    <div class="editor-form__message">
+                                        <span>Item menu visibility</span>
                                         <div class="menu-editor-checkbox-stack">
                                             <label class="editor-form__toggle-row">
-                                                <input type="checkbox" @bind="itemForm.ShowBreakfast" />
+                                                <input type="checkbox" @bind="itemForm.ShowBreakfast" disabled="@itemForm.UseSectionVisibility" />
                                                 <span>Breakfast</span>
                                             </label>
                                             <label class="editor-form__toggle-row">
-                                                <input type="checkbox" @bind="itemForm.ShowLunch" />
+                                                <input type="checkbox" @bind="itemForm.ShowLunch" disabled="@itemForm.UseSectionVisibility" />
                                                 <span>Lunch</span>
                                             </label>
                                             <label class="editor-form__toggle-row">
-                                                <input type="checkbox" @bind="itemForm.ShowDinner" />
+                                                <input type="checkbox" @bind="itemForm.ShowDinner" disabled="@itemForm.UseSectionVisibility" />
                                                 <span>Dinner</span>
                                             </label>
                                         </div>

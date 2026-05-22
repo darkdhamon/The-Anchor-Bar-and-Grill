@@ -6,7 +6,13 @@ public interface IMenuManagementRepository
 
     Task<MenuSectionReferenceRecord?> GetSectionReferenceAsync(Guid sectionId, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<MenuSectionReferenceRecord>> GetSectionReferencesAsync(IReadOnlyList<Guid> sectionIds, CancellationToken cancellationToken = default);
+
     Task<MenuItemReferenceRecord?> GetItemReferenceAsync(Guid itemId, CancellationToken cancellationToken = default);
+
+    Task<Guid?> FindSectionIdByNormalizedNameAsync(string normalizedName, CancellationToken cancellationToken = default);
+
+    Task<Guid?> FindItemIdByNormalizedNameAsync(string normalizedName, CancellationToken cancellationToken = default);
 
     Task<bool> SectionHasDependentsAsync(Guid sectionId, CancellationToken cancellationToken = default);
 

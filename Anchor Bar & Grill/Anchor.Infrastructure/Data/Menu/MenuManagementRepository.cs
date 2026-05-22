@@ -12,8 +12,29 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
         dbContext.MenuSections
             .AsNoTracking()
             .Where(section => section.MenuSectionId == sectionId)
-            .Select(section => new MenuSectionReferenceRecord(section.MenuSectionId, section.Family, section.IsArchived))
+            .Select(section => new MenuSectionReferenceRecord(
+                section.MenuSectionId,
+                section.Family,
+                section.MenuTabs
+                    .OrderBy(link => link.Tab)
+                    .Select(link => link.Tab)
+                    .ToList(),
+                section.IsArchived))
             .SingleOrDefaultAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<MenuSectionReferenceRecord>> GetSectionReferencesAsync(IReadOnlyList<Guid> sectionIds, CancellationToken cancellationToken = default) =>
+        await dbContext.MenuSections
+            .AsNoTracking()
+            .Where(section => sectionIds.Contains(section.MenuSectionId))
+            .Select(section => new MenuSectionReferenceRecord(
+                section.MenuSectionId,
+                section.Family,
+                section.MenuTabs
+                    .OrderBy(link => link.Tab)
+                    .Select(link => link.Tab)
+                    .ToList(),
+                section.IsArchived))
+            .ToListAsync(cancellationToken);
 
     public Task<MenuItemReferenceRecord?> GetItemReferenceAsync(Guid itemId, CancellationToken cancellationToken = default) =>
         dbContext.MenuItems
@@ -21,24 +42,51 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
             .Where(item => item.MenuItemId == itemId)
             .Select(item => new MenuItemReferenceRecord(
                 item.MenuItemId,
-                item.MenuSectionId,
-                item.Section.Family,
+                item.SectionAssignments
+                    .Select(assignment => assignment.Section.Family)
+                    .FirstOrDefault(),
                 item.Name,
                 item.Description,
                 item.IsArchived,
-                item.FoodTabs.Select(link => link.Tab).ToList(),
+                item.SectionAssignments
+                    .OrderBy(assignment => assignment.SortOrder)
+                    .ThenBy(assignment => assignment.Section.SortOrder)
+                    .ThenBy(assignment => assignment.Section.Name)
+                    .Select(assignment => new MenuItemSectionAssignmentRecord(
+                        assignment.MenuSectionId,
+                        assignment.Section.Name,
+                        assignment.SortOrder))
+                    .ToList(),
+                item.UsesSectionVisibility,
+                item.MenuTabs.Select(link => link.Tab).ToList(),
                 item.Special != null))
             .SingleOrDefaultAsync(cancellationToken);
 
+    public Task<Guid?> FindSectionIdByNormalizedNameAsync(string normalizedName, CancellationToken cancellationToken = default) =>
+        dbContext.MenuSections
+            .AsNoTracking()
+            .Where(section => section.NormalizedName == normalizedName)
+            .Select(section => (Guid?)section.MenuSectionId)
+            .SingleOrDefaultAsync(cancellationToken);
+
+    public Task<Guid?> FindItemIdByNormalizedNameAsync(string normalizedName, CancellationToken cancellationToken = default) =>
+        dbContext.MenuItems
+            .AsNoTracking()
+            .Where(item => item.NormalizedName == normalizedName)
+            .Select(item => (Guid?)item.MenuItemId)
+            .SingleOrDefaultAsync(cancellationToken);
+
     public Task<bool> SectionHasDependentsAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
-        dbContext.MenuItems.AnyAsync(item => item.MenuSectionId == sectionId, cancellationToken);
+        dbContext.MenuItemSectionAssignments.AnyAsync(assignment => assignment.MenuSectionId == sectionId, cancellationToken);
 
     public async Task<Guid> UpsertSectionAsync(SaveMenuSectionRequest request, CancellationToken cancellationToken = default)
     {
         MenuSectionEntity entity;
         if (request.SectionId is { } sectionId)
         {
-            entity = await dbContext.MenuSections.SingleAsync(section => section.MenuSectionId == sectionId, cancellationToken);
+            entity = await dbContext.MenuSections
+                .Include(section => section.MenuTabs)
+                .SingleAsync(section => section.MenuSectionId == sectionId, cancellationToken);
         }
         else
         {
@@ -47,10 +95,13 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
         }
 
         entity.Name = request.Name;
+        entity.NormalizedName = MenuNameRules.NormalizeForLookup(request.Name);
+        entity.Callout = request.Callout;
         entity.Family = request.Family;
         entity.SortOrder = request.SortOrder;
         entity.IsVisibleToGuests = request.IsVisibleToGuests;
         entity.IsArchived = request.IsArchived;
+        SyncSectionTabs(entity, request.MenuTabs);
 
         return entity.MenuSectionId;
     }
@@ -72,7 +123,8 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
                 .ToArrayAsync(cancellationToken);
 
             entity = await dbContext.MenuItems
-                .Include(item => item.FoodTabs)
+                .Include(item => item.MenuTabs)
+                .Include(item => item.SectionAssignments)
                 .Include(item => item.Special)
                 .SingleAsync(item => item.MenuItemId == itemId, cancellationToken);
         }
@@ -82,8 +134,8 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
             await dbContext.MenuItems.AddAsync(entity, cancellationToken);
         }
 
-        entity.MenuSectionId = request.SectionId;
         entity.Name = request.Name;
+        entity.NormalizedName = MenuNameRules.NormalizeForLookup(request.Name);
         entity.Description = request.Description;
         entity.ImagePath = request.ImagePath;
         entity.SortOrder = request.SortOrder;
@@ -92,9 +144,11 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
         entity.OfferStartsOn = request.OfferStartsOn;
         entity.OfferEndsOn = request.OfferEndsOn;
         entity.IsSeasonal = request.IsSeasonal;
+        entity.UsesSectionVisibility = request.UsesSectionVisibility;
 
         await SyncPriceVariantsAsync(entity.MenuItemId, request.PriceVariants, existingPriceVariantIds, cancellationToken);
-        SyncFoodTabs(entity, request.FoodTabs);
+        SyncSectionAssignments(entity, request.SectionAssignments);
+        SyncMenuTabs(entity, request.MenuTabs);
 
         if (request.Special is null)
         {
@@ -154,23 +208,78 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
         }
     }
 
-    private static void SyncFoodTabs(MenuItemEntity entity, IReadOnlyList<MenuTab> requestedTabs)
+    private static void SyncSectionAssignments(MenuItemEntity entity, IReadOnlyList<SaveMenuItemSectionAssignmentRequest> requestedAssignments)
+    {
+        var requestedAssignmentsBySection = requestedAssignments
+            .GroupBy(assignment => assignment.SectionId)
+            .Select(group => group.First())
+            .ToDictionary(assignment => assignment.SectionId);
+        var existingAssignmentsBySection = entity.SectionAssignments
+            .ToDictionary(assignment => assignment.MenuSectionId);
+
+        foreach (var assignment in entity.SectionAssignments.Where(assignment => !requestedAssignmentsBySection.ContainsKey(assignment.MenuSectionId)).ToArray())
+        {
+            entity.SectionAssignments.Remove(assignment);
+        }
+
+        foreach (var request in requestedAssignmentsBySection.Values)
+        {
+            if (existingAssignmentsBySection.TryGetValue(request.SectionId, out var existingAssignment))
+            {
+                existingAssignment.SortOrder = request.SortOrder;
+                continue;
+            }
+
+            entity.SectionAssignments.Add(new MenuItemSectionAssignmentEntity
+            {
+                MenuItemId = entity.MenuItemId,
+                MenuSectionId = request.SectionId,
+                SortOrder = request.SortOrder
+            });
+        }
+    }
+
+    private static void SyncSectionTabs(MenuSectionEntity entity, IReadOnlyList<MenuTab> requestedTabs)
     {
         var requestedTabSet = requestedTabs
             .Distinct()
             .ToHashSet();
-        var existingTabs = entity.FoodTabs
+        var existingTabs = entity.MenuTabs
             .Select(link => link.Tab)
             .ToHashSet();
 
-        foreach (var link in entity.FoodTabs.Where(link => !requestedTabSet.Contains(link.Tab)).ToArray())
+        foreach (var link in entity.MenuTabs.Where(link => !requestedTabSet.Contains(link.Tab)).ToArray())
         {
-            entity.FoodTabs.Remove(link);
+            entity.MenuTabs.Remove(link);
         }
 
         foreach (var tab in requestedTabSet.Where(tab => !existingTabs.Contains(tab)))
         {
-            entity.FoodTabs.Add(new MenuItemTabEntity
+            entity.MenuTabs.Add(new MenuSectionTabEntity
+            {
+                MenuSectionId = entity.MenuSectionId,
+                Tab = tab
+            });
+        }
+    }
+
+    private static void SyncMenuTabs(MenuItemEntity entity, IReadOnlyList<MenuTab> requestedTabs)
+    {
+        var requestedTabSet = requestedTabs
+            .Distinct()
+            .ToHashSet();
+        var existingTabs = entity.MenuTabs
+            .Select(link => link.Tab)
+            .ToHashSet();
+
+        foreach (var link in entity.MenuTabs.Where(link => !requestedTabSet.Contains(link.Tab)).ToArray())
+        {
+            entity.MenuTabs.Remove(link);
+        }
+
+        foreach (var tab in requestedTabSet.Where(tab => !existingTabs.Contains(tab)))
+        {
+            entity.MenuTabs.Add(new MenuItemTabEntity
             {
                 MenuItemId = entity.MenuItemId,
                 Tab = tab
@@ -223,14 +332,21 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
     {
         dbContext.ChangeTracker.Clear();
 
-        var itemIds = requests.Select(request => request.RecordId).ToArray();
-        var items = await dbContext.MenuItems
-            .Where(item => itemIds.Contains(item.MenuItemId))
-            .ToDictionaryAsync(item => item.MenuItemId, cancellationToken);
+        var sectionIds = requests
+            .Select(request => request.ContextId)
+            .Distinct()
+            .ToArray();
+        var itemIds = requests
+            .Select(request => request.RecordId)
+            .Distinct()
+            .ToArray();
+        var assignments = await dbContext.MenuItemSectionAssignments
+            .Where(assignment => sectionIds.Contains(assignment.MenuSectionId) && itemIds.Contains(assignment.MenuItemId))
+            .ToDictionaryAsync(assignment => new { assignment.MenuItemId, assignment.MenuSectionId }, cancellationToken);
 
-        foreach (var request in requests)
+        foreach (var request in requests.Where(request => request.ContextId is not null))
         {
-            items[request.RecordId].SortOrder = request.SortOrder;
+            assignments[new { MenuItemId = request.RecordId, MenuSectionId = request.ContextId!.Value }].SortOrder = request.SortOrder;
         }
     }
 
@@ -258,7 +374,8 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
     {
         var item = await dbContext.MenuItems
             .Include(menuItem => menuItem.PriceVariants)
-            .Include(menuItem => menuItem.FoodTabs)
+            .Include(menuItem => menuItem.MenuTabs)
+            .Include(menuItem => menuItem.SectionAssignments)
             .Include(menuItem => menuItem.Special)
             .SingleAsync(menuItem => menuItem.MenuItemId == itemId, cancellationToken);
         dbContext.MenuItems.Remove(item);

@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Anchor.Domain.Identity;
 using Anchor.Domain.Menu;
 using Anchor.Web.Components.Pages.Admin;
+using Anchor.Web.Tests.Support;
 using Bunit;
 using Bunit.Rendering;
 using Microsoft.AspNetCore.Authorization;
@@ -239,7 +240,7 @@ public sealed class MenuAdminHoursEditorTests : BunitContext
         {
             IReadOnlyList<MenuSectionAdminView> sections =
             [
-                new(FoodSectionId, "Appetizers", MenuFamily.Food, 1, true, false, [])
+                MenuAdminViewFactory.Section(FoodSectionId, "Appetizers", MenuFamily.Food, [MenuTab.Lunch], 1)
             ];
 
             IReadOnlyList<MenuTabHoursAdminView> tabs = Enum.GetValues<MenuTab>()

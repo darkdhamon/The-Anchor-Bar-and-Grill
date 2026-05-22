@@ -27,6 +27,29 @@ public sealed class MenuManagementService(
             return MenuOperationResult.Failure("Section name cannot be longer than 100 characters.");
         }
 
+        var normalizedCallout = NormalizeOptionalValue(request.Callout);
+        if (normalizedCallout is { Length: > 200 })
+        {
+            return MenuOperationResult.Failure("Section callout text cannot be longer than 200 characters.");
+        }
+
+        var normalizedSectionTabs = NormalizeSectionTabs(request.Family, request.MenuTabs);
+        if (normalizedSectionTabs.Length == 0)
+        {
+            return MenuOperationResult.Failure(
+                request.Family == MenuFamily.Drink
+                    ? "Drink sections must appear on Drinks."
+                    : "Food sections must appear on at least one of Breakfast, Lunch, or Dinner.");
+        }
+
+        var duplicateSectionId = await repository.FindSectionIdByNormalizedNameAsync(
+            MenuNameRules.NormalizeForLookup(normalizedName),
+            cancellationToken);
+        if (duplicateSectionId is Guid foundSectionId && foundSectionId != request.SectionId)
+        {
+            return MenuOperationResult.Failure($"A section named {normalizedName} already exists. Rename this section before saving.");
+        }
+
         if (existingSection is not null
             && existingSection.Family != request.Family
             && await repository.SectionHasDependentsAsync(existingSection.SectionId, cancellationToken))
@@ -35,7 +58,12 @@ public sealed class MenuManagementService(
         }
 
         var savedSectionId = await repository.UpsertSectionAsync(
-            request with { Name = normalizedName },
+            request with
+            {
+                Name = normalizedName,
+                Callout = normalizedCallout,
+                MenuTabs = normalizedSectionTabs
+            },
             cancellationToken);
         await repository.SaveChangesAsync(cancellationToken);
         await logSink.WriteAsync(new MenuOperationLogEntry("save", "section", savedSectionId, normalizedName), cancellationToken);
@@ -45,10 +73,28 @@ public sealed class MenuManagementService(
 
     public async Task<MenuOperationResult> SaveItemAsync(SaveMenuItemRequest request, CancellationToken cancellationToken = default)
     {
-        var section = await repository.GetSectionReferenceAsync(request.SectionId, cancellationToken);
-        if (section is null)
+        var normalizedSectionAssignments = request.SectionAssignments
+            .GroupBy(assignment => assignment.SectionId)
+            .Select(group => group.First() with { SortOrder = Math.Max(1, group.First().SortOrder) })
+            .ToArray();
+        var requestedSectionIds = normalizedSectionAssignments
+            .Select(assignment => assignment.SectionId)
+            .ToArray();
+        if (requestedSectionIds.Length == 0)
         {
-            return MenuOperationResult.Failure("Select a valid section before saving the menu item.");
+            return MenuOperationResult.Failure("Choose at least one section before saving the menu item.");
+        }
+
+        var sections = await repository.GetSectionReferencesAsync(requestedSectionIds, cancellationToken);
+        if (sections.Count != requestedSectionIds.Length)
+        {
+            return MenuOperationResult.Failure("Select valid sections before saving the menu item.");
+        }
+
+        var family = sections[0].Family;
+        if (sections.Any(section => section.Family != family))
+        {
+            return MenuOperationResult.Failure("A menu item cannot be assigned to both food and drink sections.");
         }
 
         if (request.ItemId is { } existingItemId)
@@ -69,6 +115,14 @@ public sealed class MenuManagementService(
         if (normalizedName.Length > 150)
         {
             return MenuOperationResult.Failure("Menu item name cannot be longer than 150 characters.");
+        }
+
+        var duplicateItemId = await repository.FindItemIdByNormalizedNameAsync(
+            MenuNameRules.NormalizeForLookup(normalizedName),
+            cancellationToken);
+        if (duplicateItemId is Guid foundItemId && foundItemId != request.ItemId)
+        {
+            return MenuOperationResult.Failure($"A menu item named {normalizedName} already exists. Rename this item or edit the existing one instead.");
         }
 
         var normalizedDescription = request.Description.Trim();
@@ -96,16 +150,22 @@ public sealed class MenuManagementService(
             return MenuOperationResult.Failure("Each price variant amount must be greater than zero.");
         }
 
-        var normalizedTabs = request.FoodTabs
+        var allowedTabs = sections
+            .SelectMany(section => section.MenuTabs)
             .Distinct()
             .OrderBy(tab => tab)
             .ToArray();
 
-        if (section.Family == MenuFamily.Food)
+        var normalizedTabs = request.MenuTabs
+            .Distinct()
+            .OrderBy(tab => tab)
+            .ToArray();
+
+        if (family == MenuFamily.Food)
         {
-            if (normalizedTabs.Length == 0)
+            if (!request.UsesSectionVisibility && normalizedTabs.Length == 0)
             {
-                return MenuOperationResult.Failure("Food items must appear on at least one of Breakfast, Lunch, or Dinner.");
+                return MenuOperationResult.Failure("Food items must appear on at least one of Breakfast, Lunch, or Dinner when section defaults are overridden.");
             }
 
             if (normalizedTabs.Any(tab => tab == MenuTab.Drinks))
@@ -113,9 +173,18 @@ public sealed class MenuManagementService(
                 return MenuOperationResult.Failure("Food items cannot be assigned to the Drinks tab.");
             }
         }
-        else if (normalizedTabs.Length > 0)
+        else if (!request.UsesSectionVisibility && normalizedTabs.Length == 0)
+        {
+            return MenuOperationResult.Failure("Drink items must appear on Drinks when section defaults are overridden.");
+        }
+        else if (normalizedTabs.Any(tab => tab != MenuTab.Drinks))
         {
             return MenuOperationResult.Failure("Drink items cannot be assigned to Breakfast, Lunch, or Dinner.");
+        }
+
+        if (!request.UsesSectionVisibility && normalizedTabs.Except(allowedTabs).Any())
+        {
+            return MenuOperationResult.Failure("Item menu visibility cannot include menus that are not allowed by the selected sections.");
         }
 
         if (request.Special is null
@@ -177,7 +246,8 @@ public sealed class MenuManagementService(
                 OfferEndsOn = normalizedSpecial is null ? request.OfferEndsOn : null,
                 IsSeasonal = normalizedSpecial is null && request.IsSeasonal,
                 PriceVariants = normalizedPriceVariants,
-                FoodTabs = normalizedTabs,
+                SectionAssignments = normalizedSectionAssignments,
+                MenuTabs = request.UsesSectionVisibility ? Array.Empty<MenuTab>() : normalizedTabs,
                 Special = normalizedSpecial
             },
             cancellationToken);
@@ -247,9 +317,23 @@ public sealed class MenuManagementService(
             return validationResult;
         }
 
+        if (requests.Any(request => request.ContextId is null))
+        {
+            return MenuOperationResult.Failure("Menu item reordering must target a specific section.");
+        }
+
+        var targetSectionId = requests[0].ContextId!.Value;
+        if (requests.Any(request => request.ContextId != targetSectionId))
+        {
+            return MenuOperationResult.Failure("Menu item reordering can only be saved for one section at a time.");
+        }
+
         var snapshot = await repository.GetMenuManagementSnapshotAsync(cancellationToken);
-        var knownIds = snapshot.Items.Select(item => item.ItemId).ToHashSet();
-        if (requests.Any(request => !knownIds.Contains(request.RecordId)))
+        var itemsInTargetSection = snapshot.Items
+            .Where(item => item.SectionAssignments.Any(assignment => assignment.SectionId == targetSectionId))
+            .Select(item => item.ItemId)
+            .ToHashSet();
+        if (requests.Any(request => !itemsInTargetSection.Contains(request.RecordId)))
         {
             return MenuOperationResult.Failure("One or more menu items could not be found for reordering.");
         }
@@ -337,6 +421,13 @@ public sealed class MenuManagementService(
         string.IsNullOrWhiteSpace(value)
             ? null
             : value.Trim();
+
+    private static MenuTab[] NormalizeSectionTabs(MenuFamily family, IReadOnlyList<MenuTab> requestedTabs) =>
+        requestedTabs
+            .Distinct()
+            .Where(tab => family == MenuFamily.Drink ? tab == MenuTab.Drinks : tab != MenuTab.Drinks)
+            .OrderBy(tab => tab)
+            .ToArray();
 
     private static MenuOperationResult? ValidateSortOrderRequests(
         IReadOnlyList<SaveMenuSortOrderRequest> requests,

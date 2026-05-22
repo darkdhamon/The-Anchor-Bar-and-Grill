@@ -3,6 +3,7 @@ using AngleSharp.Dom;
 using Anchor.Domain.Identity;
 using Anchor.Domain.Menu;
 using Anchor.Web.Components.Pages.Admin;
+using Anchor.Web.Tests.Support;
 using Bunit;
 using Bunit.Rendering;
 using Microsoft.AspNetCore.Authorization;
@@ -181,18 +182,18 @@ public sealed class MenuAdminOrderingTests : BunitContext
     {
         private readonly List<MenuSectionAdminView> sections =
         [
-            new(AppetizersSectionId, "Appetizers", MenuFamily.Food, 1, true, false, []),
-            new(WingsSectionId, "Wings", MenuFamily.Food, 2, true, false, []),
-            new(BurgersSectionId, "Burgers", MenuFamily.Food, 3, true, false, [])
+            MenuAdminViewFactory.Section(AppetizersSectionId, "Appetizers", MenuFamily.Food, [MenuTab.Lunch], 1),
+            MenuAdminViewFactory.Section(WingsSectionId, "Wings", MenuFamily.Food, [MenuTab.Lunch], 2),
+            MenuAdminViewFactory.Section(BurgersSectionId, "Burgers", MenuFamily.Food, [MenuTab.Lunch], 3)
         ];
 
         private readonly List<MenuItemAdminView> items =
         [
-            new(LoadedNachosItemId, AppetizersSectionId, "Appetizers", MenuFamily.Food, "Loaded Nachos", "Shareable opener.", null, 1, true, false, null, null, false, [MenuTab.Lunch], [new MenuItemPriceVariantView("Regular", 10m, 1)], [], null, null),
-            new(FriedPicklesItemId, AppetizersSectionId, "Appetizers", MenuFamily.Food, "Fried Pickles", "Crisp starter.", null, 2, true, false, null, null, false, [MenuTab.Lunch], [new MenuItemPriceVariantView("Regular", 9m, 1)], [], null, null),
-            new(CheeseCurdsItemId, AppetizersSectionId, "Appetizers", MenuFamily.Food, "Cheese Curds", "House favorite.", null, 3, true, false, null, null, false, [MenuTab.Lunch], [new MenuItemPriceVariantView("Regular", 11m, 1)], [], null, null),
-            new(Guid.Parse("F362955C-F9A6-4B22-87A1-0CB1B583F5A7"), WingsSectionId, "Wings", MenuFamily.Food, "Traditional Wings", "Sauced and shareable.", null, 1, true, false, null, null, false, [MenuTab.Lunch], [new MenuItemPriceVariantView("Regular", 14m, 1)], [], null, null),
-            new(Guid.Parse("4EA66718-BF13-4727-95F9-83D7D5D3BAE9"), BurgersSectionId, "Burgers", MenuFamily.Food, "Anchor Burger", "Griddled classic.", null, 1, true, false, null, null, false, [MenuTab.Lunch], [new MenuItemPriceVariantView("Regular", 13m, 1)], [], null, null)
+            MenuAdminViewFactory.Item(LoadedNachosItemId, MenuFamily.Food, "Loaded Nachos", "Shareable opener.", 1, [MenuAdminViewFactory.Assignment(AppetizersSectionId, "Appetizers", 1)], [MenuTab.Lunch], [new MenuItemPriceVariantView("Regular", 10m, 1)]),
+            MenuAdminViewFactory.Item(FriedPicklesItemId, MenuFamily.Food, "Fried Pickles", "Crisp starter.", 2, [MenuAdminViewFactory.Assignment(AppetizersSectionId, "Appetizers", 2)], [MenuTab.Lunch], [new MenuItemPriceVariantView("Regular", 9m, 1)]),
+            MenuAdminViewFactory.Item(CheeseCurdsItemId, MenuFamily.Food, "Cheese Curds", "House favorite.", 3, [MenuAdminViewFactory.Assignment(AppetizersSectionId, "Appetizers", 3)], [MenuTab.Lunch], [new MenuItemPriceVariantView("Regular", 11m, 1)]),
+            MenuAdminViewFactory.Item(Guid.Parse("F362955C-F9A6-4B22-87A1-0CB1B583F5A7"), MenuFamily.Food, "Traditional Wings", "Sauced and shareable.", 1, [MenuAdminViewFactory.Assignment(WingsSectionId, "Wings", 1)], [MenuTab.Lunch], [new MenuItemPriceVariantView("Regular", 14m, 1)]),
+            MenuAdminViewFactory.Item(Guid.Parse("4EA66718-BF13-4727-95F9-83D7D5D3BAE9"), MenuFamily.Food, "Anchor Burger", "Griddled classic.", 1, [MenuAdminViewFactory.Assignment(BurgersSectionId, "Burgers", 1)], [MenuTab.Lunch], [new MenuItemPriceVariantView("Regular", 13m, 1)])
         ];
 
         public MenuManagementView BuildView() =>
@@ -215,7 +216,15 @@ public sealed class MenuAdminOrderingTests : BunitContext
             foreach (var request in requests)
             {
                 var index = items.FindIndex(item => item.ItemId == request.RecordId);
-                items[index] = items[index] with { SortOrder = request.SortOrder };
+                var item = items[index];
+                items[index] = item with
+                {
+                    SectionAssignments = item.SectionAssignments
+                        .Select(assignment => assignment.SectionId == request.ContextId
+                            ? assignment with { SortOrder = request.SortOrder }
+                            : assignment)
+                        .ToArray()
+                };
             }
         }
 

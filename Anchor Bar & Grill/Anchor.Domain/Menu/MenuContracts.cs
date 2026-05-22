@@ -2,6 +2,8 @@ namespace Anchor.Domain.Menu;
 
 public sealed record MenuItemPriceVariantRecord(Guid PriceVariantId, string Label, decimal Amount, int SortOrder);
 
+public sealed record MenuItemSectionAssignmentRecord(Guid SectionId, string SectionName, int SortOrder);
+
 public sealed record MenuItemSpecialRecord(
     Guid MenuItemId,
     MenuItemSpecialScheduleKind ScheduleKind,
@@ -16,15 +18,15 @@ public sealed record MenuItemSpecialRecord(
 public sealed record MenuSectionRecord(
     Guid SectionId,
     string Name,
+    string? Callout,
     MenuFamily Family,
+    IReadOnlyList<MenuTab> MenuTabs,
     int SortOrder,
     bool IsVisibleToGuests,
     bool IsArchived);
 
 public sealed record MenuItemRecord(
     Guid ItemId,
-    Guid SectionId,
-    string SectionName,
     MenuFamily Family,
     string Name,
     string Description,
@@ -36,7 +38,9 @@ public sealed record MenuItemRecord(
     DateOnly? OfferEndsOn,
     bool IsSeasonal,
     IReadOnlyList<MenuItemPriceVariantRecord> PriceVariants,
-    IReadOnlyList<MenuTab> FoodTabs,
+    IReadOnlyList<MenuItemSectionAssignmentRecord> SectionAssignments,
+    bool UsesSectionVisibility,
+    IReadOnlyList<MenuTab> MenuTabs,
     MenuItemSpecialRecord? Special);
 
 public sealed record MenuServiceWindowRecord(
@@ -58,14 +62,19 @@ public sealed record MenuManagementSnapshot(
     IReadOnlyList<MenuItemRecord> Items,
     IReadOnlyList<MenuServiceWindowRecord> ServiceWindows);
 
-public sealed record MenuSectionReferenceRecord(Guid SectionId, MenuFamily Family, bool IsArchived);
+public sealed record MenuSectionReferenceRecord(
+    Guid SectionId,
+    MenuFamily Family,
+    IReadOnlyList<MenuTab> MenuTabs,
+    bool IsArchived);
 
 public sealed record MenuItemReferenceRecord(
     Guid ItemId,
-    Guid SectionId,
     MenuFamily Family,
     string Name,
     string Description,
     bool IsArchived,
-    IReadOnlyList<MenuTab> FoodTabs,
+    IReadOnlyList<MenuItemSectionAssignmentRecord> SectionAssignments,
+    bool UsesSectionVisibility,
+    IReadOnlyList<MenuTab> MenuTabs,
     bool HasSpecial);

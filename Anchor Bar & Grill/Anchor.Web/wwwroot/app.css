@@ -904,6 +904,13 @@ html.anchor-theme-dark .site-shell {
     margin: 0;
 }
 
+.menu-section__callout {
+    margin: 0;
+    max-width: 42rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
 .menu-item p,
 .event-card p,
 .event-preview p,

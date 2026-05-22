@@ -59,6 +59,7 @@ public sealed record PublicMenuItemView(
 public sealed record PublicMenuSectionView(
     Guid SectionId,
     string Name,
+    string? Callout,
     string AccentClass,
     IReadOnlyList<PublicMenuItemView> Items);
 
@@ -71,16 +72,21 @@ public sealed record PublicMenuView(
 public sealed record MenuSectionAdminView(
     Guid SectionId,
     string Name,
+    string? Callout,
     MenuFamily Family,
+    IReadOnlyList<MenuTab> MenuTabs,
     int SortOrder,
     bool IsVisibleToGuests,
     bool IsArchived,
     IReadOnlyList<string> StatusLabels);
 
-public sealed record MenuItemAdminView(
-    Guid ItemId,
+public sealed record MenuItemSectionAssignmentView(
     Guid SectionId,
     string SectionName,
+    int SortOrder);
+
+public sealed record MenuItemAdminView(
+    Guid ItemId,
     MenuFamily Family,
     string Name,
     string Description,
@@ -91,7 +97,9 @@ public sealed record MenuItemAdminView(
     DateOnly? OfferStartsOn,
     DateOnly? OfferEndsOn,
     bool IsSeasonal,
-    IReadOnlyList<MenuTab> FoodTabs,
+    IReadOnlyList<MenuItemSectionAssignmentView> SectionAssignments,
+    bool UsesSectionVisibility,
+    IReadOnlyList<MenuTab> MenuTabs,
     IReadOnlyList<MenuItemPriceVariantView> PriceVariants,
     IReadOnlyList<string> StatusLabels,
     string? OfferDateSummary,

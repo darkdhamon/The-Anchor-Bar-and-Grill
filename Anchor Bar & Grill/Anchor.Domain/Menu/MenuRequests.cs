@@ -3,7 +3,9 @@ namespace Anchor.Domain.Menu;
 public sealed record SaveMenuSectionRequest(
     Guid? SectionId,
     string Name,
+    string? Callout,
     MenuFamily Family,
+    IReadOnlyList<MenuTab> MenuTabs,
     int SortOrder,
     bool IsVisibleToGuests,
     bool IsArchived);
@@ -13,6 +15,8 @@ public sealed record SaveMenuItemPriceVariantRequest(
     string Label,
     decimal Amount,
     int SortOrder);
+
+public sealed record SaveMenuItemSectionAssignmentRequest(Guid SectionId, int SortOrder);
 
 public sealed record SaveMenuItemSpecialRequest(
     MenuItemSpecialScheduleKind ScheduleKind,
@@ -26,7 +30,6 @@ public sealed record SaveMenuItemSpecialRequest(
 
 public sealed record SaveMenuItemRequest(
     Guid? ItemId,
-    Guid SectionId,
     string Name,
     string Description,
     string? ImagePath,
@@ -37,7 +40,9 @@ public sealed record SaveMenuItemRequest(
     DateOnly? OfferEndsOn,
     bool IsSeasonal,
     IReadOnlyList<SaveMenuItemPriceVariantRequest> PriceVariants,
-    IReadOnlyList<MenuTab> FoodTabs,
+    IReadOnlyList<SaveMenuItemSectionAssignmentRequest> SectionAssignments,
+    bool UsesSectionVisibility,
+    IReadOnlyList<MenuTab> MenuTabs,
     SaveMenuItemSpecialRequest? Special);
 
 public sealed record SaveMenuServiceWindowDayRequest(
@@ -53,4 +58,5 @@ public sealed record SaveMenuServiceWindowRequest(
 
 public sealed record SaveMenuSortOrderRequest(
     Guid RecordId,
-    int SortOrder);
+    int SortOrder,
+    Guid? ContextId = null);

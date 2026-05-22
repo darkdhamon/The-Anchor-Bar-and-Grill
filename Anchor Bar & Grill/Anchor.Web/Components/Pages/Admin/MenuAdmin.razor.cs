@@ -3,6 +3,7 @@ using Anchor.Domain.Menu;
 using Anchor.Web.Components.Pages;
 using Anchor.Web.Components.Shared;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Logging;
 
 namespace Anchor.Web.Components.Pages.Admin;
@@ -42,6 +43,8 @@ public partial class MenuAdmin
     private string sectionSnapshot = string.Empty;
     private string itemSnapshot = string.Empty;
     private string hoursSnapshot = string.Empty;
+    private readonly HashSet<Guid> sessionVisibleEmptySectionIds = [];
+    private MenuAdminDuplicateItemPromptViewModel? duplicateItemPrompt;
 
     [Inject]
     private IMenuQueryService MenuQueryService { get; set; } = null!;
@@ -110,6 +113,8 @@ public partial class MenuAdmin
 
     private string? DetailStatusMessage => selectedEditorTab == MenuEditorTab.Hours ? null : statusMessage;
 
+    private MenuAdminDuplicateItemPromptViewModel? DuplicateItemPrompt => detailKind == MenuAdminDetailKind.Item ? duplicateItemPrompt : null;
+
     private bool CurrentDetailHasUnsavedChanges =>
         detailKind switch
         {
@@ -148,6 +153,7 @@ public partial class MenuAdmin
     {
         isLoading = true;
         menuView = await MenuQueryService.GetMenuManagementViewAsync(today);
+        sessionVisibleEmptySectionIds.RemoveWhere(sectionId => Sections.All(section => section.SectionId != sectionId));
         isLoading = false;
     }
 
@@ -270,19 +276,29 @@ public partial class MenuAdmin
             Family = preferredFamily ?? MenuFamily.Food
         };
 
+        NormalizeSectionFormForSelectedFamily();
         CaptureSectionSnapshot();
     }
 
     private void ResetItemForm()
     {
+        ClearDuplicateItemPrompt();
         itemForm = CreateDefaultItemForm();
-        itemForm.SectionId = Sections
+        var defaultSectionId = Sections
             .Where(section => section.Family == MenuFamily.Food)
             .OrderBy(section => section.SortOrder)
             .ThenBy(section => section.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(section => section.SectionId.ToString())
+            .Select(section => section.SectionId)
             .FirstOrDefault();
-        NormalizeItemFormForSelectedSection();
+        if (defaultSectionId != Guid.Empty)
+        {
+            itemForm.SelectedSectionIds.Add(defaultSectionId);
+            itemForm.SectionSortOrders[defaultSectionId] = 1;
+            itemForm.ActiveSectionId = defaultSectionId;
+        }
+
+        NormalizeItemFormForSelectedSections();
+        itemForm.SortOrder = GetCurrentItemSortOrder();
         CaptureItemSnapshot();
     }
 
@@ -335,8 +351,10 @@ public partial class MenuAdmin
                 .Max() + 1
         };
 
+        NormalizeSectionFormForSelectedFamily();
         detailKind = MenuAdminDetailKind.Section;
         selectedBrowserId = null;
+        ClearDuplicateItemPrompt();
         CaptureSectionSnapshot();
     }
 
@@ -345,18 +363,21 @@ public partial class MenuAdmin
     private void StartNewItem(MenuFamily family, bool isSpecial)
     {
         ClearPendingDeletes();
+        ClearDuplicateItemPrompt();
         itemForm = CreateDefaultItemForm(isSpecial);
 
         var contextSection = ResolveContextSection(family);
-        itemForm.SectionId = contextSection?.SectionId.ToString();
-        itemForm.SortOrder = GetNextItemSortOrder(contextSection?.SectionId, isSpecial);
-
-        if (family == MenuFamily.Food)
+        if (contextSection is not null)
         {
-            ApplyFoodFilterDefaultsToItemForm();
+            itemForm.SelectedSectionIds.Add(contextSection.SectionId);
+            itemForm.ActiveSectionId = contextSection.SectionId;
+            itemForm.SectionSortOrders[contextSection.SectionId] = GetNextItemSortOrder(contextSection.SectionId, isSpecial);
         }
 
-        NormalizeItemFormForSelectedSection();
+        itemForm.SortOrder = GetCurrentItemSortOrder();
+
+        ApplyFoodFilterDefaultsToItemForm();
+        NormalizeItemFormForSelectedSections();
         detailKind = MenuAdminDetailKind.Item;
         selectedBrowserId = null;
         CaptureItemSnapshot();
@@ -374,6 +395,14 @@ public partial class MenuAdmin
 
     private void ApplyFoodFilterDefaultsToItemForm()
     {
+        if (GetItemEditorFamily() == MenuFamily.Drink)
+        {
+            itemForm.ShowBreakfast = false;
+            itemForm.ShowLunch = false;
+            itemForm.ShowDinner = false;
+            return;
+        }
+
         itemForm.ShowBreakfast = false;
         itemForm.ShowLunch = false;
         itemForm.ShowDinner = false;
@@ -401,7 +430,8 @@ public partial class MenuAdmin
         Guid? sectionId = detailKind switch
         {
             MenuAdminDetailKind.Section when sectionForm.SectionId is Guid currentSectionId && GetSectionEditorFamily() == family => currentSectionId,
-            MenuAdminDetailKind.Item => ParseGuid(itemForm.SectionId),
+            MenuAdminDetailKind.Item when itemForm.ActiveSectionId is Guid activeSectionId => activeSectionId,
+            MenuAdminDetailKind.Item => itemForm.SelectedSectionIds.OrderBy(id => id).FirstOrDefault(),
             _ => null
         };
 
@@ -420,8 +450,8 @@ public partial class MenuAdmin
     private int GetNextItemSortOrder(Guid? sectionId, bool isSpecial) =>
         sectionId is Guid id
             ? Items
-                .Where(item => item.SectionId == id && (item.Special is not null) == isSpecial)
-                .Select(item => item.SortOrder)
+                .Where(item => item.SectionAssignments.Any(assignment => assignment.SectionId == id) && (item.Special is not null) == isSpecial)
+                .Select(item => GetSectionAssignmentSortOrder(item, id))
                 .DefaultIfEmpty(0)
                 .Max() + 1
             : 1;
@@ -429,13 +459,19 @@ public partial class MenuAdmin
     private void SelectSection(MenuSectionAdminView section)
     {
         ClearPendingDeletes();
+        ClearDuplicateItemPrompt();
         detailKind = MenuAdminDetailKind.Section;
         selectedBrowserId = section.SectionId;
         sectionForm = new MenuSectionFormModel
         {
             SectionId = section.SectionId,
             Name = section.Name,
+            Callout = section.Callout,
             Family = section.Family,
+            ShowBreakfast = section.MenuTabs.Contains(MenuTab.Breakfast),
+            ShowLunch = section.MenuTabs.Contains(MenuTab.Lunch),
+            ShowDinner = section.MenuTabs.Contains(MenuTab.Dinner),
+            ShowDrinks = section.MenuTabs.Contains(MenuTab.Drinks),
             SortOrder = section.SortOrder,
             IsVisibleToGuests = section.IsVisibleToGuests,
             IsArchived = section.IsArchived
@@ -444,27 +480,29 @@ public partial class MenuAdmin
         CaptureSectionSnapshot();
     }
 
-    private void SelectItem(MenuItemAdminView item)
+    private void SelectItem(MenuAdminBrowserItemViewModel itemEntry) => SelectItem(itemEntry.Item, itemEntry.SectionId);
+
+    private void SelectItem(MenuItemAdminView item, Guid? activeSectionId = null)
     {
         ClearPendingDeletes();
+        ClearDuplicateItemPrompt();
         detailKind = MenuAdminDetailKind.Item;
         selectedBrowserId = item.ItemId;
         itemForm = new MenuItemFormModel
         {
             ItemId = item.ItemId,
-            SectionId = item.SectionId.ToString(),
             Name = item.Name,
             Description = item.Description,
             ImagePath = item.ImagePath,
-            SortOrder = item.SortOrder,
             IsVisibleToGuests = item.IsVisibleToGuests,
             IsArchived = item.IsArchived,
             OfferStartsOnText = FormatDate(item.OfferStartsOn),
             OfferEndsOnText = FormatDate(item.OfferEndsOn),
             IsSeasonal = item.IsSeasonal,
-            ShowBreakfast = item.FoodTabs.Contains(MenuTab.Breakfast),
-            ShowLunch = item.FoodTabs.Contains(MenuTab.Lunch),
-            ShowDinner = item.FoodTabs.Contains(MenuTab.Dinner),
+            UseSectionVisibility = item.UsesSectionVisibility,
+            ShowBreakfast = item.MenuTabs.Contains(MenuTab.Breakfast),
+            ShowLunch = item.MenuTabs.Contains(MenuTab.Lunch),
+            ShowDinner = item.MenuTabs.Contains(MenuTab.Dinner),
             IsSpecial = item.Special is not null,
             SpecialScheduleKind = item.Special?.ScheduleKind ?? MenuItemSpecialScheduleKind.WeeklyRecurring,
             SpecialDayOfWeek = item.Special?.DayOfWeek ?? DayOfWeek.Monday,
@@ -475,6 +513,18 @@ public partial class MenuAdmin
             SpecialClosesNextDay = item.Special?.ClosesNextDay ?? false,
             SpecialCallout = item.Special?.Callout
         };
+
+        foreach (var assignment in item.SectionAssignments)
+        {
+            itemForm.SelectedSectionIds.Add(assignment.SectionId);
+            itemForm.SectionSortOrders[assignment.SectionId] = assignment.SortOrder;
+        }
+
+        itemForm.ActiveSectionId = activeSectionId is Guid requestedSectionId
+            && item.SectionAssignments.Any(assignment => assignment.SectionId == requestedSectionId)
+                ? requestedSectionId
+                : item.SectionAssignments.OrderBy(assignment => assignment.SortOrder).Select(assignment => (Guid?)assignment.SectionId).FirstOrDefault();
+        itemForm.SortOrder = GetCurrentItemSortOrder(item.SortOrder);
 
         itemForm.PriceVariants.Clear();
         foreach (var variant in item.PriceVariants)
@@ -488,18 +538,21 @@ public partial class MenuAdmin
             });
         }
 
-        NormalizeItemFormForSelectedSection();
+        NormalizeItemFormForSelectedSections();
         CaptureItemSnapshot();
     }
 
     private async Task SaveSectionAsync()
     {
         var currentSectionId = sectionForm.SectionId;
+        var isNewSection = currentSectionId is null;
         var result = await MenuManagementService.SaveSectionAsync(
             new SaveMenuSectionRequest(
                 sectionForm.SectionId,
                 sectionForm.Name,
+                sectionForm.Callout,
                 sectionForm.Family,
+                GetSelectedSectionTabs().ToArray(),
                 sectionForm.SortOrder,
                 sectionForm.IsVisibleToGuests,
                 sectionForm.IsArchived));
@@ -509,17 +562,32 @@ public partial class MenuAdmin
             return;
         }
 
-        TrySelectSectionById(result.EntityId ?? currentSectionId);
+        var savedSectionId = result.EntityId ?? currentSectionId;
+        if (savedSectionId is Guid trackedSectionId && sectionForm.IsArchived)
+        {
+            sessionVisibleEmptySectionIds.Remove(trackedSectionId);
+        }
+        else if (isNewSection && savedSectionId is Guid createdSectionId && !Items.Any(item => item.SectionAssignments.Any(assignment => assignment.SectionId == createdSectionId)))
+        {
+            sessionVisibleEmptySectionIds.Add(createdSectionId);
+        }
+
+        TrySelectSectionById(savedSectionId);
     }
 
     private async Task SaveItemAsync()
     {
         try
         {
-            var sectionId = ParseGuid(itemForm.SectionId);
-            if (sectionId is null)
+            ClearDuplicateItemPrompt();
+
+            var sectionIds = itemForm.SelectedSectionIds
+                .Where(sectionId => Sections.Any(section => section.SectionId == sectionId))
+                .Distinct()
+                .ToArray();
+            if (sectionIds.Length == 0)
             {
-                statusMessage = "Error: Choose a section before saving the menu item.";
+                statusMessage = "Error: Choose at least one section before saving the menu item.";
                 return;
             }
 
@@ -550,7 +618,6 @@ public partial class MenuAdmin
             var result = await MenuManagementService.SaveItemAsync(
                 new SaveMenuItemRequest(
                     itemForm.ItemId,
-                    sectionId.Value,
                     itemForm.Name,
                     itemForm.Description,
                     itemForm.ImagePath,
@@ -561,12 +628,23 @@ public partial class MenuAdmin
                     itemForm.IsSpecial ? null : offerEndsOn,
                     itemForm.IsSpecial ? false : itemForm.IsSeasonal,
                     priceVariants,
-                    GetItemEditorFamily() == MenuFamily.Food ? GetSelectedFoodTabs().ToArray() : Array.Empty<MenuTab>(),
+                    sectionIds
+                        .Select(sectionId => new SaveMenuItemSectionAssignmentRequest(
+                            sectionId,
+                            itemForm.SectionSortOrders.GetValueOrDefault(sectionId, itemForm.SortOrder)))
+                        .ToArray(),
+                    itemForm.UseSectionVisibility,
+                    GetSelectedMenuTabs().ToArray(),
                     specialRequest));
 
             if (!await HandleOperationResultAsync(result, currentItemId is null ? "Menu item created." : "Menu item updated."))
             {
                 return;
+            }
+
+            foreach (var sectionId in sectionIds)
+            {
+                sessionVisibleEmptySectionIds.Remove(sectionId);
             }
 
             TrySelectItemById(result.EntityId ?? currentItemId);
@@ -701,6 +779,7 @@ public partial class MenuAdmin
         var result = await MenuManagementService.ArchiveSectionAsync(sectionId);
         if (await HandleOperationResultAsync(result, "Section archived."))
         {
+            sessionVisibleEmptySectionIds.Remove(sectionId);
             ReloadSelectedDetailOrEnsureSelection();
         }
     }
@@ -722,6 +801,7 @@ public partial class MenuAdmin
             var result = await MenuManagementService.DeleteSectionAsync(sectionId);
             if (await HandleOperationResultAsync(result, "Section deleted."))
             {
+                sessionVisibleEmptySectionIds.Remove(sectionId);
                 if (sectionForm.SectionId == sectionId)
                 {
                     detailKind = MenuAdminDetailKind.None;
@@ -762,21 +842,60 @@ public partial class MenuAdmin
         pendingSectionDeleteId = null;
     }
 
-    private async Task HandleItemSectionChangedAsync(ChangeEventArgs args)
+    private async Task HandleSectionFamilyChangedAsync(ChangeEventArgs args)
     {
-        itemForm.SectionId = args.Value?.ToString();
-        if (itemForm.ItemId is null)
+        if (args.Value is string familyValue && Enum.TryParse<MenuFamily>(familyValue, out var family))
         {
-            itemForm.SortOrder = GetNextItemSortOrder(ParseGuid(itemForm.SectionId), itemForm.IsSpecial);
+            sectionForm.Family = family;
+            NormalizeSectionFormForSelectedFamily();
         }
 
-        NormalizeItemFormForSelectedSection();
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleItemSectionSelectionChangedAsync(Guid sectionId, ChangeEventArgs args)
+    {
+        var isSelected = args.Value is bool selected && selected;
+        if (isSelected)
+        {
+            itemForm.SelectedSectionIds.Add(sectionId);
+            itemForm.SectionSortOrders[sectionId] = itemForm.ItemId is null
+                ? GetNextItemSortOrder(sectionId, itemForm.IsSpecial)
+                : itemForm.SectionSortOrders.GetValueOrDefault(sectionId, GetNextItemSortOrder(sectionId, itemForm.IsSpecial));
+            itemForm.ActiveSectionId ??= sectionId;
+        }
+        else
+        {
+            itemForm.SelectedSectionIds.Remove(sectionId);
+            itemForm.SectionSortOrders.Remove(sectionId);
+            if (itemForm.ActiveSectionId == sectionId)
+            {
+                itemForm.ActiveSectionId = itemForm.SelectedSectionIds.OrderBy(id => id).FirstOrDefault();
+            }
+        }
+
+        ClearDuplicateItemPrompt();
+        NormalizeItemFormForSelectedSections();
+        itemForm.SortOrder = GetCurrentItemSortOrder();
+
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleItemSortOrderChangedAsync()
+    {
+        var activeSectionId = GetCurrentItemSortOrderContextSectionId();
+        if (activeSectionId is Guid sectionId)
+        {
+            itemForm.SectionSortOrders[sectionId] = Math.Max(1, itemForm.SortOrder);
+        }
+
         await Task.CompletedTask;
     }
 
     private async Task HandleSpecialToggleChangedAsync(ChangeEventArgs args)
     {
         itemForm.IsSpecial = args.Value is bool selected && selected;
+        ClearDuplicateItemPrompt();
         if (itemForm.IsSpecial && string.IsNullOrWhiteSpace(itemForm.SpecialStartDateText))
         {
             itemForm.SpecialStartDateText = FormatDate(today);
@@ -784,7 +903,13 @@ public partial class MenuAdmin
 
         if (itemForm.ItemId is null)
         {
-            itemForm.SortOrder = GetNextItemSortOrder(ParseGuid(itemForm.SectionId), itemForm.IsSpecial);
+            var activeSectionId = GetCurrentItemSortOrderContextSectionId();
+            if (activeSectionId is Guid sectionId)
+            {
+                itemForm.SectionSortOrders[sectionId] = GetNextItemSortOrder(sectionId, itemForm.IsSpecial);
+            }
+
+            itemForm.SortOrder = GetCurrentItemSortOrder();
         }
 
         await Task.CompletedTask;
@@ -819,16 +944,72 @@ public partial class MenuAdmin
         }
     }
 
-    private void NormalizeItemFormForSelectedSection()
+    private void NormalizeSectionFormForSelectedFamily()
     {
-        if (GetItemEditorFamily() != MenuFamily.Drink)
+        if (sectionForm.Family == MenuFamily.Drink)
         {
+            sectionForm.ShowBreakfast = false;
+            sectionForm.ShowLunch = false;
+            sectionForm.ShowDinner = false;
+            sectionForm.ShowDrinks = true;
             return;
         }
 
-        itemForm.ShowBreakfast = false;
-        itemForm.ShowLunch = false;
-        itemForm.ShowDinner = false;
+        sectionForm.ShowDrinks = false;
+        if (!sectionForm.ShowBreakfast && !sectionForm.ShowLunch && !sectionForm.ShowDinner)
+        {
+            sectionForm.ShowLunch = true;
+            sectionForm.ShowDinner = true;
+        }
+    }
+
+    private void NormalizeItemFormForSelectedSections()
+    {
+        itemForm.ActiveSectionId = GetCurrentItemSortOrderContextSectionId();
+
+        if (GetItemEditorFamily() == MenuFamily.Drink)
+        {
+            itemForm.ShowBreakfast = false;
+            itemForm.ShowLunch = false;
+            itemForm.ShowDinner = false;
+            itemForm.UseSectionVisibility = true;
+            return;
+        }
+
+        var allowedTabs = GetAllowedSectionTabsForItem().ToHashSet();
+        if (!allowedTabs.Contains(MenuTab.Breakfast))
+        {
+            itemForm.ShowBreakfast = false;
+        }
+
+        if (!allowedTabs.Contains(MenuTab.Lunch))
+        {
+            itemForm.ShowLunch = false;
+        }
+
+        if (!allowedTabs.Contains(MenuTab.Dinner))
+        {
+            itemForm.ShowDinner = false;
+        }
+
+        if (!itemForm.UseSectionVisibility
+            && !itemForm.ShowBreakfast
+            && !itemForm.ShowLunch
+            && !itemForm.ShowDinner)
+        {
+            if (allowedTabs.Contains(MenuTab.Lunch))
+            {
+                itemForm.ShowLunch = true;
+            }
+            else if (allowedTabs.Contains(MenuTab.Dinner))
+            {
+                itemForm.ShowDinner = true;
+            }
+            else if (allowedTabs.Contains(MenuTab.Breakfast))
+            {
+                itemForm.ShowBreakfast = true;
+            }
+        }
     }
 
     private async Task<bool> HandleOperationResultAsync(MenuOperationResult result, string successMessage)
@@ -843,6 +1024,74 @@ public partial class MenuAdmin
         ResetHoursForm(serviceWindowForm.Tab);
         statusMessage = successMessage;
         return true;
+    }
+
+    private Task HandleItemNameBlurAsync(FocusEventArgs _)
+    {
+        duplicateItemPrompt = null;
+
+        var normalizedName = itemForm.Name.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedName))
+        {
+            return Task.CompletedTask;
+        }
+
+        var duplicateItem = Items
+            .FirstOrDefault(item =>
+                item.ItemId != itemForm.ItemId
+                && string.Equals(MenuNameRules.NormalizeForLookup(item.Name), MenuNameRules.NormalizeForLookup(normalizedName), StringComparison.Ordinal));
+
+        if (duplicateItem is not null)
+        {
+            duplicateItemPrompt = new MenuAdminDuplicateItemPromptViewModel(
+                duplicateItem.ItemId,
+                duplicateItem.Name,
+                duplicateItem.Family,
+                duplicateItem.IsArchived,
+                duplicateItem.Special is not null);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void DismissDuplicateItemPrompt() => ClearDuplicateItemPrompt();
+
+    private void EditExistingDuplicateItem()
+    {
+        if (duplicateItemPrompt is null)
+        {
+            return;
+        }
+
+        var matchingItem = Items.SingleOrDefault(item => item.ItemId == duplicateItemPrompt.ItemId);
+        if (matchingItem is null)
+        {
+            ClearDuplicateItemPrompt();
+            return;
+        }
+
+        if (matchingItem.Family == MenuFamily.Drink)
+        {
+            selectedEditorTab = MenuEditorTab.Drinks;
+            drinkContentFilter = MenuContentFilter.All;
+            if (matchingItem.IsArchived)
+            {
+                drinkArchiveFilter = MenuArchiveFilter.Both;
+            }
+        }
+        else
+        {
+            selectedEditorTab = MenuEditorTab.Food;
+            selectedFoodFilter = null;
+            foodContentFilter = MenuContentFilter.All;
+            if (matchingItem.IsArchived)
+            {
+                foodArchiveFilter = MenuArchiveFilter.Both;
+            }
+        }
+
+        SelectItem(matchingItem);
+        UpdateLocation();
     }
 
     private void ReloadSelectedDetailOrEnsureSelection()
@@ -893,7 +1142,7 @@ public partial class MenuAdmin
             return false;
         }
 
-        SelectItem(item);
+        SelectItem(item, item.SectionAssignments.OrderBy(assignment => assignment.SortOrder).Select(assignment => (Guid?)assignment.SectionId).FirstOrDefault());
         return true;
     }
 
@@ -902,6 +1151,8 @@ public partial class MenuAdmin
         pendingSectionDeleteId = null;
         pendingItemDeleteId = null;
     }
+
+    private void ClearDuplicateItemPrompt() => duplicateItemPrompt = null;
 
     private IReadOnlyList<MenuAdminBrowserSectionViewModel> BuildBrowserSections(
         MenuFamily family,
@@ -916,25 +1167,45 @@ public partial class MenuAdmin
                      .OrderBy(section => section.SortOrder)
                      .ThenBy(section => section.Name, StringComparer.OrdinalIgnoreCase))
         {
-            var itemEntries = Items
-                .Where(item => item.SectionId == section.SectionId)
+            var sectionMatchesMenu = MatchesSectionFilter(section, foodFilter);
+            var sectionItems = Items
+                .Where(item => item.SectionAssignments.Any(assignment => assignment.SectionId == section.SectionId))
                 .Where(item => item.Family == family)
-                .Where(item => MatchesFoodFilter(item, foodFilter))
+                .ToArray();
+
+            var itemEntries = Items
+                .Where(item => item.SectionAssignments.Any(assignment => assignment.SectionId == section.SectionId))
+                .Where(item => item.Family == family)
+                .Where(item => sectionMatchesMenu)
+                .Where(item => MatchesItemFilter(item, foodFilter))
                 .Where(item => MatchesArchiveFilter(item.IsArchived, archiveFilter))
                 .Where(item => MatchesContentFilter(item, contentFilter))
                 .OrderByDescending(item => item.Special is not null)
-                .ThenBy(item => item.SortOrder)
+                .ThenBy(item => GetSectionAssignmentSortOrder(item, section.SectionId))
                 .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
-                .Select(item => new MenuAdminBrowserItemViewModel(item, false))
+                .Select(item => new MenuAdminBrowserItemViewModel(item, section.SectionId, false))
                 .ToArray();
 
+            var keepEmptySectionVisible = sectionItems.Length == 0
+                && (detailKind == MenuAdminDetailKind.Section && sectionForm.SectionId == section.SectionId
+                    || sessionVisibleEmptySectionIds.Contains(section.SectionId));
             var sectionMatches = MatchesArchiveFilter(section.IsArchived, archiveFilter);
-            if (!sectionMatches && itemEntries.Length == 0)
+            if (!sectionMatchesMenu && !keepEmptySectionVisible && itemEntries.Length == 0)
             {
                 continue;
             }
 
-            if (contentFilter != MenuContentFilter.All && itemEntries.Length == 0)
+            if (!keepEmptySectionVisible && !sectionMatches && itemEntries.Length == 0)
+            {
+                continue;
+            }
+
+            if (!keepEmptySectionVisible && sectionItems.Length == 0)
+            {
+                continue;
+            }
+
+            if (!keepEmptySectionVisible && contentFilter != MenuContentFilter.All && itemEntries.Length == 0)
             {
                 continue;
             }
@@ -956,8 +1227,14 @@ public partial class MenuAdmin
             _ => true
         };
 
-    private static bool MatchesFoodFilter(MenuItemAdminView item, MenuTab? foodFilter) =>
-        item.Family == MenuFamily.Drink || foodFilter is null || item.FoodTabs.Contains(foodFilter.Value);
+    private static bool MatchesSectionFilter(MenuSectionAdminView section, MenuTab? foodFilter) =>
+        section.Family == MenuFamily.Drink || foodFilter is null || section.MenuTabs.Contains(foodFilter.Value);
+
+    private static bool MatchesItemFilter(MenuItemAdminView item, MenuTab? foodFilter) =>
+        item.Family == MenuFamily.Drink
+        || foodFilter is null
+        || item.UsesSectionVisibility
+        || item.MenuTabs.Contains(foodFilter.Value);
 
     private static bool MatchesContentFilter(MenuItemAdminView item, MenuContentFilter filter) =>
         filter switch
@@ -970,8 +1247,8 @@ public partial class MenuAdmin
     private void BeginSectionDrag(MenuSectionAdminView section) =>
         dragState = new MenuBrowserDragState(MenuAdminDetailKind.Section, section.SectionId, null, section.Family, false);
 
-    private void BeginItemDrag(MenuItemAdminView item) =>
-        dragState = new MenuBrowserDragState(MenuAdminDetailKind.Item, item.ItemId, item.SectionId, item.Family, item.Special is not null);
+    private void BeginItemDrag(MenuAdminBrowserItemViewModel itemEntry) =>
+        dragState = new MenuBrowserDragState(MenuAdminDetailKind.Item, itemEntry.Item.ItemId, itemEntry.SectionId, itemEntry.Item.Family, itemEntry.Item.Special is not null);
 
     private async Task DropSectionAsync(MenuSectionAdminView targetSection)
     {
@@ -986,16 +1263,16 @@ public partial class MenuAdmin
         await ReorderSectionsAsync(state.RecordId, targetSection.SectionId, targetSection.Family);
     }
 
-    private async Task DropItemAsync(MenuItemAdminView targetItem)
+    private async Task DropItemAsync(MenuAdminBrowserItemViewModel targetItem)
     {
         if (dragState is not { Kind: MenuAdminDetailKind.Item, SectionId: { } sectionId } state
-            || state.RecordId == targetItem.ItemId
+            || state.RecordId == targetItem.Item.ItemId
             || sectionId != targetItem.SectionId)
         {
             return;
         }
 
-        if (state.IsSpecialGroup != (targetItem.Special is not null))
+        if (state.IsSpecialGroup != (targetItem.Item.Special is not null))
         {
             statusMessage = "Error: Special items can only be reordered with other special items, and standard items can only be reordered with other standard items.";
             dragState = null;
@@ -1003,7 +1280,7 @@ public partial class MenuAdmin
         }
 
         dragState = null;
-        await ReorderItemsAsync(state.RecordId, targetItem.ItemId, targetItem.SectionId, targetItem.Special is not null);
+        await ReorderItemsAsync(state.RecordId, targetItem.Item.ItemId, targetItem.SectionId, targetItem.Item.Special is not null);
     }
 
     private async Task MoveSectionAsync(MenuSectionAdminView section, int direction)
@@ -1020,10 +1297,10 @@ public partial class MenuAdmin
         await ReorderSectionsAsync(section.SectionId, siblings[targetIndex].SectionId, section.Family);
     }
 
-    private async Task MoveItemAsync(MenuItemAdminView item, int direction)
+    private async Task MoveItemAsync(MenuAdminBrowserItemViewModel itemEntry, int direction)
     {
-        var siblings = GetOrderedItemGroup(item.SectionId, item.Special is not null);
-        var currentIndex = Array.FindIndex(siblings, sibling => sibling.ItemId == item.ItemId);
+        var siblings = GetOrderedItemGroup(itemEntry.SectionId, itemEntry.Item.Special is not null);
+        var currentIndex = Array.FindIndex(siblings, sibling => sibling.ItemId == itemEntry.Item.ItemId);
         var targetIndex = currentIndex + direction;
 
         if (currentIndex < 0 || targetIndex < 0 || targetIndex >= siblings.Length)
@@ -1031,7 +1308,7 @@ public partial class MenuAdmin
             return;
         }
 
-        await ReorderItemsAsync(item.ItemId, siblings[targetIndex].ItemId, item.SectionId, item.Special is not null);
+        await ReorderItemsAsync(itemEntry.Item.ItemId, siblings[targetIndex].ItemId, itemEntry.SectionId, itemEntry.Item.Special is not null);
     }
 
     private async Task ReorderSectionsAsync(Guid sourceSectionId, Guid targetSectionId, MenuFamily family)
@@ -1056,7 +1333,7 @@ public partial class MenuAdmin
             return;
         }
 
-        if (await PersistItemOrderAsync(orderedItems, "Menu item order updated."))
+        if (await PersistItemOrderAsync(orderedItems, sectionId, "Menu item order updated."))
         {
             ReloadSelectedDetailOrEnsureSelection();
         }
@@ -1071,8 +1348,8 @@ public partial class MenuAdmin
 
     private MenuItemAdminView[] GetOrderedItemGroup(Guid sectionId, bool isSpecialGroup) =>
         Items
-            .Where(item => item.SectionId == sectionId && (item.Special is not null) == isSpecialGroup)
-            .OrderBy(item => item.SortOrder)
+            .Where(item => item.SectionAssignments.Any(assignment => assignment.SectionId == sectionId) && (item.Special is not null) == isSpecialGroup)
+            .OrderBy(item => GetSectionAssignmentSortOrder(item, sectionId))
             .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
@@ -1107,16 +1384,16 @@ public partial class MenuAdmin
         return true;
     }
 
-    private async Task<bool> PersistItemOrderAsync(IReadOnlyList<MenuItemAdminView> orderedItems, string successMessage)
+    private async Task<bool> PersistItemOrderAsync(IReadOnlyList<MenuItemAdminView> orderedItems, Guid sectionId, string successMessage)
     {
         List<SaveMenuSortOrderRequest> updates = [];
         for (var index = 0; index < orderedItems.Count; index++)
         {
             var item = orderedItems[index];
             var desiredSortOrder = index + 1;
-            if (item.SortOrder != desiredSortOrder)
+            if (GetSectionAssignmentSortOrder(item, sectionId) != desiredSortOrder)
             {
-                updates.Add(new SaveMenuSortOrderRequest(item.ItemId, desiredSortOrder));
+                updates.Add(new SaveMenuSortOrderRequest(item.ItemId, desiredSortOrder, sectionId));
             }
         }
 
@@ -1146,10 +1423,10 @@ public partial class MenuAdmin
         return currentIndex >= 0 && targetIndex >= 0 && targetIndex < siblings.Length;
     }
 
-    private bool CanMoveItem(MenuItemAdminView item, int direction)
+    private bool CanMoveItem(MenuAdminBrowserItemViewModel itemEntry, int direction)
     {
-        var siblings = GetOrderedItemGroup(item.SectionId, item.Special is not null);
-        var currentIndex = Array.FindIndex(siblings, sibling => sibling.ItemId == item.ItemId);
+        var siblings = GetOrderedItemGroup(itemEntry.SectionId, itemEntry.Item.Special is not null);
+        var currentIndex = Array.FindIndex(siblings, sibling => sibling.ItemId == itemEntry.Item.ItemId);
         var targetIndex = currentIndex + direction;
         return currentIndex >= 0 && targetIndex >= 0 && targetIndex < siblings.Length;
     }
@@ -1193,9 +1470,9 @@ public partial class MenuAdmin
 
     private MenuFamily GetItemEditorFamily()
     {
-        var selectedSectionId = ParseGuid(itemForm.SectionId);
-        var selectedSection = selectedSectionId is Guid id
-            ? Sections.SingleOrDefault(section => section.SectionId == id)
+        var selectedSectionId = GetCurrentItemSortOrderContextSectionId() ?? itemForm.SelectedSectionIds.OrderBy(id => id).FirstOrDefault();
+        var selectedSection = selectedSectionId != Guid.Empty
+            ? Sections.SingleOrDefault(section => section.SectionId == selectedSectionId)
             : null;
 
         return selectedSection?.Family ?? CurrentContentFamily;
@@ -1208,12 +1485,14 @@ public partial class MenuAdmin
     private void CaptureHoursSnapshot() => hoursSnapshot = BuildHoursSnapshot(serviceWindowForm);
 
     private static string BuildSectionSnapshot(MenuSectionFormModel model) =>
-        string.Join("|", model.SectionId, model.Name, model.Family, model.SortOrder, model.IsVisibleToGuests, model.IsArchived);
+        string.Join("|", model.SectionId, model.Name, model.Callout, model.Family, model.ShowBreakfast, model.ShowLunch, model.ShowDinner, model.ShowDrinks, model.SortOrder, model.IsVisibleToGuests, model.IsArchived);
 
     private static string BuildItemSnapshot(MenuItemFormModel model) =>
         string.Join("|",
             model.ItemId,
-            model.SectionId,
+            string.Join(",", model.SelectedSectionIds.OrderBy(id => id)),
+            string.Join(",", model.SectionSortOrders.OrderBy(entry => entry.Key).Select(entry => $"{entry.Key}:{entry.Value}")),
+            model.ActiveSectionId,
             model.Name,
             model.Description,
             model.ImagePath,
@@ -1223,6 +1502,7 @@ public partial class MenuAdmin
             model.OfferStartsOnText,
             model.OfferEndsOnText,
             model.IsSeasonal,
+            model.UseSectionVisibility,
             model.ShowBreakfast,
             model.ShowLunch,
             model.ShowDinner,
@@ -1247,6 +1527,35 @@ public partial class MenuAdmin
         IsSpecial = isSpecial,
         SpecialStartDateText = isSpecial ? DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd", InvariantCulture) : null
     };
+
+    private Guid? GetCurrentItemSortOrderContextSectionId()
+    {
+        if (itemForm.ActiveSectionId is Guid activeSectionId && itemForm.SelectedSectionIds.Contains(activeSectionId))
+        {
+            return activeSectionId;
+        }
+
+        var firstSectionId = itemForm.SelectedSectionIds.OrderBy(id => id).FirstOrDefault();
+        return firstSectionId == Guid.Empty ? null : firstSectionId;
+    }
+
+    private int GetCurrentItemSortOrder(int fallbackSortOrder = 1)
+    {
+        var activeSectionId = GetCurrentItemSortOrderContextSectionId();
+        if (activeSectionId is Guid sectionId && itemForm.SectionSortOrders.TryGetValue(sectionId, out var sortOrder))
+        {
+            return sortOrder;
+        }
+
+        return fallbackSortOrder;
+    }
+
+    private static int GetSectionAssignmentSortOrder(MenuItemAdminView item, Guid sectionId) =>
+        item.SectionAssignments
+            .Where(assignment => assignment.SectionId == sectionId)
+            .Select(assignment => assignment.SortOrder)
+            .DefaultIfEmpty(item.SortOrder)
+            .First();
 
     private static MenuEditorTab ParseEditorTab(string? value) =>
         value?.Trim().ToLowerInvariant() switch
@@ -1403,8 +1712,49 @@ public partial class MenuAdmin
     private static string GetHoursInputId(DayOfWeek dayOfWeek, string slot) =>
         $"menu-hours-{dayOfWeek.ToString().ToLowerInvariant()}-{slot}";
 
-    private IEnumerable<MenuTab> GetSelectedFoodTabs()
+    private IEnumerable<MenuTab> GetSelectedSectionTabs()
     {
+        if (sectionForm.Family == MenuFamily.Drink)
+        {
+            if (sectionForm.ShowDrinks)
+            {
+                yield return MenuTab.Drinks;
+            }
+
+            yield break;
+        }
+
+        if (sectionForm.ShowBreakfast)
+        {
+            yield return MenuTab.Breakfast;
+        }
+
+        if (sectionForm.ShowLunch)
+        {
+            yield return MenuTab.Lunch;
+        }
+
+        if (sectionForm.ShowDinner)
+        {
+            yield return MenuTab.Dinner;
+        }
+    }
+
+    private IEnumerable<MenuTab> GetAllowedSectionTabsForItem() =>
+        Sections
+            .Where(section => itemForm.SelectedSectionIds.Contains(section.SectionId))
+            .SelectMany(section => section.MenuTabs)
+            .Distinct()
+            .OrderBy(tab => tab);
+
+    private IEnumerable<MenuTab> GetSelectedMenuTabs()
+    {
+        if (GetItemEditorFamily() == MenuFamily.Drink)
+        {
+            yield return MenuTab.Drinks;
+            yield break;
+        }
+
         if (itemForm.ShowBreakfast)
         {
             yield return MenuTab.Breakfast;
@@ -1476,7 +1826,12 @@ public partial class MenuAdmin
             return "Drinks";
         }
 
-        var labels = item.FoodTabs
+        if (item.UsesSectionVisibility)
+        {
+            return "Uses section defaults";
+        }
+
+        var labels = item.MenuTabs
             .OrderBy(tab => tab)
             .Select(GetTabLabel)
             .ToArray();

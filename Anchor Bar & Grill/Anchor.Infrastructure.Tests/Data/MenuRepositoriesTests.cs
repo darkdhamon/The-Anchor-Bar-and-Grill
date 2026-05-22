@@ -8,6 +8,7 @@ namespace Anchor.Infrastructure.Tests.Data;
 public sealed class MenuRepositoriesTests
 {
     private static readonly Guid BurgersSectionId = Guid.Parse("198CCF8A-72FD-4278-A360-F36D5871E58B");
+    private static readonly Guid SoupsSectionId = Guid.Parse("31E9CB99-5FCA-4A4A-A04B-89B97C926A52");
     private static readonly Guid ClassicHamburgerItemId = Guid.Parse("7626D0DF-9F8A-4FE8-9062-3596165E148A");
     private static readonly Guid MondayNightBurgersItemId = Guid.Parse("33D64E7B-D5B7-481A-97FC-7F250A68C27E");
 
@@ -41,7 +42,7 @@ public sealed class MenuRepositoriesTests
             new DateOnly(2026, 6, 17));
 
         var sectionItems = snapshot.Items
-            .Where(item => item.SectionId == BurgersSectionId)
+            .Where(item => item.SectionAssignments.Any(assignment => assignment.SectionId == BurgersSectionId))
             .OrderByDescending(item => item.Special is not null)
             .ThenBy(item => item.SortOrder)
             .ToArray();
@@ -68,6 +69,99 @@ public sealed class MenuRepositoriesTests
     }
 
     [Fact]
+    public async Task GetPublicMenuSnapshotAsync_respects_multi_section_visibility_and_item_overrides()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+
+        var breakfastSectionId = Guid.NewGuid();
+        var itemId = Guid.NewGuid();
+
+        context.DbContext.MenuSections.Add(new MenuSectionEntity
+        {
+            MenuSectionId = breakfastSectionId,
+            Name = "Breakfast Specials",
+            NormalizedName = MenuNameRules.NormalizeForLookup("Breakfast Specials"),
+            Family = MenuFamily.Food,
+            SortOrder = 20,
+            IsVisibleToGuests = true,
+            IsArchived = false
+        });
+        context.DbContext.MenuSectionTabs.Add(new MenuSectionTabEntity
+        {
+            MenuSectionId = breakfastSectionId,
+            Tab = MenuTab.Breakfast
+        });
+
+        context.DbContext.MenuItems.Add(new MenuItemEntity
+        {
+            MenuItemId = itemId,
+            Name = "Everything Toast",
+            NormalizedName = MenuNameRules.NormalizeForLookup("Everything Toast"),
+            Description = "Breakfast special that crosses into lunch.",
+            SortOrder = 50,
+            IsVisibleToGuests = true,
+            IsArchived = false,
+            UsesSectionVisibility = false
+        });
+        context.DbContext.MenuItemSectionAssignments.AddRange(
+            new MenuItemSectionAssignmentEntity
+            {
+                MenuItemId = itemId,
+                MenuSectionId = breakfastSectionId,
+                SortOrder = 1
+            },
+            new MenuItemSectionAssignmentEntity
+            {
+                MenuItemId = itemId,
+                MenuSectionId = SoupsSectionId,
+                SortOrder = 8
+            });
+        context.DbContext.MenuItemTabs.AddRange(
+            new MenuItemTabEntity
+            {
+                MenuItemId = itemId,
+                Tab = MenuTab.Breakfast
+            },
+            new MenuItemTabEntity
+            {
+                MenuItemId = itemId,
+                Tab = MenuTab.Lunch
+            });
+        context.DbContext.MenuItemPriceVariants.Add(new MenuItemPriceVariantEntity
+        {
+            MenuItemPriceVariantId = Guid.NewGuid(),
+            MenuItemId = itemId,
+            Label = "Regular",
+            Amount = 9m,
+            SortOrder = 1
+        });
+        await context.DbContext.SaveChangesAsync();
+
+        var repository = new MenuQueryRepository(context.DbContext);
+
+        var breakfastSnapshot = await repository.GetPublicMenuSnapshotAsync(
+            MenuTab.Breakfast,
+            new DateOnly(2026, 5, 22),
+            new DateOnly(2026, 6, 21));
+        var lunchSnapshot = await repository.GetPublicMenuSnapshotAsync(
+            MenuTab.Lunch,
+            new DateOnly(2026, 5, 22),
+            new DateOnly(2026, 6, 21));
+        var dinnerSnapshot = await repository.GetPublicMenuSnapshotAsync(
+            MenuTab.Dinner,
+            new DateOnly(2026, 5, 22),
+            new DateOnly(2026, 6, 21));
+
+        Assert.Contains(breakfastSnapshot.Sections, section => section.SectionId == breakfastSectionId);
+        Assert.Contains(breakfastSnapshot.Items, item => item.ItemId == itemId);
+
+        Assert.Contains(lunchSnapshot.Sections, section => section.SectionId == SoupsSectionId);
+        Assert.Contains(lunchSnapshot.Items, item => item.ItemId == itemId);
+
+        Assert.DoesNotContain(dinnerSnapshot.Items, item => item.ItemId == itemId);
+    }
+
+    [Fact]
     public async Task GetPublicServiceWindowsAsync_returns_all_public_service_windows()
     {
         await using var context = await SqliteIdentityTestContext.CreateAsync();
@@ -91,6 +185,7 @@ public sealed class MenuRepositoriesTests
         {
             MenuSectionId = hiddenSectionId,
             Name = "Hidden Cocktails",
+            NormalizedName = MenuNameRules.NormalizeForLookup("Hidden Cocktails"),
             Family = MenuFamily.Drink,
             SortOrder = 9,
             IsVisibleToGuests = false,
@@ -99,12 +194,18 @@ public sealed class MenuRepositoriesTests
         context.DbContext.MenuItems.Add(new MenuItemEntity
         {
             MenuItemId = hiddenItemId,
-            MenuSectionId = hiddenSectionId,
             Name = "Late Night Old Fashioned",
+            NormalizedName = MenuNameRules.NormalizeForLookup("Late Night Old Fashioned"),
             Description = "Archived drink profile.",
             SortOrder = 1,
             IsVisibleToGuests = false,
             IsArchived = true
+        });
+        context.DbContext.MenuItemSectionAssignments.Add(new MenuItemSectionAssignmentEntity
+        {
+            MenuItemId = hiddenItemId,
+            MenuSectionId = hiddenSectionId,
+            SortOrder = 1
         });
         context.DbContext.MenuItemSpecials.Add(new MenuItemSpecialEntity
         {
@@ -130,22 +231,17 @@ public sealed class MenuRepositoriesTests
         await using var context = await SqliteIdentityTestContext.CreateAsync();
         var repository = new MenuManagementRepository(context.DbContext);
         var itemId = await repository.UpsertItemAsync(
-            new SaveMenuItemRequest(
+            CreateItemRequest(
                 null,
-                BurgersSectionId,
                 "Test Burger Night",
                 "Built for repository coverage.",
-                null,
                 99,
-                true,
-                false,
-                null,
-                null,
-                false,
                 [
                     new SaveMenuItemPriceVariantRequest(null, "Single", 12m, 1),
                     new SaveMenuItemPriceVariantRequest(null, "Double", 15m, 2)
                 ],
+                [new SaveMenuItemSectionAssignmentRequest(BurgersSectionId, 99)],
+                false,
                 [MenuTab.Dinner],
                 new SaveMenuItemSpecialRequest(
                     MenuItemSpecialScheduleKind.WeeklyRecurring,
@@ -160,13 +256,15 @@ public sealed class MenuRepositoriesTests
 
         var savedItem = await context.DbContext.MenuItems
             .Include(item => item.PriceVariants)
-            .Include(item => item.FoodTabs)
+            .Include(item => item.MenuTabs)
+            .Include(item => item.SectionAssignments)
             .Include(item => item.Special)
             .SingleAsync(item => item.MenuItemId == itemId);
 
         Assert.Equal("Test Burger Night", savedItem.Name);
         Assert.Equal(2, savedItem.PriceVariants.Count);
-        Assert.Contains(savedItem.FoodTabs, link => link.Tab == MenuTab.Dinner);
+        Assert.Contains(savedItem.MenuTabs, link => link.Tab == MenuTab.Dinner);
+        Assert.Contains(savedItem.SectionAssignments, assignment => assignment.MenuSectionId == BurgersSectionId);
         Assert.NotNull(savedItem.Special);
         Assert.Equal(DayOfWeek.Monday, savedItem.Special!.DayOfWeek);
         Assert.Equal("$12 basket special", savedItem.Special.Callout);
@@ -185,28 +283,23 @@ public sealed class MenuRepositoriesTests
             .ToArrayAsync();
 
         await repository.UpsertItemAsync(
-            new SaveMenuItemRequest(
+            CreateItemRequest(
                 ClassicHamburgerItemId,
-                BurgersSectionId,
                 "Classic Hamburger",
                 "Updated burger description.",
-                null,
                 7,
-                true,
-                false,
-                null,
-                null,
-                false,
                 [
                     new SaveMenuItemPriceVariantRequest(null, "Regular", 13m, 1)
                 ],
+                [new SaveMenuItemSectionAssignmentRequest(BurgersSectionId, 7)],
+                false,
                 [MenuTab.Lunch, MenuTab.Dinner],
                 null));
         await repository.SaveChangesAsync();
 
         var savedItem = await context.DbContext.MenuItems
             .Include(item => item.PriceVariants)
-            .Include(item => item.FoodTabs)
+            .Include(item => item.MenuTabs)
             .SingleAsync(item => item.MenuItemId == ClassicHamburgerItemId);
         var savedVariantIds = savedItem.PriceVariants
             .Select(variant => variant.MenuItemPriceVariantId)
@@ -216,7 +309,7 @@ public sealed class MenuRepositoriesTests
         Assert.Equal(existingVariantIds, savedVariantIds);
         Assert.Equal("Updated burger description.", savedItem.Description);
         Assert.Equal(13m, savedItem.PriceVariants.Single().Amount);
-        Assert.Equal([MenuTab.Lunch, MenuTab.Dinner], savedItem.FoodTabs.Select(link => link.Tab).OrderBy(tab => tab).ToArray());
+        Assert.Equal([MenuTab.Lunch, MenuTab.Dinner], savedItem.MenuTabs.Select(link => link.Tab).OrderBy(tab => tab).ToArray());
     }
 
     [Fact]
@@ -231,22 +324,17 @@ public sealed class MenuRepositoriesTests
             .SingleAsync();
 
         await repository.UpsertItemAsync(
-            new SaveMenuItemRequest(
+            CreateItemRequest(
                 ClassicHamburgerItemId,
-                BurgersSectionId,
                 "Classic Hamburger",
                 "Now available with two price options.",
-                null,
                 7,
-                true,
-                false,
-                null,
-                null,
-                false,
                 [
                     new SaveMenuItemPriceVariantRequest(existingVariantId, "Regular", 13m, 1),
                     new SaveMenuItemPriceVariantRequest(null, "Basket", 16m, 2)
                 ],
+                [new SaveMenuItemSectionAssignmentRequest(BurgersSectionId, 7)],
+                false,
                 [MenuTab.Lunch, MenuTab.Dinner],
                 null));
         await repository.SaveChangesAsync();
@@ -284,21 +372,16 @@ public sealed class MenuRepositoriesTests
             .Single();
 
         await repository.UpsertItemAsync(
-            new SaveMenuItemRequest(
+            CreateItemRequest(
                 ClassicHamburgerItemId,
-                BurgersSectionId,
                 "Classic Hamburger",
                 "Updated after stale tracked state.",
-                null,
                 7,
-                true,
-                false,
-                null,
-                null,
-                false,
                 [
                     new SaveMenuItemPriceVariantRequest(existingVariantId, "Regular", 14m, 1)
                 ],
+                [new SaveMenuItemSectionAssignmentRequest(BurgersSectionId, 7)],
+                false,
                 [MenuTab.Lunch, MenuTab.Dinner],
                 null));
         await repository.SaveChangesAsync();
@@ -327,6 +410,53 @@ public sealed class MenuRepositoriesTests
     }
 
     [Fact]
+    public async Task FindNormalizedNameLookups_return_matching_section_and_item_ids()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+        var repository = new MenuManagementRepository(context.DbContext);
+
+        var sectionId = await repository.FindSectionIdByNormalizedNameAsync(MenuNameRules.NormalizeForLookup("burgers"));
+        var itemId = await repository.FindItemIdByNormalizedNameAsync(MenuNameRules.NormalizeForLookup(" classic hamburger "));
+
+        Assert.Equal(BurgersSectionId, sectionId);
+        Assert.Equal(ClassicHamburgerItemId, itemId);
+    }
+
+    [Fact]
+    public async Task Unique_indexes_on_normalized_names_reject_duplicate_sections_and_items()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+
+        context.DbContext.MenuSections.Add(new MenuSectionEntity
+        {
+            MenuSectionId = Guid.NewGuid(),
+            Name = "Burgers Copy",
+            NormalizedName = MenuNameRules.NormalizeForLookup("burgers"),
+            Family = MenuFamily.Food,
+            SortOrder = 99,
+            IsVisibleToGuests = true,
+            IsArchived = false
+        });
+
+        await Assert.ThrowsAsync<DbUpdateException>(() => context.DbContext.SaveChangesAsync());
+
+        context.DbContext.ChangeTracker.Clear();
+
+        context.DbContext.MenuItems.Add(new MenuItemEntity
+        {
+            MenuItemId = Guid.NewGuid(),
+            Name = "Classic Hamburger Copy",
+            NormalizedName = MenuNameRules.NormalizeForLookup("classic hamburger"),
+            Description = "Duplicate item name test.",
+            SortOrder = 99,
+            IsVisibleToGuests = true,
+            IsArchived = false
+        });
+
+        await Assert.ThrowsAsync<DbUpdateException>(() => context.DbContext.SaveChangesAsync());
+    }
+
+    [Fact]
     public async Task ReorderItemsAsync_updates_sort_orders_without_rewriting_price_variants()
     {
         await using var context = await SqliteIdentityTestContext.CreateAsync();
@@ -338,19 +468,19 @@ public sealed class MenuRepositoriesTests
             .OrderBy(id => id)
             .ToArrayAsync();
 
-        await repository.ReorderItemsAsync([new SaveMenuSortOrderRequest(ClassicHamburgerItemId, 99)]);
+        await repository.ReorderItemsAsync([new SaveMenuSortOrderRequest(ClassicHamburgerItemId, 99, BurgersSectionId)]);
         await repository.SaveChangesAsync();
 
-        var savedItem = await context.DbContext.MenuItems
+        var savedAssignment = await context.DbContext.MenuItemSectionAssignments
             .AsNoTracking()
-            .SingleAsync(item => item.MenuItemId == ClassicHamburgerItemId);
+            .SingleAsync(assignment => assignment.MenuItemId == ClassicHamburgerItemId && assignment.MenuSectionId == BurgersSectionId);
         var afterVariantIds = await context.DbContext.MenuItemPriceVariants
             .Where(variant => variant.MenuItemId == ClassicHamburgerItemId)
             .Select(variant => variant.MenuItemPriceVariantId)
             .OrderBy(id => id)
             .ToArrayAsync();
 
-        Assert.Equal(99, savedItem.SortOrder);
+        Assert.Equal(99, savedAssignment.SortOrder);
         Assert.Equal(beforeVariantIds, afterVariantIds);
     }
 
@@ -369,4 +499,31 @@ public sealed class MenuRepositoriesTests
 
         Assert.Equal(42, burgers.SortOrder);
     }
+
+    private static SaveMenuItemRequest CreateItemRequest(
+        Guid? itemId,
+        string name,
+        string description,
+        int sortOrder,
+        IReadOnlyList<SaveMenuItemPriceVariantRequest> priceVariants,
+        IReadOnlyList<SaveMenuItemSectionAssignmentRequest> sectionAssignments,
+        bool usesSectionVisibility,
+        IReadOnlyList<MenuTab> menuTabs,
+        SaveMenuItemSpecialRequest? special) =>
+        new(
+            itemId,
+            name,
+            description,
+            null,
+            sortOrder,
+            true,
+            false,
+            null,
+            null,
+            false,
+            priceVariants,
+            sectionAssignments,
+            usesSectionVisibility,
+            menuTabs,
+            special);
 }

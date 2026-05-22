@@ -2,12 +2,14 @@ using System.Security.Claims;
 using Anchor.Domain.Identity;
 using Anchor.Domain.Menu;
 using Anchor.Web.Components.Pages.Admin;
+using Anchor.Web.Tests.Support;
 using Bunit;
 using Bunit.Rendering;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -89,6 +91,16 @@ public sealed class MenuAdminRedesignTests : BunitContext
     }
 
     [Fact]
+    public void Empty_sections_stay_hidden_by_default_in_the_browser()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+
+        var cut = RenderMenuAdmin("/admin/menu");
+
+        Assert.DoesNotContain("Unassigned Platters", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Both_filter_shows_archived_and_hidden_rows_with_different_states()
     {
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
@@ -135,20 +147,22 @@ public sealed class MenuAdminRedesignTests : BunitContext
         var cut = RenderMenuAdmin("/admin/menu?tab=food&food=breakfast");
 
         cut.FindAll(".menu-editor-tree__select")
-            .First(button => button.TextContent.Contains("Appetizers", StringComparison.OrdinalIgnoreCase))
+            .First(button => button.TextContent.Contains("Breakfast Plates", StringComparison.OrdinalIgnoreCase))
             .Click();
 
         cut.FindAll("button")
             .Single(button => string.Equals(button.TextContent.Trim(), "Add item", StringComparison.Ordinal))
             .Click();
 
-        var sectionSelect = cut.Find("select");
-        var mealCheckboxes = cut.FindAll(".menu-editor-checkbox-stack input[type='checkbox']");
+        var checkboxStacks = cut.FindAll(".menu-editor-checkbox-stack");
+        var sectionCheckboxes = checkboxStacks[0].GetElementsByTagName("input");
+        var menuVisibilityCheckboxes = checkboxStacks[1].GetElementsByTagName("input");
 
-        Assert.Equal(StaticMenuAdminQueryService.AppetizersSectionId.ToString(), sectionSelect.GetAttribute("value"));
-        Assert.True(mealCheckboxes[0].HasAttribute("checked"));
-        Assert.False(mealCheckboxes[1].HasAttribute("checked"));
-        Assert.False(mealCheckboxes[2].HasAttribute("checked"));
+        Assert.False(sectionCheckboxes[0].HasAttribute("checked"));
+        Assert.True(sectionCheckboxes[1].HasAttribute("checked"));
+        Assert.True(menuVisibilityCheckboxes[0].HasAttribute("checked"));
+        Assert.False(menuVisibilityCheckboxes[1].HasAttribute("checked"));
+        Assert.False(menuVisibilityCheckboxes[2].HasAttribute("checked"));
     }
 
     [Fact]
@@ -265,6 +279,34 @@ public sealed class MenuAdminRedesignTests : BunitContext
     }
 
     [Fact]
+    public void Duplicate_item_name_blur_prompts_to_edit_the_existing_item()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+
+        var cut = RenderMenuAdmin("/admin/menu?tab=drinks");
+
+        cut.FindAll(".menu-editor-tree__select")
+            .Single(button => button.TextContent.Contains("Cocktails", StringComparison.OrdinalIgnoreCase))
+            .Click();
+
+        cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Add item", StringComparison.Ordinal))
+            .Click();
+
+        var nameInput = cut.Find("input[placeholder='Classic hamburger, wing night, old fashioned...']");
+        nameInput.Input("Old Fashioned");
+        nameInput.TriggerEvent("onblur", new FocusEventArgs());
+
+        cut.WaitForAssertion(() => Assert.Contains("Would you like to edit the existing item instead?", cut.Markup, StringComparison.OrdinalIgnoreCase));
+
+        cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Edit existing item", StringComparison.Ordinal))
+            .Click();
+
+        cut.WaitForAssertion(() => Assert.Contains("Edit item: Old Fashioned", cut.Markup, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void Thrown_item_save_errors_render_as_inline_status_messages()
     {
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
@@ -327,6 +369,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
         internal static readonly Guid AppetizersSectionId = Guid.Parse("D8F92296-4F3C-4B88-B2D4-D1775F54A1D1");
         private static readonly Guid BreakfastSectionId = Guid.Parse("8A88226D-F45A-4E15-9420-8E1828654A73");
         private static readonly Guid CocktailsSectionId = Guid.Parse("5E3C8768-2020-4C8A-A565-B2B981AAB1B1");
+        private static readonly Guid EmptyFoodSectionId = Guid.Parse("266FAF80-C3BA-4D60-BD70-7B2224D52671");
         private static readonly Guid ActiveSpecialItemId = Guid.Parse("A4CC9DA8-54AE-4FA9-85D1-2E666FCF4B18");
         private static readonly Guid HiddenFoodItemId = Guid.Parse("89CE687D-62E8-453F-8D08-12D74F85FCB9");
         private static readonly Guid ArchivedFoodItemId = Guid.Parse("44AA62BE-4B4D-46C7-A3D3-5088BF3B58DD");
@@ -364,30 +407,24 @@ public sealed class MenuAdminRedesignTests : BunitContext
 
             IReadOnlyList<MenuSectionAdminView> sections =
             [
-                new(AppetizersSectionId, "Appetizers", MenuFamily.Food, 1, true, false, []),
-                new(BreakfastSectionId, "Breakfast Plates", MenuFamily.Food, 2, true, false, []),
-                new(CocktailsSectionId, "Cocktails", MenuFamily.Drink, 1, true, false, [])
+                MenuAdminViewFactory.Section(AppetizersSectionId, "Appetizers", MenuFamily.Food, [MenuTab.Lunch, MenuTab.Dinner], 1, callout: "Shareables for the table."),
+                MenuAdminViewFactory.Section(BreakfastSectionId, "Breakfast Plates", MenuFamily.Food, [MenuTab.Breakfast], 2),
+                MenuAdminViewFactory.Section(EmptyFoodSectionId, "Unassigned Platters", MenuFamily.Food, [MenuTab.Lunch], 3),
+                MenuAdminViewFactory.Section(CocktailsSectionId, "Cocktails", MenuFamily.Drink, [MenuTab.Drinks], 1)
             ];
 
             IReadOnlyList<MenuItemAdminView> items =
             [
-                new(
+                MenuAdminViewFactory.Item(
                     ActiveSpecialItemId,
-                    AppetizersSectionId,
-                    "Appetizers",
                     MenuFamily.Food,
                     "Late Night Burger",
                     "Lunch and dinner burger.",
-                    null,
                     1,
-                    true,
-                    false,
-                    null,
-                    null,
-                    false,
-                    new[] { MenuTab.Lunch, MenuTab.Dinner },
-                    new[] { new MenuItemPriceVariantView("Regular", 12m, 1) },
-                    new[] { "Special", "Today" },
+                    [MenuAdminViewFactory.Assignment(AppetizersSectionId, "Appetizers", 1)],
+                    [MenuTab.Lunch, MenuTab.Dinner],
+                    [new MenuItemPriceVariantView("Regular", 12m, 1)],
+                    ["Special", "Today"],
                     null,
                     new MenuItemSpecialAdminView(
                         MenuItemSpecialScheduleKind.WeeklyRecurring,
@@ -403,82 +440,46 @@ public sealed class MenuAdminRedesignTests : BunitContext
                         "$11 basket special",
                         new[] { "Today" },
                         Today.DayOfWeek == DayOfWeek.Monday)),
-                new(
+                MenuAdminViewFactory.Item(
                     HiddenFoodItemId,
-                    AppetizersSectionId,
-                    "Appetizers",
                     MenuFamily.Food,
                     "Secret Nachos",
                     "Hidden test item.",
-                    null,
                     2,
-                    false,
-                    false,
-                    null,
-                    null,
-                    false,
-                    new[] { MenuTab.Lunch },
-                    new[] { new MenuItemPriceVariantView("Regular", 10m, 1) },
-                    new[] { "Hidden" },
-                    null,
-                    null),
-                new(
+                    [MenuAdminViewFactory.Assignment(AppetizersSectionId, "Appetizers", 2)],
+                    [MenuTab.Lunch],
+                    [new MenuItemPriceVariantView("Regular", 10m, 1)],
+                    ["Hidden"],
+                    isVisibleToGuests: false),
+                MenuAdminViewFactory.Item(
                     ArchivedFoodItemId,
-                    AppetizersSectionId,
-                    "Appetizers",
                     MenuFamily.Food,
                     "Retired Nachos",
                     "Archived test item.",
-                    null,
                     3,
-                    true,
-                    true,
-                    null,
-                    null,
-                    false,
-                    new[] { MenuTab.Lunch },
-                    new[] { new MenuItemPriceVariantView("Regular", 9m, 1) },
-                    new[] { "Archived" },
-                    null,
-                    null),
-                new(
+                    [MenuAdminViewFactory.Assignment(AppetizersSectionId, "Appetizers", 3)],
+                    [MenuTab.Lunch],
+                    [new MenuItemPriceVariantView("Regular", 9m, 1)],
+                    ["Archived"],
+                    isArchived: true),
+                MenuAdminViewFactory.Item(
                     BreakfastItemId,
-                    BreakfastSectionId,
-                    "Breakfast Plates",
                     MenuFamily.Food,
                     "Breakfast Burrito",
                     "Breakfast-only item.",
-                    null,
                     1,
-                    true,
-                    false,
-                    null,
-                    null,
-                    false,
-                    new[] { MenuTab.Breakfast },
-                    new[] { new MenuItemPriceVariantView("Regular", 11m, 1) },
-                    [],
-                    null,
-                    null),
-                new(
+                    [MenuAdminViewFactory.Assignment(BreakfastSectionId, "Breakfast Plates", 1)],
+                    [MenuTab.Breakfast],
+                    [new MenuItemPriceVariantView("Regular", 11m, 1)]),
+                MenuAdminViewFactory.Item(
                     DrinkItemId,
-                    CocktailsSectionId,
-                    "Cocktails",
                     MenuFamily.Drink,
                     "Old Fashioned",
                     "Drink item.",
-                    null,
                     1,
-                    true,
-                    false,
-                    null,
-                    null,
-                    false,
-                    Array.Empty<MenuTab>(),
-                    new[] { new MenuItemPriceVariantView(DrinkItemPriceVariantId, "Regular", 12m, 1) },
-                    [],
-                    null,
-                    null)
+                    [MenuAdminViewFactory.Assignment(CocktailsSectionId, "Cocktails", 1)],
+                    [MenuTab.Drinks],
+                    [new MenuItemPriceVariantView(DrinkItemPriceVariantId, "Regular", 12m, 1)])
             ];
 
             return Task.FromResult(new MenuManagementView(tabs, sections, items));

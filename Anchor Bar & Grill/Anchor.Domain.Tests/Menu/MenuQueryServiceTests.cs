@@ -5,6 +5,7 @@ namespace Anchor.Domain.Tests.Menu;
 public sealed class MenuQueryServiceTests
 {
     private static readonly Guid SectionId = Guid.Parse("F11A7F7A-CBF9-4F3B-924E-9C2EDC7969E4");
+    private static readonly Guid SecondarySectionId = Guid.Parse("B8B8C2B5-B168-45F2-97B0-EA750485F7D2");
 
     [Fact]
     public async Task GetPublicMenuAsync_marks_future_items_as_coming_soon_without_limited_time_label()
@@ -14,25 +15,18 @@ public sealed class MenuQueryServiceTests
         {
             Snapshot = new PublicMenuSnapshot(
                 MenuTab.Lunch,
-                [new MenuSectionRecord(SectionId, "Appetizers", MenuFamily.Food, 1, true, false)],
+                [CreateSection("Appetizers", [MenuTab.Lunch])],
                 [
-                    new MenuItemRecord(
-                        Guid.NewGuid(),
-                        SectionId,
-                        "Appetizers",
-                        MenuFamily.Food,
+                    CreateItem(
                         "Mini Tacos",
                         "Served with salsa and sour cream.",
-                        null,
                         1,
-                        true,
-                        false,
+                        "Appetizers",
+                        [MenuTab.Lunch],
                         today.AddDays(5),
                         today.AddDays(25),
                         false,
-                        [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 9m, 1)],
-                        [MenuTab.Lunch],
-                        null)
+                        [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 9m, 1)])
                 ],
                 [CreateWindow(MenuTab.Lunch, DayOfWeek.Monday, false, null, null, false)]),
             TabsWithContent = [MenuTab.Lunch]
@@ -55,42 +49,28 @@ public sealed class MenuQueryServiceTests
         {
             Snapshot = new PublicMenuSnapshot(
                 MenuTab.Lunch,
-                [new MenuSectionRecord(SectionId, "Appetizers", MenuFamily.Food, 1, true, false)],
+                [CreateSection("Appetizers", [MenuTab.Lunch])],
                 [
-                    new MenuItemRecord(
-                        Guid.NewGuid(),
-                        SectionId,
-                        "Appetizers",
-                        MenuFamily.Food,
+                    CreateItem(
                         "Quesadillas",
                         "Loaded with cheese.",
-                        null,
                         1,
-                        true,
-                        false,
+                        "Appetizers",
+                        [MenuTab.Lunch],
                         today.AddDays(-2),
                         today.AddDays(30),
                         true,
-                        [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 11m, 1)],
-                        [MenuTab.Lunch],
-                        null),
-                    new MenuItemRecord(
-                        Guid.NewGuid(),
-                        SectionId,
-                        "Appetizers",
-                        MenuFamily.Food,
+                        [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 11m, 1)]),
+                    CreateItem(
                         "Fish Tacos",
                         "Boom Boom sauce.",
-                        null,
                         2,
-                        true,
-                        false,
+                        "Appetizers",
+                        [MenuTab.Lunch],
                         today.AddDays(-4),
                         today.AddDays(18),
                         false,
-                        [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 10m, 1)],
-                        [MenuTab.Lunch],
-                        null)
+                        [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 10m, 1)])
                 ],
                 [CreateWindow(MenuTab.Lunch, DayOfWeek.Monday, false, null, null, false)]),
             TabsWithContent = [MenuTab.Lunch]
@@ -122,41 +102,28 @@ public sealed class MenuQueryServiceTests
         {
             Snapshot = new PublicMenuSnapshot(
                 MenuTab.Dinner,
-                [new MenuSectionRecord(SectionId, "Burgers", MenuFamily.Food, 1, true, false)],
+                [CreateSection("Burgers", [MenuTab.Dinner], "Served with fries.")],
                 [
-                    new MenuItemRecord(
-                        Guid.NewGuid(),
-                        SectionId,
-                        "Burgers",
-                        MenuFamily.Food,
+                    CreateItem(
                         "Classic Hamburger",
                         "Fresh hand-pattied burger.",
-                        null,
                         1,
-                        true,
-                        false,
-                        null,
-                        null,
-                        false,
-                        [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 11m, 1)],
-                        [MenuTab.Dinner],
-                        null),
-                    new MenuItemRecord(
-                        Guid.NewGuid(),
-                        SectionId,
                         "Burgers",
-                        MenuFamily.Food,
+                        [MenuTab.Dinner],
+                        null,
+                        null,
+                        false,
+                        [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 11m, 1)]),
+                    CreateItem(
                         "Monday Night Burgers",
                         "Weeknight burger draw.",
-                        null,
                         99,
-                        true,
-                        false,
+                        "Burgers",
+                        [MenuTab.Dinner],
                         null,
                         null,
                         false,
                         [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 11m, 1)],
-                        [MenuTab.Dinner],
                         new MenuItemSpecialRecord(
                             Guid.NewGuid(),
                             MenuItemSpecialScheduleKind.WeeklyRecurring,
@@ -176,12 +143,92 @@ public sealed class MenuQueryServiceTests
 
         var result = await service.GetPublicMenuAsync(MenuTab.Dinner, today);
 
-        var section = Assert.Single(result.Sections);
+        Assert.Equal("Specials", result.Sections[0].Name);
+        var section = Assert.Single(result.Sections, section => section.Name == "Burgers");
         var firstItem = section.Items[0];
         Assert.Equal("Monday Night Burgers", firstItem.Name);
         Assert.NotNull(firstItem.Special);
         Assert.Equal("Monday", firstItem.Special!.BadgeLabel);
         Assert.True(firstItem.Special.IsToday);
+        Assert.Equal("Served with fries.", section.Callout);
+        Assert.Single(result.Sections[0].Items);
+        Assert.Equal("Monday Night Burgers", result.Sections[0].Items[0].Name);
+    }
+
+    [Fact]
+    public async Task GetPublicMenuAsync_shows_multi_section_item_only_in_sections_allowed_for_the_requested_tab()
+    {
+        var today = new DateOnly(2026, 5, 22);
+
+        var breakfastRepository = new FakeMenuQueryRepository
+        {
+            Snapshot = new PublicMenuSnapshot(
+                MenuTab.Breakfast,
+                [
+                    CreateSection(SectionId, "Breakfast Specials", [MenuTab.Breakfast]),
+                    CreateSection(SecondarySectionId, "Soups & Salads", [MenuTab.Lunch, MenuTab.Dinner])
+                ],
+                [
+                    CreateItem(
+                        "Everything Toast",
+                        "Breakfast and lunch feature.",
+                        99,
+                        [new MenuItemSectionAssignmentRecord(SectionId, "Breakfast Specials", 1), new MenuItemSectionAssignmentRecord(SecondarySectionId, "Soups & Salads", 8)],
+                        [MenuTab.Breakfast, MenuTab.Lunch],
+                        null,
+                        null,
+                        false,
+                        [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 9m, 1)])
+                ],
+                [CreateWindow(MenuTab.Breakfast, DayOfWeek.Friday, true, new TimeOnly(10, 0), new TimeOnly(13, 0), false)]),
+            TabsWithContent = [MenuTab.Breakfast]
+        };
+
+        var lunchRepository = new FakeMenuQueryRepository
+        {
+            Snapshot = new PublicMenuSnapshot(
+                MenuTab.Lunch,
+                [
+                    CreateSection(SectionId, "Breakfast Specials", [MenuTab.Breakfast]),
+                    CreateSection(SecondarySectionId, "Soups & Salads", [MenuTab.Lunch, MenuTab.Dinner])
+                ],
+                [
+                    CreateItem(
+                        "Everything Toast",
+                        "Breakfast and lunch feature.",
+                        99,
+                        [new MenuItemSectionAssignmentRecord(SectionId, "Breakfast Specials", 1), new MenuItemSectionAssignmentRecord(SecondarySectionId, "Soups & Salads", 8)],
+                        [MenuTab.Breakfast, MenuTab.Lunch],
+                        null,
+                        null,
+                        false,
+                        [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 9m, 1)])
+                ],
+                [CreateWindow(MenuTab.Lunch, DayOfWeek.Friday, true, new TimeOnly(11, 0), new TimeOnly(16, 0), false)]),
+            TabsWithContent = [MenuTab.Lunch]
+        };
+
+        var dinnerRepository = new FakeMenuQueryRepository
+        {
+            Snapshot = new PublicMenuSnapshot(
+                MenuTab.Dinner,
+                [],
+                [],
+                [CreateWindow(MenuTab.Dinner, DayOfWeek.Friday, true, new TimeOnly(16, 0), new TimeOnly(22, 0), false)]),
+            TabsWithContent = [MenuTab.Dinner]
+        };
+
+        var breakfastResult = await new MenuQueryService(breakfastRepository).GetPublicMenuAsync(MenuTab.Breakfast, today);
+        var lunchResult = await new MenuQueryService(lunchRepository).GetPublicMenuAsync(MenuTab.Lunch, today);
+        var dinnerResult = await new MenuQueryService(dinnerRepository).GetPublicMenuAsync(MenuTab.Dinner, today);
+
+        Assert.Equal("Breakfast Specials", Assert.Single(breakfastResult.Sections).Name);
+        Assert.Equal("Everything Toast", Assert.Single(Assert.Single(breakfastResult.Sections).Items).Name);
+
+        Assert.Equal("Soups & Salads", Assert.Single(lunchResult.Sections).Name);
+        Assert.Equal("Everything Toast", Assert.Single(Assert.Single(lunchResult.Sections).Items).Name);
+
+        Assert.Empty(dinnerResult.Sections);
     }
 
     [Fact]
@@ -192,22 +239,16 @@ public sealed class MenuQueryServiceTests
         {
             HomeSpecialItems =
             [
-                new MenuItemRecord(
-                    Guid.NewGuid(),
-                    SectionId,
-                    "Burgers",
-                    MenuFamily.Food,
+                CreateItem(
                     "Monday Night Burgers",
                     "Weeknight burger draw.",
-                    null,
                     1,
-                    true,
-                    false,
+                    "Burgers",
+                    [MenuTab.Dinner],
                     null,
                     null,
                     false,
                     [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 11m, 1)],
-                    [MenuTab.Dinner],
                     new MenuItemSpecialRecord(
                         Guid.NewGuid(),
                         MenuItemSpecialScheduleKind.WeeklyRecurring,
@@ -291,6 +332,72 @@ public sealed class MenuQueryServiceTests
 
     private static MenuServiceWindowRecord CreateWindow(MenuTab tab, DayOfWeek day, bool isAvailable, TimeOnly? opensAt, TimeOnly? closesAt, bool closesNextDay) =>
         new(tab, day, isAvailable, opensAt, closesAt, closesNextDay);
+
+    private static MenuSectionRecord CreateSection(Guid sectionId, string name, IReadOnlyList<MenuTab> menuTabs, string? callout = null) =>
+        new(
+            sectionId,
+            name,
+            callout,
+            MenuFamily.Food,
+            menuTabs,
+            1,
+            true,
+            false);
+
+    private static MenuSectionRecord CreateSection(string name, IReadOnlyList<MenuTab> menuTabs, string? callout = null) =>
+        CreateSection(SectionId, name, menuTabs, callout);
+
+    private static MenuItemRecord CreateItem(
+        string name,
+        string description,
+        int sortOrder,
+        string sectionName,
+        IReadOnlyList<MenuTab> menuTabs,
+        DateOnly? offerStartsOn,
+        DateOnly? offerEndsOn,
+        bool isSeasonal,
+        IReadOnlyList<MenuItemPriceVariantRecord> priceVariants,
+        MenuItemSpecialRecord? special = null) =>
+        CreateItem(
+            name,
+            description,
+            sortOrder,
+            [new MenuItemSectionAssignmentRecord(SectionId, sectionName, sortOrder)],
+            menuTabs,
+            offerStartsOn,
+            offerEndsOn,
+            isSeasonal,
+            priceVariants,
+            special);
+
+    private static MenuItemRecord CreateItem(
+        string name,
+        string description,
+        int sortOrder,
+        IReadOnlyList<MenuItemSectionAssignmentRecord> assignments,
+        IReadOnlyList<MenuTab> menuTabs,
+        DateOnly? offerStartsOn,
+        DateOnly? offerEndsOn,
+        bool isSeasonal,
+        IReadOnlyList<MenuItemPriceVariantRecord> priceVariants,
+        MenuItemSpecialRecord? special = null) =>
+        new(
+            Guid.NewGuid(),
+            MenuFamily.Food,
+            name,
+            description,
+            null,
+            sortOrder,
+            true,
+            false,
+            offerStartsOn,
+            offerEndsOn,
+            isSeasonal,
+            priceVariants,
+            assignments,
+            false,
+            menuTabs,
+            special);
 
     private sealed class FakeMenuQueryRepository : IMenuQueryRepository
     {

@@ -88,6 +88,10 @@
                                     <summary class="menu-section__summary">
                                         <div class="menu-section__summary-copy">
                                             <h2>@section.value.Name</h2>
+                                            @if (!string.IsNullOrWhiteSpace(section.value.Callout))
+                                            {
+                                                <p class="menu-section__callout">@section.value.Callout</p>
+                                            }
                                             <span class="menu-section__count">@(section.value.Items.Count == 1 ? "1 item" : $"{section.value.Items.Count} items")</span>
                                         </div>
                                     </summary>

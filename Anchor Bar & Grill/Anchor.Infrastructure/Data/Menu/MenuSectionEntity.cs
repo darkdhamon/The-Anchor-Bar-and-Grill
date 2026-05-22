@@ -8,6 +8,10 @@ public sealed class MenuSectionEntity
 
     public string Name { get; set; } = string.Empty;
 
+    public string NormalizedName { get; set; } = string.Empty;
+
+    public string? Callout { get; set; }
+
     public MenuFamily Family { get; set; }
 
     public int SortOrder { get; set; }
@@ -16,5 +20,7 @@ public sealed class MenuSectionEntity
 
     public bool IsArchived { get; set; }
 
-    public ICollection<MenuItemEntity> Items { get; set; } = [];
+    public ICollection<MenuSectionTabEntity> MenuTabs { get; set; } = [];
+
+    public ICollection<MenuItemSectionAssignmentEntity> ItemAssignments { get; set; } = [];
 }

@@ -5,6 +5,7 @@ using Anchor.Domain.Menu;
 using Anchor.Web.Components.Layout;
 using Anchor.Web.Components.Pages;
 using Anchor.Web.Components.Pages.Admin;
+using Anchor.Web.Tests.Support;
 using Bunit;
 using Bunit.JSInterop;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -272,6 +273,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Lunch hours", sidebar, StringComparison.OrdinalIgnoreCase);
         Assert.NotEmpty(cut.FindAll(".menu-sidebar .hours-row--today"));
         Assert.DoesNotContain("Lunch brings together", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Shareables for the table.", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(2, accordions.Count);
         Assert.True(accordions[0].HasAttribute("open"));
         Assert.False(accordions[1].HasAttribute("open"));
@@ -290,10 +292,12 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 
         var cut = Render<Menu>();
         var sidebarHours = cut.Find(".menu-sidebar .menu-hours-card").TextContent;
+        var accordions = cut.FindAll(".menu-accordion__section");
 
         Assert.Contains("Dinner hours", sidebarHours, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Monday Night Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Appetizers", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Specials", accordions[0].QuerySelector("h2")?.TextContent.Trim());
     }
 
     [Fact]
@@ -698,84 +702,49 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 
             IReadOnlyList<MenuSectionAdminView> sections =
             [
-                new(AppetizersSectionId, "Appetizers", MenuFamily.Food, 1, true, false, []),
-                new(BurgersSectionId, "Burgers", MenuFamily.Food, 2, true, false, []),
-                new(DrinksSectionId, "Cocktails", MenuFamily.Drink, 1, true, false, [])
+                MenuAdminViewFactory.Section(AppetizersSectionId, "Appetizers", MenuFamily.Food, [MenuTab.Lunch, MenuTab.Dinner], 1),
+                MenuAdminViewFactory.Section(BurgersSectionId, "Burgers", MenuFamily.Food, [MenuTab.Lunch, MenuTab.Dinner], 2),
+                MenuAdminViewFactory.Section(DrinksSectionId, "Cocktails", MenuFamily.Drink, [MenuTab.Drinks], 1)
             ];
 
             IReadOnlyList<MenuItemAdminView> items =
             [
-                new(
+                MenuAdminViewFactory.Item(
                     Guid.Parse("1CC159E4-C492-474B-B4B0-15274F61B23F"),
-                    AppetizersSectionId,
-                    "Appetizers",
                     MenuFamily.Food,
                     "Cheese Curds",
                     "Crisp white cheddar curds with your choice of dipping sauce.",
-                    "images/menu/appetizers.svg",
                     1,
-                    true,
-                    false,
-                    null,
-                    null,
-                    false,
+                    [MenuAdminViewFactory.Assignment(AppetizersSectionId, "Appetizers", 1)],
                     [MenuTab.Lunch, MenuTab.Dinner],
                     [new MenuItemPriceVariantView("Regular", 9m, 1)],
-                    [],
-                    null,
-                    null),
-                new(
+                    imagePath: "images/menu/appetizers.svg"),
+                MenuAdminViewFactory.Item(
                     Guid.Parse("3C0AF95B-8976-4C46-84FB-C66E2B8B3575"),
-                    AppetizersSectionId,
-                    "Appetizers",
                     MenuFamily.Food,
                     "Seasonal Soup",
                     "Cup or bowl, updated as the kitchen rotates specials.",
-                    null,
                     2,
-                    true,
-                    false,
-                    null,
-                    null,
-                    false,
+                    [MenuAdminViewFactory.Assignment(AppetizersSectionId, "Appetizers", 2)],
                     [MenuTab.Lunch, MenuTab.Dinner],
-                    [new MenuItemPriceVariantView("Cup", 4m, 1), new MenuItemPriceVariantView("Bowl", 6m, 2)],
-                    [],
-                    null,
-                    null),
-                new(
+                    [new MenuItemPriceVariantView("Cup", 4m, 1), new MenuItemPriceVariantView("Bowl", 6m, 2)]),
+                MenuAdminViewFactory.Item(
                     Guid.Parse("816F24F6-14F3-4648-9F8A-520C17600952"),
-                    BurgersSectionId,
-                    "Burgers",
                     MenuFamily.Food,
                     "Classic Hamburger",
                     "Fresh hand-pattied burger; add cheese if desired.",
-                    "images/menu/burgers.svg",
                     1,
-                    true,
-                    false,
-                    null,
-                    null,
-                    false,
+                    [MenuAdminViewFactory.Assignment(BurgersSectionId, "Burgers", 1)],
                     [MenuTab.Lunch, MenuTab.Dinner],
                     [new MenuItemPriceVariantView("Regular", 11m, 1)],
-                    [],
-                    null,
-                    null),
-                new(
+                    imagePath: "images/menu/burgers.svg"),
+                MenuAdminViewFactory.Item(
                     Guid.Parse("8F457E31-B23E-4CB0-A32B-5754C50B19F4"),
-                    BurgersSectionId,
-                    "Burgers",
                     MenuFamily.Food,
                     "Monday Night Burgers",
                     "A dependable burger-night draw with fries and easy weeknight pricing.",
-                    "images/menu/burgers.svg",
                     1,
-                    true,
-                    false,
-                    null,
-                    null,
-                    false,
+                    [MenuAdminViewFactory.Assignment(BurgersSectionId, "Burgers", 1)],
                     [MenuTab.Dinner],
                     [new MenuItemPriceVariantView("Regular", 11m, 1)],
                     ["Special", "Today"],
@@ -793,7 +762,8 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                         "After 5:00 PM",
                         "$11 basket special",
                         ["Today"],
-                        today.DayOfWeek == DayOfWeek.Monday))
+                        today.DayOfWeek == DayOfWeek.Monday),
+                    imagePath: "images/menu/burgers.svg")
             ];
 
             return Task.FromResult(
@@ -846,6 +816,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                 new(
                     AppetizersSectionId,
                     "Appetizers",
+                    "Shareables for the table.",
                     "accent-blue",
                     [
                         new(
@@ -888,6 +859,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                 new(
                     BurgersSectionId,
                     "Burgers",
+                    null,
                     "accent-magenta",
                     [
                         new(
@@ -932,8 +904,31 @@ public sealed class LayoutAndPageRenderTests : BunitContext
             IReadOnlyList<PublicMenuSectionView> sections =
             [
                 new(
+                    Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                    "Specials",
+                    null,
+                    "accent-gold",
+                    [
+                        new(
+                            Guid.Parse("DDFFDAE0-E918-43C2-B682-AE3FD5EC50EF"),
+                            "Monday Night Burgers",
+                            "A dependable burger-night draw with fries and easy weeknight pricing.",
+                            "images/menu/burgers.svg",
+                            [new MenuItemPriceVariantView("Regular", 11m, 1)],
+                            ["Special", "Today"],
+                            null,
+                            new MenuItemSpecialPublicView(
+                                MenuItemSpecialScheduleKind.WeeklyRecurring,
+                                "Monday",
+                                "Every Monday",
+                                "After 5:00 PM",
+                                "$11 basket special",
+                                today.DayOfWeek == DayOfWeek.Monday))
+                    ]),
+                new(
                     BurgersSectionId,
                     "Burgers",
+                    null,
                     "accent-magenta",
                     [
                         new(
@@ -1106,6 +1101,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                 new(
                     Guid.Parse("31CF1B24-8435-4D22-A7C1-C9039F21C37D"),
                     "Soft Drinks",
+                    null,
                     "accent-blue",
                     [
                         new(

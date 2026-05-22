@@ -4,11 +4,9 @@ public sealed class MenuItemEntity
 {
     public Guid MenuItemId { get; set; }
 
-    public Guid MenuSectionId { get; set; }
-
-    public MenuSectionEntity Section { get; set; } = null!;
-
     public string Name { get; set; } = string.Empty;
+
+    public string NormalizedName { get; set; } = string.Empty;
 
     public string Description { get; set; } = string.Empty;
 
@@ -28,7 +26,11 @@ public sealed class MenuItemEntity
 
     public ICollection<MenuItemPriceVariantEntity> PriceVariants { get; set; } = [];
 
-    public ICollection<MenuItemTabEntity> FoodTabs { get; set; } = [];
+    public bool UsesSectionVisibility { get; set; } = true;
+
+    public ICollection<MenuItemSectionAssignmentEntity> SectionAssignments { get; set; } = [];
+
+    public ICollection<MenuItemTabEntity> MenuTabs { get; set; } = [];
 
     public MenuItemSpecialEntity? Special { get; set; }
 }

@@ -4,16 +4,19 @@ using Anchor.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Anchor.Web.Migrations
+namespace Anchor.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260522221240_AddMenuSectionCalloutsAndUniqueMenuNames")]
+    partial class AddMenuSectionCalloutsAndUniqueMenuNames
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -129,6 +132,9 @@ namespace Anchor.Web.Migrations
                     b.Property<bool>("IsVisibleToGuests")
                         .HasColumnType("bit");
 
+                    b.Property<Guid>("MenuSectionId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -148,10 +154,9 @@ namespace Anchor.Web.Migrations
                     b.Property<int>("SortOrder")
                         .HasColumnType("int");
 
-                    b.Property<bool>("UsesSectionVisibility")
-                        .HasColumnType("bit");
-
                     b.HasKey("MenuItemId");
+
+                    b.HasIndex("MenuSectionId");
 
                     b.HasIndex("NormalizedName")
                         .IsUnique();
@@ -167,10 +172,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("d67bd219-6d64-4a08-8ce4-d036a0c7b16d"),
                             Name = "Cheese Curds",
                             NormalizedName = "CHEESE CURDS",
-                            SortOrder = 1,
-                            UsesSectionVisibility = false
+                            SortOrder = 1
                         },
                         new
                         {
@@ -179,11 +184,11 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("d67bd219-6d64-4a08-8ce4-d036a0c7b16d"),
                             Name = "Mini Tacos",
                             NormalizedName = "MINI TACOS",
                             OfferStartsOn = new DateOnly(2026, 5, 31),
-                            SortOrder = 2,
-                            UsesSectionVisibility = false
+                            SortOrder = 2
                         },
                         new
                         {
@@ -192,12 +197,12 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = true,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("d67bd219-6d64-4a08-8ce4-d036a0c7b16d"),
                             Name = "Quesadillas",
                             NormalizedName = "QUESADILLAS",
                             OfferEndsOn = new DateOnly(2026, 7, 10),
                             OfferStartsOn = new DateOnly(2026, 5, 9),
-                            SortOrder = 3,
-                            UsesSectionVisibility = false
+                            SortOrder = 3
                         },
                         new
                         {
@@ -207,12 +212,12 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("d67bd219-6d64-4a08-8ce4-d036a0c7b16d"),
                             Name = "Fish Tacos",
                             NormalizedName = "FISH TACOS",
                             OfferEndsOn = new DateOnly(2026, 6, 3),
                             OfferStartsOn = new DateOnly(2026, 5, 12),
-                            SortOrder = 4,
-                            UsesSectionVisibility = false
+                            SortOrder = 4
                         },
                         new
                         {
@@ -222,10 +227,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("4a3a2d15-2af0-44a7-84c8-67b603a3ddb4"),
                             Name = "Traditional or Boneless (6)",
                             NormalizedName = "TRADITIONAL OR BONELESS (6)",
-                            SortOrder = 1,
-                            UsesSectionVisibility = false
+                            SortOrder = 1
                         },
                         new
                         {
@@ -235,10 +240,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("4a3a2d15-2af0-44a7-84c8-67b603a3ddb4"),
                             Name = "Traditional or Boneless (12)",
                             NormalizedName = "TRADITIONAL OR BONELESS (12)",
-                            SortOrder = 2,
-                            UsesSectionVisibility = false
+                            SortOrder = 2
                         },
                         new
                         {
@@ -247,10 +252,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("4a3a2d15-2af0-44a7-84c8-67b603a3ddb4"),
                             Name = "Add Fries",
                             NormalizedName = "ADD FRIES",
-                            SortOrder = 3,
-                            UsesSectionVisibility = false
+                            SortOrder = 3
                         },
                         new
                         {
@@ -260,10 +265,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("31e9cb99-5fca-4a4a-a04b-89b97c926a52"),
                             Name = "The Anchor Salad",
                             NormalizedName = "THE ANCHOR SALAD",
-                            SortOrder = 1,
-                            UsesSectionVisibility = false
+                            SortOrder = 1
                         },
                         new
                         {
@@ -273,12 +278,12 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = true,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("31e9cb99-5fca-4a4a-a04b-89b97c926a52"),
                             Name = "Smoked Salmon Salad",
                             NormalizedName = "SMOKED SALMON SALAD",
                             OfferEndsOn = new DateOnly(2026, 7, 10),
                             OfferStartsOn = new DateOnly(2026, 5, 26),
-                            SortOrder = 2,
-                            UsesSectionVisibility = false
+                            SortOrder = 2
                         },
                         new
                         {
@@ -287,10 +292,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("31e9cb99-5fca-4a4a-a04b-89b97c926a52"),
                             Name = "BLT Salad",
                             NormalizedName = "BLT SALAD",
-                            SortOrder = 3,
-                            UsesSectionVisibility = false
+                            SortOrder = 3
                         },
                         new
                         {
@@ -299,10 +304,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("31e9cb99-5fca-4a4a-a04b-89b97c926a52"),
                             Name = "Seasonal Soup",
                             NormalizedName = "SEASONAL SOUP",
-                            SortOrder = 4,
-                            UsesSectionVisibility = false
+                            SortOrder = 4
                         },
                         new
                         {
@@ -312,10 +317,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("7f644c28-9275-4df8-8e4b-482f47568cfb"),
                             Name = "Grilled Chicken Sandwich",
                             NormalizedName = "GRILLED CHICKEN SANDWICH",
-                            SortOrder = 1,
-                            UsesSectionVisibility = false
+                            SortOrder = 1
                         },
                         new
                         {
@@ -325,10 +330,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("7f644c28-9275-4df8-8e4b-482f47568cfb"),
                             Name = "Steak Sandwich",
                             NormalizedName = "STEAK SANDWICH",
-                            SortOrder = 2,
-                            UsesSectionVisibility = false
+                            SortOrder = 2
                         },
                         new
                         {
@@ -337,10 +342,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("7f644c28-9275-4df8-8e4b-482f47568cfb"),
                             Name = "Ranch Melt",
                             NormalizedName = "RANCH MELT",
-                            SortOrder = 3,
-                            UsesSectionVisibility = false
+                            SortOrder = 3
                         },
                         new
                         {
@@ -349,10 +354,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("7f644c28-9275-4df8-8e4b-482f47568cfb"),
                             Name = "Walleye Sandwich",
                             NormalizedName = "WALLEYE SANDWICH",
-                            SortOrder = 4,
-                            UsesSectionVisibility = false
+                            SortOrder = 4
                         },
                         new
                         {
@@ -362,10 +367,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("198ccf8a-72fd-4278-a360-f36d5871e58b"),
                             Name = "Classic Hamburger",
                             NormalizedName = "CLASSIC HAMBURGER",
-                            SortOrder = 1,
-                            UsesSectionVisibility = false
+                            SortOrder = 1
                         },
                         new
                         {
@@ -375,10 +380,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("198ccf8a-72fd-4278-a360-f36d5871e58b"),
                             Name = "Bacon Cheeseburger",
                             NormalizedName = "BACON CHEESEBURGER",
-                            SortOrder = 2,
-                            UsesSectionVisibility = false
+                            SortOrder = 2
                         },
                         new
                         {
@@ -387,10 +392,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("198ccf8a-72fd-4278-a360-f36d5871e58b"),
                             Name = "Western Burger",
                             NormalizedName = "WESTERN BURGER",
-                            SortOrder = 3,
-                            UsesSectionVisibility = false
+                            SortOrder = 3
                         },
                         new
                         {
@@ -399,10 +404,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("198ccf8a-72fd-4278-a360-f36d5871e58b"),
                             Name = "Sunrise Burger",
                             NormalizedName = "SUNRISE BURGER",
-                            SortOrder = 4,
-                            UsesSectionVisibility = false
+                            SortOrder = 4
                         },
                         new
                         {
@@ -412,10 +417,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("fa5da0f9-7e81-4b9d-9e11-fa5b1f828c72"),
                             Name = "Chicken Wrap",
                             NormalizedName = "CHICKEN WRAP",
-                            SortOrder = 1,
-                            UsesSectionVisibility = false
+                            SortOrder = 1
                         },
                         new
                         {
@@ -425,10 +430,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("fa5da0f9-7e81-4b9d-9e11-fa5b1f828c72"),
                             Name = "Steak Wrap",
                             NormalizedName = "STEAK WRAP",
-                            SortOrder = 2,
-                            UsesSectionVisibility = false
+                            SortOrder = 2
                         },
                         new
                         {
@@ -437,10 +442,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("fa5da0f9-7e81-4b9d-9e11-fa5b1f828c72"),
                             Name = "Buffalo Chicken Wrap",
                             NormalizedName = "BUFFALO CHICKEN WRAP",
-                            SortOrder = 3,
-                            UsesSectionVisibility = false
+                            SortOrder = 3
                         },
                         new
                         {
@@ -449,10 +454,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("2ea5e671-e8ac-4c8a-b3d9-4c136a32a71b"),
                             Name = "Mac & Cheese",
                             NormalizedName = "MAC & CHEESE",
-                            SortOrder = 1,
-                            UsesSectionVisibility = false
+                            SortOrder = 1
                         },
                         new
                         {
@@ -462,10 +467,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("2ea5e671-e8ac-4c8a-b3d9-4c136a32a71b"),
                             Name = "Mini Corn Dogs",
                             NormalizedName = "MINI CORN DOGS",
-                            SortOrder = 2,
-                            UsesSectionVisibility = false
+                            SortOrder = 2
                         },
                         new
                         {
@@ -474,10 +479,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("2ea5e671-e8ac-4c8a-b3d9-4c136a32a71b"),
                             Name = "Chicken Strips",
                             NormalizedName = "CHICKEN STRIPS",
-                            SortOrder = 3,
-                            UsesSectionVisibility = false
+                            SortOrder = 3
                         },
                         new
                         {
@@ -487,12 +492,12 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("a8f0b603-e02d-49f5-873d-1bb6bfc16c0f"),
                             Name = "Chocolate Lava Cake",
                             NormalizedName = "CHOCOLATE LAVA CAKE",
                             OfferEndsOn = new DateOnly(2026, 6, 2),
                             OfferStartsOn = new DateOnly(2026, 5, 15),
-                            SortOrder = 1,
-                            UsesSectionVisibility = false
+                            SortOrder = 1
                         },
                         new
                         {
@@ -502,10 +507,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("a8f0b603-e02d-49f5-873d-1bb6bfc16c0f"),
                             Name = "Mini Donuts",
                             NormalizedName = "MINI DONUTS",
-                            SortOrder = 2,
-                            UsesSectionVisibility = false
+                            SortOrder = 2
                         },
                         new
                         {
@@ -515,10 +520,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("198ccf8a-72fd-4278-a360-f36d5871e58b"),
                             Name = "Monday Night Burgers",
                             NormalizedName = "MONDAY NIGHT BURGERS",
-                            SortOrder = 1,
-                            UsesSectionVisibility = false
+                            SortOrder = 1
                         },
                         new
                         {
@@ -528,10 +533,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("d67bd219-6d64-4a08-8ce4-d036a0c7b16d"),
                             Name = "Tuesday Taco Basket",
                             NormalizedName = "TUESDAY TACO BASKET",
-                            SortOrder = 2,
-                            UsesSectionVisibility = false
+                            SortOrder = 2
                         },
                         new
                         {
@@ -541,10 +546,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("4a3a2d15-2af0-44a7-84c8-67b603a3ddb4"),
                             Name = "Wing Night",
                             NormalizedName = "WING NIGHT",
-                            SortOrder = 3,
-                            UsesSectionVisibility = false
+                            SortOrder = 3
                         },
                         new
                         {
@@ -553,10 +558,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("7f644c28-9275-4df8-8e4b-482f47568cfb"),
                             Name = "Friday Fish Fry",
                             NormalizedName = "FRIDAY FISH FRY",
-                            SortOrder = 4,
-                            UsesSectionVisibility = false
+                            SortOrder = 4
                         },
                         new
                         {
@@ -565,10 +570,10 @@ namespace Anchor.Web.Migrations
                             IsArchived = false,
                             IsSeasonal = false,
                             IsVisibleToGuests = true,
+                            MenuSectionId = new Guid("0e4de526-5921-4c3b-8985-d83344642a41"),
                             Name = "Sunday Pork Chop Dinner",
                             NormalizedName = "SUNDAY PORK CHOP DINNER",
-                            SortOrder = 5,
-                            UsesSectionVisibility = false
+                            SortOrder = 5
                         });
                 });
 
@@ -862,218 +867,6 @@ namespace Anchor.Web.Migrations
                             Label = "Regular",
                             MenuItemId = new Guid("6baa63b3-55c9-4e47-8555-803573b9b38d"),
                             SortOrder = 1
-                        });
-                });
-
-            modelBuilder.Entity("Anchor.Infrastructure.Data.Menu.MenuItemSectionAssignmentEntity", b =>
-                {
-                    b.Property<Guid>("MenuItemId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("MenuSectionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("int");
-
-                    b.HasKey("MenuItemId", "MenuSectionId");
-
-                    b.HasIndex("MenuSectionId");
-
-                    b.ToTable("MenuItemSectionAssignments", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            MenuItemId = new Guid("c88652a0-c9f2-4a7d-b4ac-8ddbfc9ff4e5"),
-                            MenuSectionId = new Guid("d67bd219-6d64-4a08-8ce4-d036a0c7b16d"),
-                            SortOrder = 1
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("5c3a9530-0f24-4d62-883b-f01b0a4286c2"),
-                            MenuSectionId = new Guid("d67bd219-6d64-4a08-8ce4-d036a0c7b16d"),
-                            SortOrder = 2
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("ff4ee65c-89e7-49f7-9023-8579ccb8307b"),
-                            MenuSectionId = new Guid("d67bd219-6d64-4a08-8ce4-d036a0c7b16d"),
-                            SortOrder = 3
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("e75d8a92-f1d2-4d58-9cd0-9b7e80ce9d80"),
-                            MenuSectionId = new Guid("d67bd219-6d64-4a08-8ce4-d036a0c7b16d"),
-                            SortOrder = 4
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("79663ef8-29ff-4d24-8b1c-cfa8dad8ba72"),
-                            MenuSectionId = new Guid("4a3a2d15-2af0-44a7-84c8-67b603a3ddb4"),
-                            SortOrder = 1
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("1c4d4f34-5260-4f7d-abcb-1c6875b7ebf8"),
-                            MenuSectionId = new Guid("4a3a2d15-2af0-44a7-84c8-67b603a3ddb4"),
-                            SortOrder = 2
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("ca5cd1b7-8c73-4b21-b3e4-8e98fea44ee9"),
-                            MenuSectionId = new Guid("4a3a2d15-2af0-44a7-84c8-67b603a3ddb4"),
-                            SortOrder = 3
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("73ea7283-893f-4d14-8081-39f63bd54d13"),
-                            MenuSectionId = new Guid("31e9cb99-5fca-4a4a-a04b-89b97c926a52"),
-                            SortOrder = 1
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("8c5bde4d-3fb2-4a02-8ab5-40d3e0b49387"),
-                            MenuSectionId = new Guid("31e9cb99-5fca-4a4a-a04b-89b97c926a52"),
-                            SortOrder = 2
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("e9d5a6c9-9a4c-4e98-8c72-2ae28bfcba97"),
-                            MenuSectionId = new Guid("31e9cb99-5fca-4a4a-a04b-89b97c926a52"),
-                            SortOrder = 3
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("db2a7b2f-d9e9-4433-80a3-baeb5e5b5728"),
-                            MenuSectionId = new Guid("31e9cb99-5fca-4a4a-a04b-89b97c926a52"),
-                            SortOrder = 4
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("590cc0e4-8be8-48e8-97b8-908ea7a1fc9a"),
-                            MenuSectionId = new Guid("7f644c28-9275-4df8-8e4b-482f47568cfb"),
-                            SortOrder = 1
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("3b7745b6-66d4-4db7-8ee3-b018834f58f7"),
-                            MenuSectionId = new Guid("7f644c28-9275-4df8-8e4b-482f47568cfb"),
-                            SortOrder = 2
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("1af4708e-e741-4621-95e3-6c8f24af2be6"),
-                            MenuSectionId = new Guid("7f644c28-9275-4df8-8e4b-482f47568cfb"),
-                            SortOrder = 3
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("e1fd2b7f-d7e0-47cc-9e3e-4bc3a30aa4b8"),
-                            MenuSectionId = new Guid("7f644c28-9275-4df8-8e4b-482f47568cfb"),
-                            SortOrder = 4
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("7626d0df-9f8a-4fe8-9062-3596165e148a"),
-                            MenuSectionId = new Guid("198ccf8a-72fd-4278-a360-f36d5871e58b"),
-                            SortOrder = 1
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("ecfc8bfa-6c51-4607-b7ff-fe9f59db8fbc"),
-                            MenuSectionId = new Guid("198ccf8a-72fd-4278-a360-f36d5871e58b"),
-                            SortOrder = 2
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("6e97a8ee-16b1-4feb-b6e0-2ab4e56658a0"),
-                            MenuSectionId = new Guid("198ccf8a-72fd-4278-a360-f36d5871e58b"),
-                            SortOrder = 3
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("90dce7e3-9cc6-4732-b7d2-f4d43056fbb8"),
-                            MenuSectionId = new Guid("198ccf8a-72fd-4278-a360-f36d5871e58b"),
-                            SortOrder = 4
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("0d440a2b-06a3-47f9-b129-1544f2f391a8"),
-                            MenuSectionId = new Guid("fa5da0f9-7e81-4b9d-9e11-fa5b1f828c72"),
-                            SortOrder = 1
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("95f39c20-e1ba-4fd2-992d-8d9e19600d64"),
-                            MenuSectionId = new Guid("fa5da0f9-7e81-4b9d-9e11-fa5b1f828c72"),
-                            SortOrder = 2
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("6f2a75a4-c1e2-458f-bde4-d825f987cc3d"),
-                            MenuSectionId = new Guid("fa5da0f9-7e81-4b9d-9e11-fa5b1f828c72"),
-                            SortOrder = 3
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("b7ab3351-1b6b-45d0-b7b4-9782d79cfc65"),
-                            MenuSectionId = new Guid("2ea5e671-e8ac-4c8a-b3d9-4c136a32a71b"),
-                            SortOrder = 1
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("5b1c6127-f7f0-497a-88b9-537e9110176f"),
-                            MenuSectionId = new Guid("2ea5e671-e8ac-4c8a-b3d9-4c136a32a71b"),
-                            SortOrder = 2
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("06f858a2-f226-4b2f-a912-a6330bbf4ec1"),
-                            MenuSectionId = new Guid("2ea5e671-e8ac-4c8a-b3d9-4c136a32a71b"),
-                            SortOrder = 3
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("8fcaa555-d618-4ad8-ae73-abf51854a329"),
-                            MenuSectionId = new Guid("a8f0b603-e02d-49f5-873d-1bb6bfc16c0f"),
-                            SortOrder = 1
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("44472c07-5f31-482a-8506-8a3c11cf1f26"),
-                            MenuSectionId = new Guid("a8f0b603-e02d-49f5-873d-1bb6bfc16c0f"),
-                            SortOrder = 2
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("33d64e7b-d5b7-481a-97fc-7f250a68c27e"),
-                            MenuSectionId = new Guid("198ccf8a-72fd-4278-a360-f36d5871e58b"),
-                            SortOrder = 1
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("5ee7bbea-c2f4-4d5b-bcdb-bd0fd0a06704"),
-                            MenuSectionId = new Guid("d67bd219-6d64-4a08-8ce4-d036a0c7b16d"),
-                            SortOrder = 2
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("7e8222c3-63ec-4b4b-b777-d1e3aa7c5a86"),
-                            MenuSectionId = new Guid("4a3a2d15-2af0-44a7-84c8-67b603a3ddb4"),
-                            SortOrder = 3
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("88bb945a-b7b4-4725-972b-60a042e524e9"),
-                            MenuSectionId = new Guid("7f644c28-9275-4df8-8e4b-482f47568cfb"),
-                            SortOrder = 4
-                        },
-                        new
-                        {
-                            MenuItemId = new Guid("6baa63b3-55c9-4e47-8555-803573b9b38d"),
-                            MenuSectionId = new Guid("0e4de526-5921-4c3b-8985-d83344642a41"),
-                            SortOrder = 5
                         });
                 });
 
@@ -1606,106 +1399,6 @@ namespace Anchor.Web.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Anchor.Infrastructure.Data.Menu.MenuSectionTabEntity", b =>
-                {
-                    b.Property<Guid>("MenuSectionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Tab")
-                        .HasColumnType("int");
-
-                    b.HasKey("MenuSectionId", "Tab");
-
-                    b.ToTable("MenuSectionTabs", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            MenuSectionId = new Guid("0e4de526-5921-4c3b-8985-d83344642a41"),
-                            Tab = 3
-                        },
-                        new
-                        {
-                            MenuSectionId = new Guid("d67bd219-6d64-4a08-8ce4-d036a0c7b16d"),
-                            Tab = 2
-                        },
-                        new
-                        {
-                            MenuSectionId = new Guid("d67bd219-6d64-4a08-8ce4-d036a0c7b16d"),
-                            Tab = 3
-                        },
-                        new
-                        {
-                            MenuSectionId = new Guid("4a3a2d15-2af0-44a7-84c8-67b603a3ddb4"),
-                            Tab = 2
-                        },
-                        new
-                        {
-                            MenuSectionId = new Guid("4a3a2d15-2af0-44a7-84c8-67b603a3ddb4"),
-                            Tab = 3
-                        },
-                        new
-                        {
-                            MenuSectionId = new Guid("31e9cb99-5fca-4a4a-a04b-89b97c926a52"),
-                            Tab = 2
-                        },
-                        new
-                        {
-                            MenuSectionId = new Guid("31e9cb99-5fca-4a4a-a04b-89b97c926a52"),
-                            Tab = 3
-                        },
-                        new
-                        {
-                            MenuSectionId = new Guid("7f644c28-9275-4df8-8e4b-482f47568cfb"),
-                            Tab = 2
-                        },
-                        new
-                        {
-                            MenuSectionId = new Guid("7f644c28-9275-4df8-8e4b-482f47568cfb"),
-                            Tab = 3
-                        },
-                        new
-                        {
-                            MenuSectionId = new Guid("198ccf8a-72fd-4278-a360-f36d5871e58b"),
-                            Tab = 2
-                        },
-                        new
-                        {
-                            MenuSectionId = new Guid("198ccf8a-72fd-4278-a360-f36d5871e58b"),
-                            Tab = 3
-                        },
-                        new
-                        {
-                            MenuSectionId = new Guid("fa5da0f9-7e81-4b9d-9e11-fa5b1f828c72"),
-                            Tab = 2
-                        },
-                        new
-                        {
-                            MenuSectionId = new Guid("fa5da0f9-7e81-4b9d-9e11-fa5b1f828c72"),
-                            Tab = 3
-                        },
-                        new
-                        {
-                            MenuSectionId = new Guid("2ea5e671-e8ac-4c8a-b3d9-4c136a32a71b"),
-                            Tab = 2
-                        },
-                        new
-                        {
-                            MenuSectionId = new Guid("2ea5e671-e8ac-4c8a-b3d9-4c136a32a71b"),
-                            Tab = 3
-                        },
-                        new
-                        {
-                            MenuSectionId = new Guid("a8f0b603-e02d-49f5-873d-1bb6bfc16c0f"),
-                            Tab = 2
-                        },
-                        new
-                        {
-                            MenuSectionId = new Guid("a8f0b603-e02d-49f5-873d-1bb6bfc16c0f"),
-                            Tab = 3
-                        });
-                });
-
             modelBuilder.Entity("Anchor.Infrastructure.Data.Menu.MenuServiceWindowEntity", b =>
                 {
                     b.Property<int>("Tab")
@@ -2127,6 +1820,17 @@ namespace Anchor.Web.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Anchor.Infrastructure.Data.Menu.MenuItemEntity", b =>
+                {
+                    b.HasOne("Anchor.Infrastructure.Data.Menu.MenuSectionEntity", "Section")
+                        .WithMany("Items")
+                        .HasForeignKey("MenuSectionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Section");
+                });
+
             modelBuilder.Entity("Anchor.Infrastructure.Data.Menu.MenuItemPriceVariantEntity", b =>
                 {
                     b.HasOne("Anchor.Infrastructure.Data.Menu.MenuItemEntity", "Item")
@@ -2136,25 +1840,6 @@ namespace Anchor.Web.Migrations
                         .IsRequired();
 
                     b.Navigation("Item");
-                });
-
-            modelBuilder.Entity("Anchor.Infrastructure.Data.Menu.MenuItemSectionAssignmentEntity", b =>
-                {
-                    b.HasOne("Anchor.Infrastructure.Data.Menu.MenuItemEntity", "Item")
-                        .WithMany("SectionAssignments")
-                        .HasForeignKey("MenuItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Anchor.Infrastructure.Data.Menu.MenuSectionEntity", "Section")
-                        .WithMany("ItemAssignments")
-                        .HasForeignKey("MenuSectionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Item");
-
-                    b.Navigation("Section");
                 });
 
             modelBuilder.Entity("Anchor.Infrastructure.Data.Menu.MenuItemSpecialEntity", b =>
@@ -2171,23 +1856,12 @@ namespace Anchor.Web.Migrations
             modelBuilder.Entity("Anchor.Infrastructure.Data.Menu.MenuItemTabEntity", b =>
                 {
                     b.HasOne("Anchor.Infrastructure.Data.Menu.MenuItemEntity", "Item")
-                        .WithMany("MenuTabs")
+                        .WithMany("FoodTabs")
                         .HasForeignKey("MenuItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Item");
-                });
-
-            modelBuilder.Entity("Anchor.Infrastructure.Data.Menu.MenuSectionTabEntity", b =>
-                {
-                    b.HasOne("Anchor.Infrastructure.Data.Menu.MenuSectionEntity", "Section")
-                        .WithMany("MenuTabs")
-                        .HasForeignKey("MenuSectionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Section");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -2294,20 +1968,16 @@ namespace Anchor.Web.Migrations
 
             modelBuilder.Entity("Anchor.Infrastructure.Data.Menu.MenuItemEntity", b =>
                 {
-                    b.Navigation("MenuTabs");
+                    b.Navigation("FoodTabs");
 
                     b.Navigation("PriceVariants");
-
-                    b.Navigation("SectionAssignments");
 
                     b.Navigation("Special");
                 });
 
             modelBuilder.Entity("Anchor.Infrastructure.Data.Menu.MenuSectionEntity", b =>
                 {
-                    b.Navigation("ItemAssignments");
-
-                    b.Navigation("MenuTabs");
+                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }

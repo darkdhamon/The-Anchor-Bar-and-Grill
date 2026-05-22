@@ -14,9 +14,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<MenuItemPriceVariantEntity> MenuItemPriceVariants => Set<MenuItemPriceVariantEntity>();
 
+    public DbSet<MenuItemSectionAssignmentEntity> MenuItemSectionAssignments => Set<MenuItemSectionAssignmentEntity>();
+
     public DbSet<MenuItemTabEntity> MenuItemTabs => Set<MenuItemTabEntity>();
 
     public DbSet<MenuItemSpecialEntity> MenuItemSpecials => Set<MenuItemSpecialEntity>();
+
+    public DbSet<MenuSectionTabEntity> MenuSectionTabs => Set<MenuSectionTabEntity>();
 
     public DbSet<MenuServiceWindowEntity> MenuServiceWindows => Set<MenuServiceWindowEntity>();
 
