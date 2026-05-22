@@ -754,6 +754,9 @@ html.anchor-theme-dark .site-shell {
 .menu-sidebar {
     display: grid;
     gap: 1.25rem;
+    align-content: start;
+    height: fit-content;
+    min-height: 0;
     padding: 1.1rem;
 }
 
