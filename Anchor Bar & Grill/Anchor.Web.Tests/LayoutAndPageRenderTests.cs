@@ -257,7 +257,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 
         var cut = Render<Menu>();
         var sidebar = cut.Find(".menu-sidebar").TextContent;
-        var hoursCard = cut.Find(".menu-hours-card").TextContent;
+        var sidebarHours = cut.Find(".menu-sidebar .menu-hours-card").TextContent;
         var accordions = cut.FindAll(".menu-accordion__section");
 
         Assert.NotNull(cut.Find(".menu-page"));
@@ -266,11 +266,11 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Appetizers", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Choose Breakfast, Lunch, Dinner, or Drinks from the sidebar", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Today", sidebar, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Lunch hours", hoursCard, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Today", hoursCard, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Tuesday-Saturday", hoursCard, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Not served", hoursCard, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Lunch hours", sidebarHours, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Today", sidebarHours, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Tuesday-Saturday", sidebarHours, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Not served", sidebarHours, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Lunch hours", sidebar, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Lunch brings together", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(2, accordions.Count);
         Assert.True(accordions[0].HasAttribute("open"));
@@ -289,9 +289,9 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         timeProvider.SetLocalNow(new DateTimeOffset(2026, 5, 18, 9, 0, 0, TimeSpan.FromHours(-5)));
 
         var cut = Render<Menu>();
-        var hoursCard = cut.Find(".menu-hours-card").TextContent;
+        var sidebarHours = cut.Find(".menu-sidebar .menu-hours-card").TextContent;
 
-        Assert.Contains("Dinner hours", hoursCard, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Dinner hours", sidebarHours, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Monday Night Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Appetizers", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
@@ -306,7 +306,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         var cut = Render<Menu>();
 
         Assert.Contains("Drink hours are live", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Drink hours", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Drinks hours", cut.Find(".menu-sidebar .menu-hours-card").TextContent, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Drinks", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Appetizers", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }

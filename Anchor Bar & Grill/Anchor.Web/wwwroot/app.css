@@ -752,12 +752,21 @@ html.anchor-theme-dark .site-shell {
 }
 
 .menu-sidebar {
+    display: grid;
+    gap: 1.25rem;
     padding: 1.1rem;
 }
 
 .menu-sidebar__header {
     display: grid;
     gap: 0.35rem;
+}
+
+.menu-sidebar__hours {
+    display: grid;
+    gap: 0.9rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--outline);
 }
 
 .menu-tab-link {
@@ -824,6 +833,11 @@ html.anchor-theme-dark .site-shell {
 
 .menu-content-stack {
     align-content: start;
+}
+
+.menu-hours-card {
+    display: grid;
+    gap: 0.9rem;
 }
 
 .menu-accordion {
@@ -2300,6 +2314,16 @@ button.menu-editor-filter-chip {
 
     .preview-nav {
         justify-content: flex-start;
+    }
+}
+
+@media (min-width: 961px) {
+    .menu-page .menu-sidebar {
+        position: sticky;
+        top: calc(var(--anchor-header-height, 0px) + 1rem);
+        max-height: calc(100vh - var(--anchor-header-height, 0px) - 2rem);
+        overflow: auto;
+        scrollbar-width: thin;
     }
 }
 

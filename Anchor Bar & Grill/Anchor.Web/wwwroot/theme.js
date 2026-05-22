@@ -131,10 +131,18 @@
     button.setAttribute("aria-expanded", isOpen ? "true" : "false");
   }
 
+  function syncHeaderHeight() {
+    const header = document.querySelector(".site-header");
+    const height = header ? Math.round(header.getBoundingClientRect().height) : 0;
+    document.documentElement.style.setProperty("--anchor-header-height", `${height}px`);
+  }
+
   function closeHeaderMenus() {
     document.querySelectorAll("[data-anchor-menu-toggle='true']").forEach((button) => {
       syncHeaderMenu(button, false);
     });
+
+    syncHeaderHeight();
   }
 
   function handleDocumentClick(event) {
@@ -144,6 +152,7 @@
       event.preventDefault();
       const isExpanded = menuToggle.getAttribute("aria-expanded") === "true";
       syncHeaderMenu(menuToggle, !isExpanded);
+      syncHeaderHeight();
       return;
     }
 
@@ -160,6 +169,7 @@
   function initialize() {
     applyTheme(resolveTheme());
     closeHeaderMenus();
+    syncHeaderHeight();
   }
 
   window.anchorTheme = {
@@ -177,4 +187,6 @@
   document.addEventListener("change", handleDocumentChange);
   document.removeEventListener("click", handleDocumentClick);
   document.addEventListener("click", handleDocumentClick);
+  window.removeEventListener("resize", syncHeaderHeight);
+  window.addEventListener("resize", syncHeaderHeight);
 })();

@@ -49,10 +49,8 @@
                             </a>
                         }
                     </nav>
-                </aside>
 
-                <div class="menu-content-stack">
-                    <article class="feature-card feature-card--tight menu-hours-card">
+                    <section class="menu-hours-card menu-sidebar__hours" aria-label="@($"{GetSelectedTabLabel(menuView.SelectedTab)} hours")">
                         <div class="menu-hours-card__header">
                             <div>
                                 <p class="feature-card__eyebrow">Weekly availability</p>
@@ -73,8 +71,10 @@
                                 </div>
                             }
                         </div>
-                    </article>
+                    </section>
+                </aside>
 
+                <div class="menu-content-stack">
                     @if (menuView.Sections.Count == 0)
                     {
                         <article class="feature-card menu-empty-state">
