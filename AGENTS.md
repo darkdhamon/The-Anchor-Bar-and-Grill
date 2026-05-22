@@ -22,6 +22,13 @@
 - Whenever changes are made to website functionality or backend application behavior, update `README.md`.
 - `README.md` updates must remove information that no longer applies and add information for new features, backend behavior changes, or other relevant application changes.
 
+# Local Development Credential Reference
+
+- The tracked reference file `docs/reference/uat-credentials.local.md` is the shared source of truth for Codex-created local development and UAT account credentials.
+- If Codex creates one of those documented accounts, resets or changes the password for one of those documented accounts, or changes the role assignments for one of those documented accounts, Codex must update `docs/reference/uat-credentials.local.md` in the same change so later conversations have the current username, password, and role information.
+- Codex must not leave the only copy of those credentials in a worktree-only file, an ignored local file, or any other ephemeral note that would disappear when a worktree is removed.
+- If a private machine-specific override note is ever needed, use `docs/reference/uat-credentials.private.local.md` for that purpose and keep `docs/reference/uat-credentials.local.md` updated with the shared current values that future Codex conversations need.
+
 # User Experience And Help Content
 
 - The website should be made as user-friendly as possible.
