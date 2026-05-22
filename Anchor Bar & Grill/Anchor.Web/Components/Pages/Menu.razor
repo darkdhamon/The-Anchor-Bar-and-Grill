@@ -19,7 +19,7 @@
             <p class="page-hero__eyebrow">Food &amp; Drink</p>
             <h1>Browse the menu</h1>
             <p class="page-hero__lead">
-                Choose Breakfast, Lunch, Dinner, or Drinks from the sidebar to jump between service windows
+                Choose Breakfast, Lunch, Dinner, or Drinks from the sidebar to switch the active service hours
                 and the menu sections guests can order from right now.
             </p>
         </section>
@@ -28,15 +28,13 @@
             <div class="menu-layout">
                 <aside class="feature-card feature-card--tight menu-sidebar" aria-label="Menu navigation">
                     <div class="menu-sidebar__header">
-                        <p class="feature-card__eyebrow">Serving windows</p>
+                        <p class="feature-card__eyebrow">Menu</p>
                         <h2>Browse by service</h2>
                     </div>
 
                     <nav class="menu-sidebar__nav" aria-label="Menu tabs">
                         @foreach (var tab in menuView.Tabs)
                         {
-                            var sidebarHours = GetTabHoursCard(tab.Tab);
-
                             <a class="menu-tab-link @(tab.IsSelected ? "menu-tab-link--selected" : string.Empty)"
                                href="@GetTabHref(tab.QueryValue)"
                                data-enhance-nav="false">
@@ -48,27 +46,35 @@
                                         <span class="menu-tab-link__hint">Coming soon</span>
                                     }
                                 </div>
-
-                                <div class="menu-tab-link__today">
-                                    <span class="menu-tab-link__today-label">Today</span>
-                                    <strong class="menu-tab-link__today-value">@sidebarHours.TodaySummary</strong>
-                                </div>
-
-                                <div class="menu-tab-link__hours">
-                                    @foreach (var row in sidebarHours.Rows)
-                                    {
-                                        <span class="menu-tab-link__hours-row">
-                                            <span class="menu-tab-link__hours-label">@row.Label</span>
-                                            <span class="menu-tab-link__hours-summary">@row.Summary</span>
-                                        </span>
-                                    }
-                                </div>
                             </a>
                         }
                     </nav>
                 </aside>
 
                 <div class="menu-content-stack">
+                    <article class="feature-card feature-card--tight menu-hours-card">
+                        <div class="menu-hours-card__header">
+                            <div>
+                                <p class="feature-card__eyebrow">Weekly availability</p>
+                                <h2>@GetSelectedTabLabel(menuView.SelectedTab) hours</h2>
+                            </div>
+                            <div class="hours-today-badge" aria-label="Today's hours">
+                                <span class="hours-today-badge__label">Today</span>
+                                <strong class="hours-today-badge__value">@menuHoursCard.TodaySummary</strong>
+                            </div>
+                        </div>
+
+                        <div class="hours-list">
+                            @foreach (var row in menuHoursCard.Rows)
+                            {
+                                <div class="hours-row">
+                                    <span class="hours-row__label">@row.Label</span>
+                                    <span class="hours-row__summary">@row.Summary</span>
+                                </div>
+                            }
+                        </div>
+                    </article>
+
                     @if (menuView.Sections.Count == 0)
                     {
                         <article class="feature-card menu-empty-state">

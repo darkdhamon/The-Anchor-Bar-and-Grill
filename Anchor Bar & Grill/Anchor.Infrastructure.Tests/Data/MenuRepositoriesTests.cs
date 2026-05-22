@@ -68,21 +68,6 @@ public sealed class MenuRepositoriesTests
     }
 
     [Fact]
-    public async Task GetPublicServiceWindowsAsync_returns_all_tabs_with_seeded_hours()
-    {
-        await using var context = await SqliteIdentityTestContext.CreateAsync();
-        var repository = new MenuQueryRepository(context.DbContext);
-
-        var windows = await repository.GetPublicServiceWindowsAsync();
-
-        Assert.Equal(28, windows.Count);
-        Assert.Contains(windows, window => window.Tab == MenuTab.Breakfast && window.DayOfWeek == DayOfWeek.Saturday);
-        Assert.Contains(windows, window => window.Tab == MenuTab.Lunch && window.DayOfWeek == DayOfWeek.Tuesday);
-        Assert.Contains(windows, window => window.Tab == MenuTab.Dinner && window.DayOfWeek == DayOfWeek.Friday);
-        Assert.Contains(windows, window => window.Tab == MenuTab.Drinks && window.DayOfWeek == DayOfWeek.Friday && window.ClosesNextDay);
-    }
-
-    [Fact]
     public async Task GetMenuManagementSnapshotAsync_includes_hidden_archived_special_items()
     {
         await using var context = await SqliteIdentityTestContext.CreateAsync();

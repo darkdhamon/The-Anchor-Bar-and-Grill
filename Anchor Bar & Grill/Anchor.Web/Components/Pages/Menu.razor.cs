@@ -7,7 +7,7 @@ public partial class Menu
 {
     private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
     private PublicMenuView? menuView;
-    private IReadOnlyDictionary<MenuTab, MenuHoursCardView> tabHoursCards = new Dictionary<MenuTab, MenuHoursCardView>();
+    private MenuHoursCardView menuHoursCard = new("Not served", Array.Empty<MenuHoursDisplayRow>());
 
     [Inject]
     private IMenuQueryService MenuQueryService { get; set; } = null!;
@@ -18,9 +18,7 @@ public partial class Menu
     protected override async Task OnParametersSetAsync()
     {
         menuView = await MenuQueryService.GetPublicMenuAsync(ParseTab(RequestedTab), today);
-        tabHoursCards = menuView.Tabs.ToDictionary(
-            tab => tab.Tab,
-            tab => MenuHoursPresentation.Create(tab.ServiceHours));
+        menuHoursCard = MenuHoursPresentation.Create(menuView.ServiceHours);
     }
 
     private static MenuTab ParseTab(string? value) =>
@@ -33,11 +31,6 @@ public partial class Menu
         };
 
     private static string GetTabHref(string queryValue) => $"/menu?tab={Uri.EscapeDataString(queryValue)}";
-
-    private MenuHoursCardView GetTabHoursCard(MenuTab tab) =>
-        tabHoursCards.TryGetValue(tab, out var card)
-            ? card
-            : new MenuHoursCardView("Not served", Array.Empty<MenuHoursDisplayRow>());
 
     private static string GetBadgeClass(string label) =>
         label switch
