@@ -30,7 +30,7 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
                         item.PriceVariants
                             .OrderBy(variant => variant.SortOrder)
                             .ThenBy(variant => variant.Label, StringComparer.OrdinalIgnoreCase)
-                            .Select(variant => new MenuItemPriceVariantView(variant.Label, variant.Amount, variant.SortOrder))
+                            .Select(variant => new MenuItemPriceVariantView(variant.PriceVariantId, variant.Label, variant.Amount, variant.SortOrder))
                             .ToArray(),
                         MenuPresentationRules.GetPublicStatusLabels(item, today),
                         MenuPresentationRules.FormatOfferDateSummary(item, today),
@@ -153,7 +153,7 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
                 item.PriceVariants
                     .OrderBy(variant => variant.SortOrder)
                     .ThenBy(variant => variant.Label, StringComparer.OrdinalIgnoreCase)
-                    .Select(variant => new MenuItemPriceVariantView(variant.Label, variant.Amount, variant.SortOrder))
+                    .Select(variant => new MenuItemPriceVariantView(variant.PriceVariantId, variant.Label, variant.Amount, variant.SortOrder))
                     .ToArray(),
                 MenuPresentationRules.GetAdminStatusLabels(item, today),
                 MenuPresentationRules.FormatOfferDateSummary(item, today),

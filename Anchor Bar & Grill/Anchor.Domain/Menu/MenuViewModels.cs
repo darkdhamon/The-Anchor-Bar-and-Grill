@@ -14,8 +14,13 @@ public sealed record MenuServiceWindowView(
     TimeOnly? ClosesAt,
     bool ClosesNextDay);
 
-public sealed record MenuItemPriceVariantView(string Label, decimal Amount, int SortOrder)
+public sealed record MenuItemPriceVariantView(Guid? PriceVariantId, string Label, decimal Amount, int SortOrder)
 {
+    public MenuItemPriceVariantView(string Label, decimal Amount, int SortOrder)
+        : this(null, Label, Amount, SortOrder)
+    {
+    }
+
     private static readonly CultureInfo UsCulture = CultureInfo.GetCultureInfo("en-US");
 
     public string PriceDisplay => Amount == decimal.Truncate(Amount)

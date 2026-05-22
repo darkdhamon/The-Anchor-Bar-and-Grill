@@ -62,6 +62,8 @@ internal sealed class MenuSectionFormModel
 
 internal sealed class MenuItemPriceVariantFormModel
 {
+    public Guid? PriceVariantId { get; set; }
+
     public string Label { get; set; } = "Regular";
 
     public string AmountText { get; set; } = "0.00";

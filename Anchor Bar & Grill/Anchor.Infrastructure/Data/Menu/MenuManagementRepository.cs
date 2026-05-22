@@ -57,11 +57,21 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
 
     public async Task<Guid> UpsertItemAsync(SaveMenuItemRequest request, CancellationToken cancellationToken = default)
     {
+        dbContext.ChangeTracker.Clear();
+
+        Guid[] existingPriceVariantIds = [];
         MenuItemEntity entity;
         if (request.ItemId is { } itemId)
         {
+            existingPriceVariantIds = await dbContext.MenuItemPriceVariants
+                .AsNoTracking()
+                .Where(variant => variant.MenuItemId == itemId)
+                .OrderBy(variant => variant.SortOrder)
+                .ThenBy(variant => variant.MenuItemPriceVariantId)
+                .Select(variant => variant.MenuItemPriceVariantId)
+                .ToArrayAsync(cancellationToken);
+
             entity = await dbContext.MenuItems
-                .Include(item => item.PriceVariants)
                 .Include(item => item.FoodTabs)
                 .Include(item => item.Special)
                 .SingleAsync(item => item.MenuItemId == itemId, cancellationToken);
@@ -83,7 +93,7 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
         entity.OfferEndsOn = request.OfferEndsOn;
         entity.IsSeasonal = request.IsSeasonal;
 
-        SyncPriceVariants(entity, request.PriceVariants);
+        await SyncPriceVariantsAsync(entity.MenuItemId, request.PriceVariants, existingPriceVariantIds, cancellationToken);
         SyncFoodTabs(entity, request.FoodTabs);
 
         if (request.Special is null)
@@ -110,42 +120,37 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
         return entity.MenuItemId;
     }
 
-    private static void SyncPriceVariants(MenuItemEntity entity, IReadOnlyList<SaveMenuItemPriceVariantRequest> requestedVariants)
+    private async Task SyncPriceVariantsAsync(
+        Guid itemId,
+        IReadOnlyList<SaveMenuItemPriceVariantRequest> requestedVariants,
+        IReadOnlyList<Guid> existingPriceVariantIds,
+        CancellationToken cancellationToken)
     {
-        var existingVariants = entity.PriceVariants
-            .OrderBy(variant => variant.SortOrder)
-            .ThenBy(variant => variant.MenuItemPriceVariantId)
-            .ToArray();
+        if (existingPriceVariantIds.Count > 0)
+        {
+            await dbContext.MenuItemPriceVariants
+                .Where(variant => variant.MenuItemId == itemId)
+                .ExecuteDeleteAsync(cancellationToken);
+        }
+
         var orderedRequestedVariants = requestedVariants
             .OrderBy(variant => variant.SortOrder)
             .ToArray();
 
-        var sharedCount = Math.Min(existingVariants.Length, orderedRequestedVariants.Length);
-        for (var index = 0; index < sharedCount; index++)
-        {
-            var existingVariant = existingVariants[index];
-            var requestedVariant = orderedRequestedVariants[index];
-
-            existingVariant.Label = requestedVariant.Label;
-            existingVariant.Amount = requestedVariant.Amount;
-            existingVariant.SortOrder = requestedVariant.SortOrder;
-        }
-
-        for (var index = sharedCount; index < existingVariants.Length; index++)
-        {
-            entity.PriceVariants.Remove(existingVariants[index]);
-        }
-
-        for (var index = sharedCount; index < orderedRequestedVariants.Length; index++)
+        for (var index = 0; index < orderedRequestedVariants.Length; index++)
         {
             var requestedVariant = orderedRequestedVariants[index];
-            entity.PriceVariants.Add(new MenuItemPriceVariantEntity
+            var priceVariantId = requestedVariant.PriceVariantId
+                ?? (index < existingPriceVariantIds.Count ? existingPriceVariantIds[index] : Guid.NewGuid());
+
+            await dbContext.MenuItemPriceVariants.AddAsync(new MenuItemPriceVariantEntity
             {
-                MenuItemPriceVariantId = requestedVariant.PriceVariantId ?? Guid.NewGuid(),
+                MenuItemPriceVariantId = priceVariantId,
+                MenuItemId = itemId,
                 Label = requestedVariant.Label,
                 Amount = requestedVariant.Amount,
                 SortOrder = requestedVariant.SortOrder
-            });
+            }, cancellationToken);
         }
     }
 

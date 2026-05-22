@@ -234,6 +234,37 @@ public sealed class MenuAdminRedesignTests : BunitContext
     }
 
     [Fact]
+    public void Existing_item_preserves_price_variant_ids_when_adding_a_second_price()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+        var captureService = new CapturingMenuAdminManagementService();
+        Services.AddSingleton<IMenuManagementService>(captureService);
+
+        var cut = RenderMenuAdmin("/admin/menu?tab=drinks");
+
+        cut.FindAll(".menu-editor-tree__select")
+            .Single(button => button.TextContent.Contains("Old Fashioned", StringComparison.OrdinalIgnoreCase))
+            .Click();
+
+        cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Add price variant", StringComparison.Ordinal))
+            .Click();
+
+        var priceInputs = cut.FindAll(".menu-editor-price-row input");
+        priceInputs[2].Input("Tall");
+        priceInputs[3].Input("14.00");
+
+        cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Save item", StringComparison.Ordinal))
+            .Click();
+
+        Assert.NotNull(captureService.LastSaveItemRequest);
+        Assert.Equal(2, captureService.LastSaveItemRequest!.PriceVariants.Count);
+        Assert.Equal(StaticMenuAdminQueryService.DrinkItemPriceVariantId, captureService.LastSaveItemRequest.PriceVariants[0].PriceVariantId);
+        Assert.Null(captureService.LastSaveItemRequest.PriceVariants[1].PriceVariantId);
+    }
+
+    [Fact]
     public void Thrown_item_save_errors_render_as_inline_status_messages()
     {
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
@@ -301,6 +332,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
         private static readonly Guid ArchivedFoodItemId = Guid.Parse("44AA62BE-4B4D-46C7-A3D3-5088BF3B58DD");
         private static readonly Guid BreakfastItemId = Guid.Parse("797FEE70-BA14-46A5-AB88-DCDA3DAF7262");
         private static readonly Guid DrinkItemId = Guid.Parse("0A5B6B42-778E-49D3-8568-9AB1A785432D");
+        internal static readonly Guid DrinkItemPriceVariantId = Guid.Parse("B81338F8-E82A-4B8A-B9B0-2D831B2C5520");
         private static readonly DateOnly Today = new(2026, 5, 18);
 
         public Task<MenuTab> GetSuggestedPublicTabAsync(DateOnly today, TimeOnly currentTime, CancellationToken cancellationToken = default) =>
@@ -443,7 +475,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
                     null,
                     false,
                     Array.Empty<MenuTab>(),
-                    new[] { new MenuItemPriceVariantView("Regular", 12m, 1) },
+                    new[] { new MenuItemPriceVariantView(DrinkItemPriceVariantId, "Regular", 12m, 1) },
                     [],
                     null,
                     null)

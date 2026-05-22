@@ -481,6 +481,7 @@ public partial class MenuAdmin
         {
             itemForm.PriceVariants.Add(new MenuItemPriceVariantFormModel
             {
+                PriceVariantId = variant.PriceVariantId,
                 Label = variant.Label,
                 AmountText = variant.Amount.ToString("0.00", InvariantCulture),
                 SortOrder = variant.SortOrder
@@ -612,7 +613,7 @@ public partial class MenuAdmin
                 return false;
             }
 
-            builtVariants.Add(new SaveMenuItemPriceVariantRequest(null, label, amount, entry.Index + 1));
+            builtVariants.Add(new SaveMenuItemPriceVariantRequest(entry.Variant.PriceVariantId, label, amount, entry.Index + 1));
         }
 
         requests = builtVariants;
@@ -1234,7 +1235,7 @@ public partial class MenuAdmin
             model.SpecialEndsAtText,
             model.SpecialClosesNextDay,
             model.SpecialCallout,
-            string.Join(";", model.PriceVariants.Select(variant => $"{variant.Label}~{variant.AmountText}~{variant.SortOrder}")));
+            string.Join(";", model.PriceVariants.Select(variant => $"{variant.PriceVariantId}~{variant.Label}~{variant.AmountText}~{variant.SortOrder}")));
 
     private static string BuildHoursSnapshot(MenuServiceWindowFormModel model) =>
         string.Join("|",
