@@ -411,5 +411,5 @@ FodyWeavers.xsd
 .DS_Store
 Thumbs.db
 
-# Local-only UAT credential notes
-docs/reference/uat-credentials.local.md
+# Private local-only UAT credential notes
+docs/reference/uat-credentials.private.local.md
