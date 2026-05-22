@@ -9,6 +9,7 @@ using Anchor.Web.Components;
 using Anchor.Web.Components.Account;
 using Anchor.Web.Configuration;
 using Anchor.Web.Data;
+using Anchor.Web.Issues;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -37,6 +38,8 @@ builder.Services.AddAuthorizationBuilder()
 
 builder.Services.Configure<AnchorIdentityOptions>(builder.Configuration.GetSection(AnchorIdentityConfigurationKeys.SectionName));
 builder.Services.AddAnchorDomainServices();
+builder.Services.AddGitHubIssueServices(builder.Configuration);
+builder.Services.AddProductionExceptionIssueReporting(builder.Configuration);
 builder.Services.AddScoped<IConfirmedAccountConfigurationStore, JsonConfirmedAccountConfigurationStore>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -77,6 +80,7 @@ else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
+    app.UseMiddleware<ProductionExceptionIssueMiddleware>();
 }
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);

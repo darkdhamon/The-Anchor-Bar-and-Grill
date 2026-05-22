@@ -74,6 +74,11 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 
 - The development configuration now includes a LocalDB connection string so the mockup can run locally without additional secret setup
 - The menu catalog now lives in the application database through the repository layer, with seed data for Lunch and Dinner food sections, first-class Dinner special items, and empty-state Breakfast and Drinks tabs that already have service hours configured
+- A shared server-side GitHub issue service is now registered for future production exception reporting and technical website issue submissions
+- The GitHub issue service can create repository issues and place them into the configured GitHub project status when `GitHubIssues` settings and a secure `GitHubIssues__AccessToken` are supplied
+- Automated production exception issue creation is gated separately by `ProductionExceptionIssues`, runs only when the ASP.NET Core environment is `Production`, and skips `localhost`, loopback, and `.local` hosts
+- Production exception issue bodies include redacted request context such as route values, query values, form fields, selected headers, trace identifiers, and authenticated user roles to help recreate the failure without leaking secrets
+- Repeated matching production exceptions are temporarily deduplicated in memory so GitHub does not get flooded during a burst
 - The current homepage uses a styled building-photo placeholder until a real exterior image is added to the project
 - The event mockup data now demonstrates weekly, every-other-week, and nth-weekday monthly recurrence patterns so the UI direction can be reviewed before backend scheduling is built
 - On mobile, the shared header now keeps public and admin mockup links inside the expandable menu and uses an icon-style site-menu control so it does not compete with the food Menu link
