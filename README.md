@@ -69,6 +69,7 @@ This repository currently contains the first code-native website mockup for The 
 - Automated production exception issue creation is gated separately by `ProductionExceptionIssues`, runs only when the ASP.NET Core environment is `Production`, and skips `localhost`, loopback, and `.local` hosts
 - Production exception issue bodies include redacted request context such as route values, query values, form fields, selected headers, trace identifiers, and authenticated user roles to help recreate the failure without leaking secrets
 - Repeated matching production exceptions are temporarily deduplicated in memory so GitHub does not get flooded during a burst
+- The shared local development and UAT account credentials are documented in [docs/reference/uat-credentials.local.md](docs/reference/uat-credentials.local.md); if those local passwords or roles change, update that file in the same change
 - The current homepage uses a styled building-photo placeholder until a real exterior image is added to the project
 - The event mockup data now demonstrates weekly, every-other-week, and nth-weekday monthly recurrence patterns so the UI direction can be reviewed before backend scheduling is built
 - On mobile, the shared header now keeps public and admin mockup links inside the expandable menu and uses an icon-style site-menu control so it does not compete with the food Menu link
