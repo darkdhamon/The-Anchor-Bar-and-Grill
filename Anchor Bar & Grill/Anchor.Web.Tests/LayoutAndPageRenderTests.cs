@@ -267,10 +267,10 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Choose Breakfast, Lunch, Dinner, or Drinks from the sidebar", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Lunch hours", sidebarHours, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Today", sidebarHours, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Tuesday-Saturday", sidebarHours, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Not served", sidebarHours, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Lunch hours", sidebar, StringComparison.OrdinalIgnoreCase);
+        Assert.NotEmpty(cut.FindAll(".menu-sidebar .hours-row--today"));
         Assert.DoesNotContain("Lunch brings together", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(2, accordions.Count);
         Assert.True(accordions[0].HasAttribute("open"));

@@ -120,10 +120,6 @@
                                         <div class="menu-editor-hours-summary__row @(row.IncludesToday ? "is-today" : null)">
                                             <span class="menu-editor-hours-summary__row-copy">
                                                 <span>@row.Label</span>
-                                                @if (row.IncludesToday)
-                                                {
-                                                    <span class="menu-editor-hours-summary__today-pill">Today</span>
-                                                }
                                             </span>
                                             <strong>@row.Summary</strong>
                                         </div>

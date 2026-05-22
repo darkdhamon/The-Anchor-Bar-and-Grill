@@ -62,10 +62,6 @@
                                 <div class="hours-row @(row.IncludesToday ? "hours-row--today" : null)">
                                     <div class="hours-row__copy">
                                         <span class="hours-row__label">@row.Label</span>
-                                        @if (row.IncludesToday)
-                                        {
-                                            <span class="hours-row__today-pill">Today</span>
-                                        }
                                     </div>
                                     <span class="hours-row__summary">@row.Summary</span>
                                 </div>
