@@ -114,16 +114,17 @@
                                     </button>
                                 </div>
 
-                                <p class="menu-editor-hours-summary__today">
-                                    <span>Today</span>
-                                    <strong>@hourCard.Card.TodaySummary</strong>
-                                </p>
-
                                 <div class="menu-editor-hours-summary__rows">
                                     @foreach (var row in hourCard.Card.Rows)
                                     {
-                                        <div class="menu-editor-hours-summary__row">
-                                            <span>@row.Label</span>
+                                        <div class="menu-editor-hours-summary__row @(row.IncludesToday ? "is-today" : null)">
+                                            <span class="menu-editor-hours-summary__row-copy">
+                                                <span>@row.Label</span>
+                                                @if (row.IncludesToday)
+                                                {
+                                                    <span class="menu-editor-hours-summary__today-pill">Today</span>
+                                                }
+                                            </span>
                                             <strong>@row.Summary</strong>
                                         </div>
                                     }

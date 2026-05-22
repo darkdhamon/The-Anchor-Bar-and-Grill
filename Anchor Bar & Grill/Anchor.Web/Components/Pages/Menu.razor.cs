@@ -6,7 +6,7 @@ namespace Anchor.Web.Components.Pages;
 public partial class Menu
 {
     private PublicMenuView? menuView;
-    private MenuHoursCardView menuHoursCard = new("Not served", Array.Empty<MenuHoursDisplayRow>());
+    private MenuHoursCardView menuHoursCard = new(Array.Empty<MenuHoursDisplayRow>());
 
     [Inject]
     private IMenuQueryService MenuQueryService { get; set; } = null!;

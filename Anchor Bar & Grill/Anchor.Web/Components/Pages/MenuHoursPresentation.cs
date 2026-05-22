@@ -2,9 +2,9 @@ using Anchor.Domain.Menu;
 
 namespace Anchor.Web.Components.Pages;
 
-public sealed record MenuHoursDisplayRow(string Label, string Summary);
+public sealed record MenuHoursDisplayRow(string Label, string Summary, bool IncludesToday);
 
-public sealed record MenuHoursCardView(string TodaySummary, IReadOnlyList<MenuHoursDisplayRow> Rows);
+public sealed record MenuHoursCardView(IReadOnlyList<MenuHoursDisplayRow> Rows);
 
 public static class MenuHoursPresentation
 {
@@ -23,17 +23,16 @@ public static class MenuHoursPresentation
     {
         if (serviceHours.Count == 0)
         {
-            return new MenuHoursCardView("Not served", Array.Empty<MenuHoursDisplayRow>());
+            return new MenuHoursCardView(Array.Empty<MenuHoursDisplayRow>());
         }
 
         var orderedHours = serviceHours
             .OrderBy(window => GetDayIndex(window.DayOfWeek))
             .ToArray();
 
-        var todaySummary = orderedHours.FirstOrDefault(window => window.IsToday)?.Summary ?? orderedHours[0].Summary;
         var rows = BuildRows(orderedHours);
 
-        return new MenuHoursCardView(todaySummary, rows);
+        return new MenuHoursCardView(rows);
     }
 
     private static IReadOnlyList<MenuHoursDisplayRow> BuildRows(IReadOnlyList<MenuServiceWindowView> orderedHours)
@@ -63,7 +62,10 @@ public static class MenuHoursPresentation
         }
 
         return groupedWindows
-            .Select(group => new MenuHoursDisplayRow(GetLabel(group), group[0].Summary))
+            .Select(group => new MenuHoursDisplayRow(
+                GetLabel(group),
+                group[0].Summary,
+                group.Any(window => window.IsToday)))
             .ToArray();
     }
 

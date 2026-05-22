@@ -860,38 +860,8 @@ html.anchor-theme-dark .site-shell {
 }
 
 .menu-hours-card__header {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    align-items: flex-start;
-}
-
-.hours-today-badge {
     display: grid;
-    gap: 0.3rem;
-    justify-items: end;
-    padding: 0.75rem 0.95rem;
-    border-radius: 1rem;
-    border: 1px solid rgba(89, 175, 226, 0.28);
-    background:
-        linear-gradient(135deg, rgba(48, 154, 221, 0.14), rgba(31, 36, 58, 0.08)),
-        var(--surface-strong);
-    text-align: right;
-}
-
-.hours-today-badge__label {
-    color: var(--text-secondary);
-    font-size: 0.76rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-}
-
-.hours-today-badge__value {
-    font-family: "Bebas Neue", "Impact", sans-serif;
-    font-size: 1.45rem;
-    letter-spacing: 0.04em;
-    line-height: 1;
-    color: var(--accent-readable);
+    gap: 0.25rem;
 }
 
 .recurring-specials-grid {
@@ -1302,6 +1272,13 @@ html.anchor-theme-dark .site-shell {
     border-bottom: 1px solid var(--outline);
 }
 
+.hours-row__copy {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    align-items: center;
+}
+
 .hours-row__label {
     font-family: "Bebas Neue", "Impact", sans-serif;
     font-size: 1.2rem;
@@ -1309,9 +1286,29 @@ html.anchor-theme-dark .site-shell {
     color: var(--text-primary);
 }
 
+.hours-row__today-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid rgba(89, 175, 226, 0.28);
+    background: rgba(48, 154, 221, 0.12);
+    color: var(--accent-readable);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
 .hours-row__summary {
     color: var(--accent-readable);
     text-align: right;
+}
+
+.hours-row--today .hours-row__summary {
+    font-family: "Bebas Neue", "Impact", sans-serif;
+    font-size: 1.35rem;
+    letter-spacing: 0.04em;
+    line-height: 1;
 }
 
 .hours-row:last-child {
@@ -1716,20 +1713,26 @@ html.anchor-theme-dark .site-shell {
     font-size: 0.8rem;
 }
 
-.menu-editor-hours-summary__today {
-    margin: 0;
-    display: grid;
-    gap: 0.25rem;
+.menu-editor-hours-summary__row-copy {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    align-items: center;
 }
 
-.menu-editor-hours-summary__today span {
-    color: var(--text-secondary);
+.menu-editor-hours-summary__today-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.18rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid rgba(89, 175, 226, 0.28);
+    background: rgba(48, 154, 221, 0.12);
+    color: var(--accent-readable);
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    font-size: 0.78rem;
+    font-size: 0.72rem;
 }
 
-.menu-editor-hours-summary__today strong,
 .menu-editor-hours-summary__row strong {
     color: var(--accent-readable);
 }
@@ -2472,11 +2475,6 @@ button.menu-editor-filter-chip {
 
     .site-footer__grid {
         align-items: stretch;
-    }
-
-    .hours-today-badge {
-        justify-items: start;
-        text-align: left;
     }
 
     .menu-item--with-image,

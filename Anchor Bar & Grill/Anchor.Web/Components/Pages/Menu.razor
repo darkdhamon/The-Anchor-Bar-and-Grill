@@ -52,21 +52,21 @@
 
                     <section class="menu-hours-card menu-sidebar__hours" aria-label="@($"{GetSelectedTabLabel(menuView.SelectedTab)} hours")">
                         <div class="menu-hours-card__header">
-                            <div>
-                                <p class="feature-card__eyebrow">Weekly availability</p>
-                                <h2>@GetSelectedTabLabel(menuView.SelectedTab) hours</h2>
-                            </div>
-                            <div class="hours-today-badge" aria-label="Today's hours">
-                                <span class="hours-today-badge__label">Today</span>
-                                <strong class="hours-today-badge__value">@menuHoursCard.TodaySummary</strong>
-                            </div>
+                            <p class="feature-card__eyebrow">Weekly availability</p>
+                            <h2>@GetSelectedTabLabel(menuView.SelectedTab) hours</h2>
                         </div>
 
                         <div class="hours-list">
                             @foreach (var row in menuHoursCard.Rows)
                             {
-                                <div class="hours-row">
-                                    <span class="hours-row__label">@row.Label</span>
+                                <div class="hours-row @(row.IncludesToday ? "hours-row--today" : null)">
+                                    <div class="hours-row__copy">
+                                        <span class="hours-row__label">@row.Label</span>
+                                        @if (row.IncludesToday)
+                                        {
+                                            <span class="hours-row__today-pill">Today</span>
+                                        }
+                                    </div>
                                     <span class="hours-row__summary">@row.Summary</span>
                                 </div>
                             }

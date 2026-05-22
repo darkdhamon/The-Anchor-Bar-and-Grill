@@ -23,10 +23,10 @@ public sealed class MenuHoursPresentationTests
 
         var result = MenuHoursPresentation.Create(windows);
 
-        Assert.Equal("11:00 AM - 5:00 PM", result.TodaySummary);
         var row = Assert.Single(result.Rows);
         Assert.Equal("Daily", row.Label);
         Assert.Equal("11:00 AM - 5:00 PM", row.Summary);
+        Assert.True(row.IncludesToday);
     }
 
     [Fact]
@@ -47,18 +47,19 @@ public sealed class MenuHoursPresentationTests
 
         var result = MenuHoursPresentation.Create(windows);
 
-        Assert.Equal("5:00 PM - 11:00 PM", result.TodaySummary);
         Assert.Collection(
             result.Rows,
             row =>
             {
                 Assert.Equal("Sunday-Thursday", row.Label);
                 Assert.Equal("5:00 PM - 11:00 PM", row.Summary);
+                Assert.True(row.IncludesToday);
             },
             row =>
             {
                 Assert.Equal("Friday & Saturday", row.Label);
                 Assert.Equal("5:00 PM - 2:00 AM next day", row.Summary);
+                Assert.False(row.IncludesToday);
             });
     }
 
@@ -80,18 +81,19 @@ public sealed class MenuHoursPresentationTests
 
         var result = MenuHoursPresentation.Create(windows);
 
-        Assert.Equal("10:00 AM - 1:00 PM", result.TodaySummary);
         Assert.Collection(
             result.Rows,
             row =>
             {
                 Assert.Equal("Monday-Friday", row.Label);
                 Assert.Equal("Not served", row.Summary);
+                Assert.False(row.IncludesToday);
             },
             row =>
             {
                 Assert.Equal("Saturday & Sunday", row.Label);
                 Assert.Equal("10:00 AM - 1:00 PM", row.Summary);
+                Assert.True(row.IncludesToday);
             });
     }
 
