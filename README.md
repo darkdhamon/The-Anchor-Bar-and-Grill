@@ -64,6 +64,7 @@ This repository currently contains the first code-native website mockup for The 
 ## Development Notes
 
 - The development configuration now includes a LocalDB connection string so the mockup can run locally without additional secret setup
+- The shared local development and UAT account credentials are documented in [docs/reference/uat-credentials.local.md](docs/reference/uat-credentials.local.md); if those local passwords or roles change, update that file in the same change
 - The current homepage uses a styled building-photo placeholder until a real exterior image is added to the project
 - The event mockup data now demonstrates weekly, every-other-week, and nth-weekday monthly recurrence patterns so the UI direction can be reviewed before backend scheduling is built
 - On mobile, the shared header now keeps public and admin mockup links inside the expandable menu and uses an icon-style site-menu control so it does not compete with the food Menu link
