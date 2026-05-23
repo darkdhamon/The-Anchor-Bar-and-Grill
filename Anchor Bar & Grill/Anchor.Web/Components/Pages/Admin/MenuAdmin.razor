@@ -531,18 +531,22 @@
 
                                 <div class="editor-form__message">
                                     <span>Default menu visibility</span>
-                                    <div class="chip-list">
-                                        @if (sectionForm.Family == MenuFamily.Food)
-                                        {
+                                    @if (sectionForm.Family == MenuFamily.Food)
+                                    {
+                                        <div class="chip-list">
                                             <button type="button" class="@GetChoiceChipClass(sectionForm.ShowBreakfast)" @onclick="() => ToggleSectionTabAsync(MenuTab.Breakfast)">Breakfast</button>
                                             <button type="button" class="@GetChoiceChipClass(sectionForm.ShowLunch)" @onclick="() => ToggleSectionTabAsync(MenuTab.Lunch)">Lunch</button>
                                             <button type="button" class="@GetChoiceChipClass(sectionForm.ShowDinner)" @onclick="() => ToggleSectionTabAsync(MenuTab.Dinner)">Dinner</button>
-                                        }
-                                        else
+                                        </div>
+                                        @if (!SectionHasAnyVisibleMenu)
                                         {
-                                            <button type="button" class="@GetChoiceChipClass(sectionForm.ShowDrinks)" @onclick="() => ToggleSectionTabAsync(MenuTab.Drinks)">Drinks</button>
+                                            <p class="admin-field-note">Select at least one menu before saving this section.</p>
                                         }
-                                    </div>
+                                    }
+                                    else
+                                    {
+                                        <p class="admin-field-note">Drink sections automatically appear on the Drinks menu.</p>
+                                    }
                                 </div>
 
                                 <label>
@@ -577,7 +581,10 @@
                             }
 
                             <div class="action-row action-row--wrap">
-                                <button type="button" class="action-button action-button--primary" @onclick="SaveSectionAsync">
+                                <button type="button"
+                                        class="action-button action-button--primary"
+                                        disabled="@(!CanSaveSection)"
+                                        @onclick="SaveSectionAsync">
                                     @(sectionForm.SectionId is null ? "Create section" : "Save section")
                                 </button>
                                 <button type="button" class="action-button action-button--secondary" @onclick="ResetCurrentDetail">
@@ -933,7 +940,7 @@
 
                         <section class="menu-editor-guide__section">
                             <p class="menu-editor-guide__eyebrow">4. Create in context</p>
-                            <p>Choose a section first when you can. The top toolbar uses the current selection so new items and special items start in the right place.</p>
+                            <p>Choose a section first when you can. The top toolbar uses the current selection so new items and special items start in the right place. New sections stay unsaveable until they have a name, and food sections also need at least one menu-visibility chip turned on.</p>
                         </section>
 
                         <section class="menu-editor-guide__section">

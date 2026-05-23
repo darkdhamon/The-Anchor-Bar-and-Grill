@@ -131,7 +131,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
     }
 
     [Fact]
-    public void New_drink_sections_can_enable_drinks_visibility_and_save()
+    public void New_drink_sections_automatically_save_to_drinks()
     {
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
         var captureService = new CapturingMenuAdminManagementService();
@@ -143,15 +143,20 @@ public sealed class MenuAdminRedesignTests : BunitContext
             .Single(button => string.Equals(button.TextContent.Trim(), "Add section", StringComparison.Ordinal))
             .Click();
 
-        var drinksChip = cut.FindAll(".menu-editor-detail button")
-            .Single(button => string.Equals(button.TextContent.Trim(), "Drinks", StringComparison.Ordinal));
+        var createButton = cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Create section", StringComparison.Ordinal));
 
-        drinksChip.Click();
+        Assert.True(createButton.HasAttribute("disabled"));
+        Assert.Contains("Drink sections automatically appear on the Drinks menu.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(">Drinks</button>", cut.Markup, StringComparison.OrdinalIgnoreCase);
+
         cut.Find("input[placeholder='Appetizers, Wings, Cocktails...']").Input("Mocktails");
+        createButton = cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Create section", StringComparison.Ordinal));
 
-        cut.FindAll("button")
-            .Single(button => string.Equals(button.TextContent.Trim(), "Create section", StringComparison.Ordinal))
-            .Click();
+        Assert.False(createButton.HasAttribute("disabled"));
+
+        createButton.Click();
 
         Assert.NotNull(captureService.LastSaveSectionRequest);
         Assert.Equal(MenuFamily.Drink, captureService.LastSaveSectionRequest!.Family);

@@ -126,6 +126,10 @@ public partial class MenuAdmin
                 : "Complete required times";
 
     private string? DetailStatusMessage => selectedEditorTab == MenuEditorTab.Hours ? null : statusMessage;
+    private bool SectionHasAnyVisibleMenu => sectionForm.Family == MenuFamily.Drink
+        ? sectionForm.ShowDrinks
+        : sectionForm.ShowBreakfast || sectionForm.ShowLunch || sectionForm.ShowDinner;
+    private bool CanSaveSection => !string.IsNullOrWhiteSpace(sectionForm.Name) && SectionHasAnyVisibleMenu;
 
     private MenuAdminDuplicateItemPromptViewModel? DuplicateItemPrompt => detailKind == MenuAdminDetailKind.Item ? duplicateItemPrompt : null;
 
@@ -492,6 +496,7 @@ public partial class MenuAdmin
             IsArchived = section.IsArchived
         };
 
+        NormalizeSectionFormForSelectedFamily();
         CaptureSectionSnapshot();
     }
 
@@ -935,6 +940,7 @@ public partial class MenuAdmin
         {
             sectionForm.Family = family;
             NormalizeSectionFormForSelectedFamily();
+            ClearSectionValidationMessage();
             if (sectionForm.ParentSectionId is { } parentSectionId
                 && ParentSectionOptions.All(section => section.SectionId != parentSectionId))
             {
@@ -1022,6 +1028,7 @@ public partial class MenuAdmin
         }
 
         NormalizeSectionFormForSelectedFamily();
+        ClearSectionValidationMessage();
         return Task.CompletedTask;
     }
 
@@ -1116,6 +1123,7 @@ public partial class MenuAdmin
             sectionForm.ShowBreakfast = false;
             sectionForm.ShowLunch = false;
             sectionForm.ShowDinner = false;
+            sectionForm.ShowDrinks = true;
             return;
         }
 
@@ -1124,6 +1132,16 @@ public partial class MenuAdmin
         {
             sectionForm.ShowLunch = true;
             sectionForm.ShowDinner = true;
+        }
+    }
+
+    private void ClearSectionValidationMessage()
+    {
+        if (detailKind == MenuAdminDetailKind.Section
+            && (string.Equals(statusMessage, "Error: Drink sections must appear on Drinks.", StringComparison.Ordinal)
+                || string.Equals(statusMessage, "Error: Food sections must appear on at least one of Breakfast, Lunch, or Dinner.", StringComparison.Ordinal)))
+        {
+            statusMessage = null;
         }
     }
 
