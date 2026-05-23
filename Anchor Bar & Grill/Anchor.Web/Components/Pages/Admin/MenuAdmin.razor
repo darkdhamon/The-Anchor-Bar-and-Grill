@@ -32,144 +32,155 @@
     }
     else
     {
-        <section class="admin-card menu-editor-intro">
-            <div class="menu-editor-tabs" role="tablist" aria-label="Menu editor workspaces">
-                <button type="button"
-                        role="tab"
-                        class="@GetEditorTabClass(MenuEditorTab.Food)"
-                        aria-selected="@(selectedEditorTab == MenuEditorTab.Food)"
-                        @onclick="() => SelectEditorTab(MenuEditorTab.Food)">
-                    Food
-                </button>
-                <button type="button"
-                        role="tab"
-                        class="@GetEditorTabClass(MenuEditorTab.Drinks)"
-                        aria-selected="@(selectedEditorTab == MenuEditorTab.Drinks)"
-                        @onclick="() => SelectEditorTab(MenuEditorTab.Drinks)">
-                    Drinks
-                </button>
-                <button type="button"
-                        role="tab"
-                        class="@GetEditorTabClass(MenuEditorTab.Hours)"
-                        aria-selected="@(selectedEditorTab == MenuEditorTab.Hours)"
-                        @onclick="() => SelectEditorTab(MenuEditorTab.Hours)">
-                    Hours
-                </button>
-            </div>
-        </section>
+        <div class="menu-editor-shell">
+            <aside class="admin-card menu-editor-nav" aria-label="Menu editor workspace navigation">
+                <div class="admin-card__header">
+                    <h2>Workspaces</h2>
+                    <span class="admin-card__badge">Left rail</span>
+                </div>
 
-        @if (selectedEditorTab == MenuEditorTab.Hours)
-        {
-            <div class="menu-editor-hours-layout">
-                <section class="admin-card">
-                    <div class="admin-card__header">
-                        <h2>Current hour summaries</h2>
-                        <span class="admin-card__badge">@HoursSummaryCards.Count tab@(HoursSummaryCards.Count == 1 ? string.Empty : "s")</span>
-                    </div>
+                <p class="admin-field-note">Switch between Food, Drinks, and Hours here. The rest of the page updates around the selected workspace.</p>
 
-                    <div class="menu-editor-hours-summaries">
-                        @foreach (var hourCard in HoursSummaryCards)
-                        {
-                            <article class="menu-editor-hours-summary @(serviceWindowForm.Tab == hourCard.Tab ? "is-selected" : null)">
-                                <div class="menu-editor-hours-summary__header">
-                                    <div>
-                                        <p class="menu-editor-hours-summary__eyebrow">@hourCard.Label</p>
-                                        <h3>@GetTabLabel(hourCard.Tab)</h3>
-                                    </div>
-                                    <button type="button"
-                                            class="action-button @(serviceWindowForm.Tab == hourCard.Tab ? "action-button--primary" : "action-button--secondary")"
-                                            @onclick="() => SelectHoursTabAsync(hourCard.Tab)">
-                                        @(serviceWindowForm.Tab == hourCard.Tab ? "Editing" : "Edit hours")
-                                    </button>
-                                </div>
+                <div class="menu-editor-tabs" role="tablist" aria-label="Menu editor workspaces" aria-orientation="vertical">
+                    <button type="button"
+                            role="tab"
+                            class="@GetEditorTabClass(MenuEditorTab.Food)"
+                            aria-selected="@(selectedEditorTab == MenuEditorTab.Food)"
+                            @onclick="() => SelectEditorTab(MenuEditorTab.Food)">
+                        Food
+                    </button>
+                    <button type="button"
+                            role="tab"
+                            class="@GetEditorTabClass(MenuEditorTab.Drinks)"
+                            aria-selected="@(selectedEditorTab == MenuEditorTab.Drinks)"
+                            @onclick="() => SelectEditorTab(MenuEditorTab.Drinks)">
+                        Drinks
+                    </button>
+                    <button type="button"
+                            role="tab"
+                            class="@GetEditorTabClass(MenuEditorTab.Hours)"
+                            aria-selected="@(selectedEditorTab == MenuEditorTab.Hours)"
+                            @onclick="() => SelectEditorTab(MenuEditorTab.Hours)">
+                        Hours
+                    </button>
+                </div>
+            </aside>
 
-                                <div class="menu-editor-hours-summary__rows">
-                                    @foreach (var row in hourCard.Card.Rows)
-                                    {
-                                        <div class="menu-editor-hours-summary__row @(row.IncludesToday ? "is-today" : null)">
-                                            <span class="menu-editor-hours-summary__row-copy">
-                                                <span>@row.Label</span>
-                                            </span>
-                                            <strong>@row.Summary</strong>
-                                        </div>
-                                    }
-                                </div>
-                            </article>
-                        }
-                    </div>
-                </section>
-
-                <section class="admin-card">
-                    <div class="admin-card__header">
-                        <h2>Edit @GetTabLabel(serviceWindowForm.Tab) hours</h2>
-                        <span class="admin-card__badge">@HoursEditorStateLabel</span>
-                    </div>
-
-                    <div class="menu-hours-tab-row">
-                        @foreach (var tab in HourTabs.OrderBy(tab => tab.Tab))
-                        {
-                            <button type="button"
-                                    class="action-button @(serviceWindowForm.Tab == tab.Tab ? "action-button--primary" : "action-button--secondary")"
-                                    @onclick="() => SelectHoursTabAsync(tab.Tab)">
-                                @tab.Label
-                            </button>
-                        }
-                    </div>
-
-                    <div class="menu-hours-editor" @key="serviceWindowForm.Tab">
-                        @foreach (var day in serviceWindowForm.Days)
-                        {
-                            <div class="menu-hours-editor__row" @key="(serviceWindowForm.Tab, day.DayOfWeek)">
-                                <div class="menu-hours-editor__day">
-                                    <strong>@GetDayLabel(day.DayOfWeek)</strong>
-                                </div>
-                                <label class="menu-hours-editor__toggle">
-                                    <span>Available</span>
-                                    <input type="checkbox" @bind="day.IsAvailable" />
-                                </label>
-                                <div>
-                                    <label for="@GetHoursInputId(day.DayOfWeek, "open")">Open</label>
-                                    <InputTimeComboBox Id="@GetHoursInputId(day.DayOfWeek, "open")"
-                                                       @bind-Value="day.OpensAtText"
-                                                       Placeholder="Type 1300 or pick a time"
-                                                       ToggleAriaLabel="@($"Show {GetDayLabel(day.DayOfWeek)} opening times")"
-                                                       Disabled="@(!day.IsAvailable)" />
-                                </div>
-                                <div>
-                                    <label for="@GetHoursInputId(day.DayOfWeek, "close")">Close</label>
-                                    <InputTimeComboBox Id="@GetHoursInputId(day.DayOfWeek, "close")"
-                                                       @bind-Value="day.ClosesAtText"
-                                                       Placeholder="Type 1300 or pick a time"
-                                                       ToggleAriaLabel="@($"Show {GetDayLabel(day.DayOfWeek)} closing times")"
-                                                       Disabled="@(!day.IsAvailable)" />
-                                </div>
-                                <label class="menu-hours-editor__toggle">
-                                    <span>Closes next day</span>
-                                    <input type="checkbox" @bind="day.ClosesNextDay" disabled="@(!day.IsAvailable)" />
-                                </label>
+            @if (selectedEditorTab == MenuEditorTab.Hours)
+            {
+                <div class="menu-editor-shell__content">
+                    <div class="menu-editor-hours-layout">
+                        <section class="admin-card">
+                            <div class="admin-card__header">
+                                <h2>Current hour summaries</h2>
+                                <span class="admin-card__badge">@HoursSummaryCards.Count tab@(HoursSummaryCards.Count == 1 ? string.Empty : "s")</span>
                             </div>
-                        }
-                    </div>
 
-                    <div class="action-row action-row--wrap">
-                        <button type="button"
-                                class="action-button action-button--primary"
-                                disabled="@(!CanSaveHours)"
-                                @onclick="SaveServiceHoursAsync">
-                            Save @GetTabLabel(serviceWindowForm.Tab) hours
-                        </button>
-                        <button type="button" class="action-button action-button--secondary" @onclick="() => ResetHoursForm(serviceWindowForm.Tab)">
-                            Revert changes
-                        </button>
-                    </div>
+                            <div class="menu-editor-hours-summaries">
+                                @foreach (var hourCard in HoursSummaryCards)
+                                {
+                                    <article class="menu-editor-hours-summary @(serviceWindowForm.Tab == hourCard.Tab ? "is-selected" : null)">
+                                        <div class="menu-editor-hours-summary__header">
+                                            <div>
+                                                <p class="menu-editor-hours-summary__eyebrow">@hourCard.Label</p>
+                                                <h3>@GetTabLabel(hourCard.Tab)</h3>
+                                            </div>
+                                            <button type="button"
+                                                    class="action-button @(serviceWindowForm.Tab == hourCard.Tab ? "action-button--primary" : "action-button--secondary")"
+                                                    @onclick="() => SelectHoursTabAsync(hourCard.Tab)">
+                                                @(serviceWindowForm.Tab == hourCard.Tab ? "Editing" : "Edit hours")
+                                            </button>
+                                        </div>
 
-                    <p class="admin-field-note">Type shorthand like <code>1300</code>, <code>930</code>, or <code>1pm</code>, or open the list for a nearby half-hour pick. Save stays disabled until every available day has valid opening and closing times. Use <strong>Closes next day</strong> when the tab stays open past midnight.</p>
-                </section>
-            </div>
-        }
-        else
-        {
-            <div class="menu-editor-workspace">
+                                        <div class="menu-editor-hours-summary__rows">
+                                            @foreach (var row in hourCard.Card.Rows)
+                                            {
+                                                <div class="menu-editor-hours-summary__row @(row.IncludesToday ? "is-today" : null)">
+                                                    <span class="menu-editor-hours-summary__row-copy">
+                                                        <span>@row.Label</span>
+                                                    </span>
+                                                    <strong>@row.Summary</strong>
+                                                </div>
+                                            }
+                                        </div>
+                                    </article>
+                                }
+                            </div>
+                        </section>
+
+                        <section class="admin-card">
+                            <div class="admin-card__header">
+                                <h2>Edit @GetTabLabel(serviceWindowForm.Tab) hours</h2>
+                                <span class="admin-card__badge">@HoursEditorStateLabel</span>
+                            </div>
+
+                            <div class="menu-hours-tab-row">
+                                @foreach (var tab in HourTabs.OrderBy(tab => tab.Tab))
+                                {
+                                    <button type="button"
+                                            class="action-button @(serviceWindowForm.Tab == tab.Tab ? "action-button--primary" : "action-button--secondary")"
+                                            @onclick="() => SelectHoursTabAsync(tab.Tab)">
+                                        @tab.Label
+                                    </button>
+                                }
+                            </div>
+
+                            <div class="menu-hours-editor" @key="serviceWindowForm.Tab">
+                                @foreach (var day in serviceWindowForm.Days)
+                                {
+                                    <div class="menu-hours-editor__row" @key="(serviceWindowForm.Tab, day.DayOfWeek)">
+                                        <div class="menu-hours-editor__day">
+                                            <strong>@GetDayLabel(day.DayOfWeek)</strong>
+                                        </div>
+                                        <label class="menu-hours-editor__toggle">
+                                            <span>Available</span>
+                                            <input type="checkbox" @bind="day.IsAvailable" />
+                                        </label>
+                                        <div>
+                                            <label for="@GetHoursInputId(day.DayOfWeek, "open")">Open</label>
+                                            <InputTimeComboBox Id="@GetHoursInputId(day.DayOfWeek, "open")"
+                                                               @bind-Value="day.OpensAtText"
+                                                               Placeholder="Type 1300 or pick a time"
+                                                               ToggleAriaLabel="@($"Show {GetDayLabel(day.DayOfWeek)} opening times")"
+                                                               Disabled="@(!day.IsAvailable)" />
+                                        </div>
+                                        <div>
+                                            <label for="@GetHoursInputId(day.DayOfWeek, "close")">Close</label>
+                                            <InputTimeComboBox Id="@GetHoursInputId(day.DayOfWeek, "close")"
+                                                               @bind-Value="day.ClosesAtText"
+                                                               Placeholder="Type 1300 or pick a time"
+                                                               ToggleAriaLabel="@($"Show {GetDayLabel(day.DayOfWeek)} closing times")"
+                                                               Disabled="@(!day.IsAvailable)" />
+                                        </div>
+                                        <label class="menu-hours-editor__toggle">
+                                            <span>Closes next day</span>
+                                            <input type="checkbox" @bind="day.ClosesNextDay" disabled="@(!day.IsAvailable)" />
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="action-row action-row--wrap">
+                                <button type="button"
+                                        class="action-button action-button--primary"
+                                        disabled="@(!CanSaveHours)"
+                                        @onclick="SaveServiceHoursAsync">
+                                    Save @GetTabLabel(serviceWindowForm.Tab) hours
+                                </button>
+                                <button type="button" class="action-button action-button--secondary" @onclick="() => ResetHoursForm(serviceWindowForm.Tab)">
+                                    Revert changes
+                                </button>
+                            </div>
+
+                            <p class="admin-field-note">Type shorthand like <code>1300</code>, <code>930</code>, or <code>1pm</code>, or open the list for a nearby half-hour pick. Save stays disabled until every available day has valid opening and closing times. Use <strong>Closes next day</strong> when the tab stays open past midnight.</p>
+                        </section>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="menu-editor-shell__content">
+                    <div class="menu-editor-workspace">
                 <section class="admin-card menu-editor-browser">
                     <div class="admin-card__header">
                         <h2>@CurrentWorkspaceLabel browser</h2>
@@ -886,7 +897,9 @@
                         </section>
                     </div>
                 </aside>
-            </div>
-        }
+                    </div>
+                </div>
+            }
+        </div>
     }
 </section>

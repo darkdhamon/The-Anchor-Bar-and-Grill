@@ -50,6 +50,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
 
         var cut = RenderMenuAdmin("/admin/menu");
 
+        Assert.Single(cut.FindAll(".menu-editor-nav"));
         var selectedTab = cut.FindAll(".menu-editor-tabs__button.is-selected").Single();
 
         Assert.Equal("Food", selectedTab.TextContent.Trim());

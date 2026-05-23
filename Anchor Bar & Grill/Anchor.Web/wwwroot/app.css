@@ -1657,7 +1657,7 @@ html.anchor-theme-dark .site-shell {
         rgba(247, 247, 244, 0.03);
 }
 
-.menu-editor-intro,
+.menu-editor-shell,
 .menu-editor-hours-layout,
 .menu-editor-workspace,
 .menu-editor-browser__toolbar,
@@ -1670,23 +1670,41 @@ html.anchor-theme-dark .site-shell {
 }
 
 .menu-editor-tabs {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
     gap: 0.75rem;
-    margin-bottom: 1.25rem;
+    align-content: start;
 }
 
 .menu-editor-tabs__button {
+    width: 100%;
     border: 1px solid var(--outline);
     background: rgba(247, 247, 244, 0.08);
     color: var(--text-secondary);
     border-radius: 999px;
     padding: 0.8rem 1.2rem;
+    text-align: left;
     font-family: "Bebas Neue", "Impact", sans-serif;
     font-size: 1.35rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.menu-editor-shell {
+    grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+    align-items: start;
+}
+
+.menu-editor-shell__content {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+}
+
+.menu-editor-nav {
+    display: grid;
+    gap: 1rem;
+    align-content: start;
 }
 
 .menu-editor-tabs__button:hover,
@@ -2385,6 +2403,7 @@ button.menu-editor-filter-chip {
     .feature-grid,
     .recurring-specials-grid,
     .menu-layout,
+    .menu-editor-shell,
     .menu-editor-hours-layout,
     .menu-editor-workspace,
     .event-card-grid,
@@ -2421,6 +2440,14 @@ button.menu-editor-filter-chip {
         scrollbar-width: thin;
     }
 
+    .menu-admin-page .menu-editor-nav {
+        position: sticky;
+        top: calc(var(--anchor-header-height, 0px) + 1rem);
+        max-height: calc(100vh - var(--anchor-header-height, 0px) - 2rem);
+        overflow: auto;
+        scrollbar-width: thin;
+    }
+
     .menu-admin-page .menu-editor-detail {
         position: sticky;
         top: calc(var(--anchor-header-height, 0px) + 1rem);
@@ -2437,6 +2464,10 @@ button.menu-editor-filter-chip {
 
     .menu-admin-page .admin-grid {
         grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+    }
+
+    .menu-editor-shell {
+        grid-template-columns: minmax(230px, 250px) minmax(0, 1fr);
     }
 
     .menu-editor-workspace {
@@ -2460,6 +2491,10 @@ button.menu-editor-filter-chip {
 @media (min-width: 1500px) {
     .menu-page .menu-layout {
         grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+    }
+
+    .menu-editor-shell {
+        grid-template-columns: minmax(240px, 270px) minmax(0, 1fr);
     }
 
     .menu-editor-workspace {

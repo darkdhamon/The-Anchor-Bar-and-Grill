@@ -405,6 +405,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         var cut = Render<MenuAdmin>();
 
         Assert.NotNull(cut.Find(".menu-admin-page"));
+        Assert.NotNull(cut.Find(".menu-editor-nav"));
         Assert.Contains("Menu editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Food browser", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Meal filter", cut.Markup, StringComparison.OrdinalIgnoreCase);
