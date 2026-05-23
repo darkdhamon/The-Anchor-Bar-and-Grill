@@ -162,9 +162,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
                 "Breakfast Plates",
                 StringComparison.Ordinal));
 
-        breakfastSection.GetElementsByTagName("button")
-            .Single(button => string.Equals(button.TextContent.Trim(), "Show", StringComparison.Ordinal))
-            .Click();
+        breakfastSection.QuerySelector(":scope > .menu-editor-tree__row")!.Click();
 
         breakfastSection = cut.FindAll("article.menu-editor-tree__section")
             .Single(section => string.Equals(
@@ -198,7 +196,8 @@ public sealed class MenuAdminRedesignTests : BunitContext
 
         Assert.DoesNotContain("is-expanded", breakfastSection.ClassName, StringComparison.Ordinal);
         Assert.Empty(breakfastSection.QuerySelectorAll(".menu-editor-tree__group"));
-        Assert.Contains("Show", breakfastSection.TextContent, StringComparison.Ordinal);
+        Assert.Contains("Collapsed", breakfastSection.TextContent, StringComparison.Ordinal);
+        Assert.Equal("false", breakfastSection.QuerySelector(":scope > .menu-editor-tree__row")?.GetAttribute("aria-expanded"));
     }
 
     [Fact]
@@ -462,11 +461,14 @@ public sealed class MenuAdminRedesignTests : BunitContext
 
     private static void ExpandAllBrowserSections(IRenderedComponent<ContainerFragment> cut)
     {
-        foreach (var toggle in cut.FindAll(".menu-editor-tree__toggle")
-                     .Where(button => string.Equals(button.TextContent.Trim(), "Show", StringComparison.Ordinal))
-                     .ToArray())
+        foreach (var section in cut.FindAll("article.menu-editor-tree__section").ToArray())
         {
-            toggle.Click();
+            var header = section.QuerySelector(":scope > .menu-editor-tree__row");
+            if (header is not null
+                && string.Equals(header.GetAttribute("aria-expanded"), "false", StringComparison.Ordinal))
+            {
+                header.Click();
+            }
         }
     }
 
@@ -478,9 +480,13 @@ public sealed class MenuAdminRedesignTests : BunitContext
                 sectionTitle,
                 StringComparison.Ordinal));
 
-        section.GetElementsByTagName("button")
-            .Single(button => string.Equals(button.TextContent.Trim(), "Show", StringComparison.Ordinal))
-            .Click();
+        var header = section.QuerySelector(":scope > .menu-editor-tree__row");
+
+        if (header is not null
+            && string.Equals(header.GetAttribute("aria-expanded"), "false", StringComparison.Ordinal))
+        {
+            header.Click();
+        }
     }
 
     private static ClaimsPrincipal CreateUser(string userName, params string[] roles)

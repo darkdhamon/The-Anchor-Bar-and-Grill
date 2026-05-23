@@ -2379,11 +2379,25 @@ public partial class MenuAdmin
 
     private bool IsBrowserSectionExpanded(Guid sectionId) => expandedBrowserSectionIds.Contains(sectionId);
 
+    private void ToggleBrowserSection(MenuSectionAdminView section)
+    {
+        SelectSection(section);
+        ToggleBrowserSectionExpanded(section.SectionId);
+    }
+
     private void ToggleBrowserSectionExpanded(Guid sectionId)
     {
         if (!expandedBrowserSectionIds.Add(sectionId))
         {
             expandedBrowserSectionIds.Remove(sectionId);
+        }
+    }
+
+    private void HandleBrowserSectionHeaderKeyDown(KeyboardEventArgs args, MenuSectionAdminView section)
+    {
+        if (args.Key is "Enter" or " " or "Spacebar")
+        {
+            ToggleBrowserSection(section);
         }
     }
 

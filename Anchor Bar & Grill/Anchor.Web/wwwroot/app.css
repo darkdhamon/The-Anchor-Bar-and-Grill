@@ -1905,6 +1905,10 @@ button.menu-editor-filter-chip {
     gap: 0;
 }
 
+.menu-editor-tree__section-header {
+    cursor: pointer;
+}
+
 .menu-editor-tree__section.is-context-muted {
     opacity: 0.82;
 }
@@ -1948,6 +1952,11 @@ button.menu-editor-filter-chip {
     background: transparent;
     color: inherit;
     text-align: left;
+}
+
+.menu-editor-tree__section-header:focus-visible {
+    outline: 2px solid rgba(89, 175, 226, 0.55);
+    outline-offset: 2px;
 }
 
 .menu-editor-tree__title {
@@ -2175,8 +2184,9 @@ button.menu-editor-filter-chip {
     color: var(--text-primary);
 }
 
-.menu-editor-tree__toggle {
-    min-width: 4.25rem;
+.menu-editor-tree__disclosure {
+    min-width: 6.4rem;
+    justify-content: center;
 }
 
 .action-button--success {

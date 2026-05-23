@@ -178,10 +178,10 @@ public sealed class MenuAdminOrderingTests : BunitContext
     private static void ExpandSection(IRenderedComponent<ContainerFragment> cut, string title)
     {
         var section = GetSectionElement(cut, title);
-        var toggle = section.QuerySelector("button.menu-editor-tree__toggle");
+        var toggle = section.QuerySelector(":scope > .menu-editor-tree__row");
 
         if (toggle is not null
-            && string.Equals(toggle.TextContent.Trim(), "Show", StringComparison.Ordinal))
+            && string.Equals(toggle.GetAttribute("aria-expanded"), "false", StringComparison.Ordinal))
         {
             toggle.Click();
         }

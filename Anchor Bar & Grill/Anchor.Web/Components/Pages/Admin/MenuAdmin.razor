@@ -236,12 +236,18 @@
                             @foreach (var browserSection in BrowserSections)
                             {
                                 <article class="@GetSectionContainerClass(browserSection)">
-                                    <div class="@GetTreeRowClass(MenuAdminDetailKind.Section, browserSection.Section.SectionId, browserSection.Section.IsArchived, browserSection.Section.IsVisibleToGuests)"
+                                    <div class="@($"{GetTreeRowClass(MenuAdminDetailKind.Section, browserSection.Section.SectionId, browserSection.Section.IsArchived, browserSection.Section.IsVisibleToGuests)} menu-editor-tree__section-header")"
+                                         role="button"
+                                         tabindex="0"
+                                         aria-expanded="@(IsBrowserSectionExpanded(browserSection.Section.SectionId) ? "true" : "false")"
+                                         @onclick="() => ToggleBrowserSection(browserSection.Section)"
+                                         @onkeydown="args => HandleBrowserSectionHeaderKeyDown(args, browserSection.Section)"
+                                         @onkeydown:preventDefault="true"
                                          draggable="true"
                                          @ondragstart="() => BeginSectionDrag(browserSection.Section)"
                                          @ondragover:preventDefault
                                          @ondrop="() => DropSectionAsync(browserSection.Section)">
-                                        <button type="button" class="menu-editor-tree__select" @onclick="() => SelectSection(browserSection.Section)">
+                                        <div class="menu-editor-tree__select">
                                             <span class="menu-editor-tree__title">@browserSection.Section.Name</span>
                                             <span class="menu-editor-tree__subtitle">
                                                 @GetFamilyLabel(browserSection.Section.Family) section
@@ -254,10 +260,13 @@
                                                     <span> | @browserSection.Section.Callout</span>
                                                 }
                                             </span>
-                                        </button>
+                                        </div>
 
                                         <div class="menu-editor-tree__chips">
                                             <span class="chip chip--neutral">Order @browserSection.Section.SortOrder</span>
+                                            <span class="chip chip--neutral menu-editor-tree__disclosure">
+                                                @(IsBrowserSectionExpanded(browserSection.Section.SectionId) ? "Expanded" : "Collapsed")
+                                            </span>
                                             @foreach (var label in browserSection.Section.StatusLabels)
                                             {
                                                 <span class="status-pill @(GetStatusClass(label))">@label</span>
@@ -266,15 +275,11 @@
 
                                         <div class="menu-editor-tree__actions">
                                             <button type="button"
-                                                    class="menu-editor-tree__icon-button menu-editor-tree__toggle"
-                                                    aria-expanded="@IsBrowserSectionExpanded(browserSection.Section.SectionId)"
-                                                    @onclick="() => ToggleBrowserSectionExpanded(browserSection.Section.SectionId)">
-                                                @(IsBrowserSectionExpanded(browserSection.Section.SectionId) ? "Hide" : "Show")
-                                            </button>
-                                            <button type="button"
                                                     class="menu-editor-tree__icon-button"
                                                     title="Move section up"
                                                     disabled="@(!CanMoveSection(browserSection.Section, -1))"
+                                                    @onclick:stopPropagation="true"
+                                                    @onkeydown:stopPropagation="true"
                                                     @onclick="() => MoveSectionAsync(browserSection.Section, -1)">
                                                 Up
                                             </button>
@@ -282,11 +287,13 @@
                                                     class="menu-editor-tree__icon-button"
                                                     title="Move section down"
                                                     disabled="@(!CanMoveSection(browserSection.Section, 1))"
+                                                    @onclick:stopPropagation="true"
+                                                    @onkeydown:stopPropagation="true"
                                                     @onclick="() => MoveSectionAsync(browserSection.Section, 1)">
                                                 Down
                                             </button>
-                                            <button type="button" class="menu-editor-tree__quick-action" @onclick="() => StartNewItemFromSection(browserSection.Section, false)">+ Item</button>
-                                            <button type="button" class="menu-editor-tree__quick-action" @onclick="() => StartNewItemFromSection(browserSection.Section, true)">+ Special item</button>
+                                            <button type="button" class="menu-editor-tree__quick-action" @onclick:stopPropagation="true" @onkeydown:stopPropagation="true" @onclick="() => StartNewItemFromSection(browserSection.Section, false)">+ Item</button>
+                                            <button type="button" class="menu-editor-tree__quick-action" @onclick:stopPropagation="true" @onkeydown:stopPropagation="true" @onclick="() => StartNewItemFromSection(browserSection.Section, true)">+ Special item</button>
                                         </div>
                                     </div>
 
