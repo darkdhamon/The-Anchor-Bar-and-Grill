@@ -92,6 +92,19 @@ public partial class MenuAdmin
             .ThenBy(section => section.Name, StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
+    private IReadOnlyList<MenuSectionAdminView> ParentSectionOptions =>
+        Sections
+            .Where(section => section.Family == sectionForm.Family)
+            .Where(section => section.SectionId != sectionForm.SectionId)
+            .OrderBy(section => section.SortOrder)
+            .ThenBy(section => section.Name, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+    private static IReadOnlyList<(int Value, string Label)> MonthOptions { get; } =
+        Enumerable.Range(1, 12)
+            .Select(month => (month, CultureInfo.InvariantCulture.DateTimeFormat.GetMonthName(month)))
+            .ToArray();
+
     private bool HasItemCreationContext => Sections.Any(section => section.Family == CurrentContentFamily);
 
     private bool SectionHasUnsavedChanges => BuildSectionSnapshot(sectionForm) != sectionSnapshot;
@@ -468,6 +481,7 @@ public partial class MenuAdmin
             Name = section.Name,
             Callout = section.Callout,
             Family = section.Family,
+            ParentSectionId = section.ParentSectionId,
             ShowBreakfast = section.MenuTabs.Contains(MenuTab.Breakfast),
             ShowLunch = section.MenuTabs.Contains(MenuTab.Lunch),
             ShowDinner = section.MenuTabs.Contains(MenuTab.Dinner),
@@ -499,13 +513,17 @@ public partial class MenuAdmin
             OfferStartsOnText = FormatDate(item.OfferStartsOn),
             OfferEndsOnText = FormatDate(item.OfferEndsOn),
             IsSeasonal = item.IsSeasonal,
+            UseRecurringSeasonWindow = item.SeasonStartMonth is not null && item.SeasonEndMonth is not null,
+            SeasonStartMonth = item.SeasonStartMonth,
+            SeasonStartDay = item.SeasonStartDay,
+            SeasonEndMonth = item.SeasonEndMonth,
+            SeasonEndDay = item.SeasonEndDay,
             UseSectionVisibility = item.UsesSectionVisibility,
             ShowBreakfast = item.MenuTabs.Contains(MenuTab.Breakfast),
             ShowLunch = item.MenuTabs.Contains(MenuTab.Lunch),
             ShowDinner = item.MenuTabs.Contains(MenuTab.Dinner),
             IsSpecial = item.Special is not null,
             SpecialScheduleKind = item.Special?.ScheduleKind ?? MenuItemSpecialScheduleKind.WeeklyRecurring,
-            SpecialDayOfWeek = item.Special?.DayOfWeek ?? DayOfWeek.Monday,
             SpecialStartDateText = FormatDate(item.Special?.StartDate),
             SpecialEndDateText = FormatDate(item.Special?.EndDate),
             SpecialStartsAtText = FormatTime(item.Special?.StartsAt),
@@ -513,6 +531,14 @@ public partial class MenuAdmin
             SpecialClosesNextDay = item.Special?.ClosesNextDay ?? false,
             SpecialCallout = item.Special?.Callout
         };
+
+        if (item.Special is not null)
+        {
+            foreach (var day in item.Special.DaysOfWeek)
+            {
+                itemForm.SelectedSpecialDays.Add(day);
+            }
+        }
 
         foreach (var assignment in item.SectionAssignments)
         {
@@ -552,6 +578,7 @@ public partial class MenuAdmin
                 sectionForm.Name,
                 sectionForm.Callout,
                 sectionForm.Family,
+                sectionForm.ParentSectionId,
                 GetSelectedSectionTabs().ToArray(),
                 sectionForm.SortOrder,
                 sectionForm.IsVisibleToGuests,
@@ -598,6 +625,17 @@ public partial class MenuAdmin
                 return;
             }
 
+            if (!TryBuildSeasonalWindow(
+                    out var seasonStartMonth,
+                    out var seasonStartDay,
+                    out var seasonEndMonth,
+                    out var seasonEndDay,
+                    out var seasonalError))
+            {
+                statusMessage = $"Error: {seasonalError}";
+                return;
+            }
+
             if (!TryBuildPriceVariants(itemForm.PriceVariants, out var priceVariants, out var priceError))
             {
                 statusMessage = $"Error: {priceError}";
@@ -624,9 +662,13 @@ public partial class MenuAdmin
                     itemForm.SortOrder,
                     itemForm.IsVisibleToGuests,
                     itemForm.IsArchived,
-                    itemForm.IsSpecial ? null : offerStartsOn,
-                    itemForm.IsSpecial ? null : offerEndsOn,
-                    itemForm.IsSpecial ? false : itemForm.IsSeasonal,
+                    offerStartsOn,
+                    offerEndsOn,
+                    itemForm.IsSeasonal,
+                    seasonStartMonth,
+                    seasonStartDay,
+                    seasonEndMonth,
+                    seasonEndDay,
                     priceVariants,
                     sectionIds
                         .Select(sectionId => new SaveMenuItemSectionAssignmentRequest(
@@ -698,19 +740,46 @@ public partial class MenuAdmin
         return true;
     }
 
+    private bool TryBuildSeasonalWindow(
+        out int? seasonStartMonth,
+        out int? seasonStartDay,
+        out int? seasonEndMonth,
+        out int? seasonEndDay,
+        out string? error)
+    {
+        seasonStartMonth = null;
+        seasonStartDay = null;
+        seasonEndMonth = null;
+        seasonEndDay = null;
+        error = null;
+
+        if (!itemForm.UseRecurringSeasonWindow)
+        {
+            return true;
+        }
+
+        if (itemForm.SeasonStartMonth is null || itemForm.SeasonEndMonth is null)
+        {
+            error = "Recurring seasonal availability needs both a start month and an end month.";
+            return false;
+        }
+
+        if (itemForm.SeasonStartDay is < 1 or > 31 || itemForm.SeasonEndDay is < 1 or > 31)
+        {
+            error = "Seasonal day values must be between 1 and 31.";
+            return false;
+        }
+
+        seasonStartMonth = itemForm.SeasonStartMonth;
+        seasonStartDay = itemForm.SeasonStartDay;
+        seasonEndMonth = itemForm.SeasonEndMonth;
+        seasonEndDay = itemForm.SeasonEndDay;
+        return true;
+    }
+
     private bool TryBuildSpecialRequest(out SaveMenuItemSpecialRequest? request, out string? error)
     {
         request = null;
-
-        if (!TryParseRequiredDate(itemForm.SpecialStartDateText, "Special start date", out var startDate, out error))
-        {
-            return false;
-        }
-
-        if (!TryParseOptionalDate(itemForm.SpecialEndDateText, "Special end date", out var endDate, out error))
-        {
-            return false;
-        }
 
         if (!TryParseOptionalTime(itemForm.SpecialStartsAtText, "Special start time", out var startsAt, out error)
             || !TryParseOptionalTime(itemForm.SpecialEndsAtText, "Special end time", out var endsAt, out error))
@@ -718,10 +787,27 @@ public partial class MenuAdmin
             return false;
         }
 
+        DateOnly? startDate = null;
+        DateOnly? endDate = null;
+        if (itemForm.SpecialScheduleKind == MenuItemSpecialScheduleKind.Dated)
+        {
+            if (!TryParseRequiredDate(itemForm.SpecialStartDateText, "Special start date", out startDate, out error))
+            {
+                return false;
+            }
+
+            if (!TryParseOptionalDate(itemForm.SpecialEndDateText, "Special end date", out endDate, out error))
+            {
+                return false;
+            }
+        }
+
         request = new SaveMenuItemSpecialRequest(
             itemForm.SpecialScheduleKind,
-            itemForm.SpecialScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring ? itemForm.SpecialDayOfWeek : null,
-            startDate!.Value,
+            itemForm.SpecialScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring
+                ? itemForm.SelectedSpecialDays.OrderBy(day => Array.IndexOf(OrderedDays, day)).ToArray()
+                : Array.Empty<DayOfWeek>(),
+            startDate,
             endDate,
             startsAt,
             endsAt,
@@ -848,6 +934,11 @@ public partial class MenuAdmin
         {
             sectionForm.Family = family;
             NormalizeSectionFormForSelectedFamily();
+            if (sectionForm.ParentSectionId is { } parentSectionId
+                && ParentSectionOptions.All(section => section.SectionId != parentSectionId))
+            {
+                sectionForm.ParentSectionId = null;
+            }
         }
 
         await Task.CompletedTask;
@@ -896,10 +987,6 @@ public partial class MenuAdmin
     {
         itemForm.IsSpecial = args.Value is bool selected && selected;
         ClearDuplicateItemPrompt();
-        if (itemForm.IsSpecial && string.IsNullOrWhiteSpace(itemForm.SpecialStartDateText))
-        {
-            itemForm.SpecialStartDateText = FormatDate(today);
-        }
 
         if (itemForm.ItemId is null)
         {
@@ -913,6 +1000,83 @@ public partial class MenuAdmin
         }
 
         await Task.CompletedTask;
+    }
+
+    private Task ToggleSectionTabAsync(MenuTab tab)
+    {
+        switch (tab)
+        {
+            case MenuTab.Breakfast:
+                sectionForm.ShowBreakfast = !sectionForm.ShowBreakfast;
+                break;
+            case MenuTab.Lunch:
+                sectionForm.ShowLunch = !sectionForm.ShowLunch;
+                break;
+            case MenuTab.Dinner:
+                sectionForm.ShowDinner = !sectionForm.ShowDinner;
+                break;
+            case MenuTab.Drinks:
+                sectionForm.ShowDrinks = !sectionForm.ShowDrinks;
+                break;
+        }
+
+        NormalizeSectionFormForSelectedFamily();
+        return Task.CompletedTask;
+    }
+
+    private Task ToggleItemMenuTabAsync(MenuTab tab)
+    {
+        if (itemForm.UseSectionVisibility)
+        {
+            return Task.CompletedTask;
+        }
+
+        switch (tab)
+        {
+            case MenuTab.Breakfast:
+                itemForm.ShowBreakfast = !itemForm.ShowBreakfast;
+                break;
+            case MenuTab.Lunch:
+                itemForm.ShowLunch = !itemForm.ShowLunch;
+                break;
+            case MenuTab.Dinner:
+                itemForm.ShowDinner = !itemForm.ShowDinner;
+                break;
+        }
+
+        NormalizeItemFormForSelectedSections();
+        return Task.CompletedTask;
+    }
+
+    private Task SetItemUseSectionVisibilityAsync(bool useSectionVisibility)
+    {
+        itemForm.UseSectionVisibility = useSectionVisibility;
+        NormalizeItemFormForSelectedSections();
+        return Task.CompletedTask;
+    }
+
+    private Task SetRecurringSeasonWindowEnabledAsync(bool isEnabled)
+    {
+        itemForm.UseRecurringSeasonWindow = isEnabled;
+        if (!isEnabled)
+        {
+            itemForm.SeasonStartMonth = null;
+            itemForm.SeasonStartDay = null;
+            itemForm.SeasonEndMonth = null;
+            itemForm.SeasonEndDay = null;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task ToggleSpecialDayAsync(DayOfWeek dayOfWeek)
+    {
+        if (!itemForm.SelectedSpecialDays.Add(dayOfWeek))
+        {
+            itemForm.SelectedSpecialDays.Remove(dayOfWeek);
+        }
+
+        return Task.CompletedTask;
     }
 
     private async Task SelectHoursTabAsync(MenuTab tab)
@@ -951,7 +1115,7 @@ public partial class MenuAdmin
             sectionForm.ShowBreakfast = false;
             sectionForm.ShowLunch = false;
             sectionForm.ShowDinner = false;
-            sectionForm.ShowDrinks = true;
+            sectionForm.ShowDrinks = false;
             return;
         }
 
@@ -1168,6 +1332,9 @@ public partial class MenuAdmin
                      .ThenBy(section => section.Name, StringComparer.OrdinalIgnoreCase))
         {
             var sectionMatchesMenu = MatchesSectionFilter(section, foodFilter);
+            var childSections = Sections
+                .Where(candidate => candidate.ParentSectionId == section.SectionId && candidate.Family == family)
+                .ToArray();
             var sectionItems = Items
                 .Where(item => item.SectionAssignments.Any(assignment => assignment.SectionId == section.SectionId))
                 .Where(item => item.Family == family)
@@ -1200,12 +1367,12 @@ public partial class MenuAdmin
                 continue;
             }
 
-            if (!keepEmptySectionVisible && sectionItems.Length == 0)
+            if (!keepEmptySectionVisible && sectionItems.Length == 0 && childSections.Length == 0)
             {
                 continue;
             }
 
-            if (!keepEmptySectionVisible && contentFilter != MenuContentFilter.All && itemEntries.Length == 0)
+            if (!keepEmptySectionVisible && contentFilter != MenuContentFilter.All && itemEntries.Length == 0 && childSections.Length == 0)
             {
                 continue;
             }
@@ -1485,7 +1652,7 @@ public partial class MenuAdmin
     private void CaptureHoursSnapshot() => hoursSnapshot = BuildHoursSnapshot(serviceWindowForm);
 
     private static string BuildSectionSnapshot(MenuSectionFormModel model) =>
-        string.Join("|", model.SectionId, model.Name, model.Callout, model.Family, model.ShowBreakfast, model.ShowLunch, model.ShowDinner, model.ShowDrinks, model.SortOrder, model.IsVisibleToGuests, model.IsArchived);
+        string.Join("|", model.SectionId, model.Name, model.Callout, model.Family, model.ParentSectionId, model.ShowBreakfast, model.ShowLunch, model.ShowDinner, model.ShowDrinks, model.SortOrder, model.IsVisibleToGuests, model.IsArchived);
 
     private static string BuildItemSnapshot(MenuItemFormModel model) =>
         string.Join("|",
@@ -1502,13 +1669,18 @@ public partial class MenuAdmin
             model.OfferStartsOnText,
             model.OfferEndsOnText,
             model.IsSeasonal,
+            model.UseRecurringSeasonWindow,
+            model.SeasonStartMonth,
+            model.SeasonStartDay,
+            model.SeasonEndMonth,
+            model.SeasonEndDay,
             model.UseSectionVisibility,
             model.ShowBreakfast,
             model.ShowLunch,
             model.ShowDinner,
             model.IsSpecial,
             model.SpecialScheduleKind,
-            model.SpecialDayOfWeek,
+            string.Join(",", model.SelectedSpecialDays.OrderBy(day => Array.IndexOf(OrderedDays, day))),
             model.SpecialStartDateText,
             model.SpecialEndDateText,
             model.SpecialStartsAtText,
@@ -1524,8 +1696,7 @@ public partial class MenuAdmin
 
     private static MenuItemFormModel CreateDefaultItemForm(bool isSpecial = false) => new()
     {
-        IsSpecial = isSpecial,
-        SpecialStartDateText = isSpecial ? DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd", InvariantCulture) : null
+        IsSpecial = isSpecial
     };
 
     private Guid? GetCurrentItemSortOrderContextSectionId()
@@ -1712,6 +1883,11 @@ public partial class MenuAdmin
     private static string GetHoursInputId(DayOfWeek dayOfWeek, string slot) =>
         $"menu-hours-{dayOfWeek.ToString().ToLowerInvariant()}-{slot}";
 
+    private static int GetMaxDayForMonth(int? month, bool isStartBoundary) =>
+        month is null
+            ? 31
+            : MenuAvailabilityRules.GetEffectiveDay(2024, month.Value, null, isStartBoundary);
+
     private IEnumerable<MenuTab> GetSelectedSectionTabs()
     {
         if (sectionForm.Family == MenuFamily.Drink)
@@ -1855,6 +2031,15 @@ public partial class MenuAdmin
         selectedEditorTab == tab
             ? "menu-editor-tabs__button is-selected"
             : "menu-editor-tabs__button";
+
+    private static string GetChoiceChipClass(bool isSelected, bool isDisabled = false) =>
+        string.Join(' ',
+            new[]
+            {
+                "chip",
+                isSelected ? "chip--info menu-editor-filter-chip is-selected" : "chip--neutral menu-editor-filter-chip",
+                isDisabled ? "is-disabled" : null
+            }.Where(value => value is not null));
 
     private string GetFoodFilterClass(MenuTab? filter) =>
         selectedFoodFilter == filter

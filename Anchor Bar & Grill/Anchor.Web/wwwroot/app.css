@@ -929,6 +929,32 @@ html.anchor-theme-dark .site-shell {
     padding: 0 1.25rem 1.25rem;
 }
 
+.menu-subsection {
+    display: grid;
+    gap: 0.85rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--outline);
+}
+
+.menu-subsection__header {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.menu-subsection__header h3 {
+    font-size: 1.45rem;
+}
+
+.menu-subsection__callout {
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.menu-subsection__items {
+    display: grid;
+    gap: 0.85rem;
+}
+
 .menu-empty-state {
     padding: 1.4rem;
 }
@@ -938,7 +964,8 @@ html.anchor-theme-dark .site-shell {
     border-top: 1px dashed var(--outline);
 }
 
-.menu-section__items > .menu-item:first-child {
+.menu-section__items > .menu-item:first-child,
+.menu-section__items > .menu-subsection:first-child {
     padding-top: 0;
     border-top: none;
 }
@@ -1595,6 +1622,11 @@ html.anchor-theme-dark .site-shell {
     margin-top: 0.65rem;
 }
 
+.menu-editor-season-grid {
+    margin-top: 0.85rem;
+    align-items: end;
+}
+
 .menu-editor-price-row {
     display: grid;
     grid-template-columns: minmax(0, 1.2fr) minmax(140px, 0.8fr) auto;
@@ -1772,6 +1804,13 @@ button.menu-editor-filter-chip {
 
 .menu-editor-filter-chip.is-selected {
     box-shadow: inset 0 0 0 1px rgba(89, 175, 226, 0.12);
+}
+
+.menu-editor-filter-chip.is-disabled,
+.menu-editor-filter-chip:disabled {
+    opacity: 0.58;
+    cursor: not-allowed;
+    box-shadow: none;
 }
 
 .menu-editor-segmented {

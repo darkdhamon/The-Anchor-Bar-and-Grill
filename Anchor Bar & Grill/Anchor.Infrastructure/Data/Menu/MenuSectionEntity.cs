@@ -14,6 +14,12 @@ public sealed class MenuSectionEntity
 
     public MenuFamily Family { get; set; }
 
+    public Guid? ParentSectionId { get; set; }
+
+    public MenuSectionEntity? ParentSection { get; set; }
+
+    public ICollection<MenuSectionEntity> ChildSections { get; set; } = [];
+
     public int SortOrder { get; set; }
 
     public bool IsVisibleToGuests { get; set; }

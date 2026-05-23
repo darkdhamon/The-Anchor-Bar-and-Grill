@@ -268,6 +268,10 @@
                                             <span class="menu-editor-tree__title">@browserSection.Section.Name</span>
                                             <span class="menu-editor-tree__subtitle">
                                                 @GetFamilyLabel(browserSection.Section.Family) section
+                                                @if (!string.IsNullOrWhiteSpace(browserSection.Section.ParentSectionName))
+                                                {
+                                                    <span> | Child of @browserSection.Section.ParentSectionName</span>
+                                                }
                                                 @if (!string.IsNullOrWhiteSpace(browserSection.Section.Callout))
                                                 {
                                                     <span> | @browserSection.Section.Callout</span>
@@ -393,30 +397,29 @@
                                     </select>
                                 </label>
 
+                                <label>
+                                    <span>Parent section (optional)</span>
+                                    <select @bind="sectionForm.ParentSectionId">
+                                        <option value="">No parent section</option>
+                                        @foreach (var parentSection in ParentSectionOptions)
+                                        {
+                                            <option value="@parentSection.SectionId">@parentSection.Name</option>
+                                        }
+                                    </select>
+                                </label>
+
                                 <div class="editor-form__message">
                                     <span>Default menu visibility</span>
-                                    <div class="menu-editor-checkbox-stack">
+                                    <div class="chip-list">
                                         @if (sectionForm.Family == MenuFamily.Food)
                                         {
-                                            <label class="editor-form__toggle-row">
-                                                <input type="checkbox" @bind="sectionForm.ShowBreakfast" />
-                                                <span>Breakfast</span>
-                                            </label>
-                                            <label class="editor-form__toggle-row">
-                                                <input type="checkbox" @bind="sectionForm.ShowLunch" />
-                                                <span>Lunch</span>
-                                            </label>
-                                            <label class="editor-form__toggle-row">
-                                                <input type="checkbox" @bind="sectionForm.ShowDinner" />
-                                                <span>Dinner</span>
-                                            </label>
+                                            <button type="button" class="@GetChoiceChipClass(sectionForm.ShowBreakfast)" @onclick="() => ToggleSectionTabAsync(MenuTab.Breakfast)">Breakfast</button>
+                                            <button type="button" class="@GetChoiceChipClass(sectionForm.ShowLunch)" @onclick="() => ToggleSectionTabAsync(MenuTab.Lunch)">Lunch</button>
+                                            <button type="button" class="@GetChoiceChipClass(sectionForm.ShowDinner)" @onclick="() => ToggleSectionTabAsync(MenuTab.Dinner)">Dinner</button>
                                         }
                                         else
                                         {
-                                            <label class="editor-form__toggle-row">
-                                                <input type="checkbox" @bind="sectionForm.ShowDrinks" />
-                                                <span>Drinks</span>
-                                            </label>
+                                            <button type="button" class="@GetChoiceChipClass(sectionForm.ShowDrinks)" @onclick="() => ToggleSectionTabAsync(MenuTab.Drinks)">Drinks</button>
                                         }
                                     </div>
                                 </div>
@@ -426,24 +429,24 @@
                                     <input type="number" @bind="sectionForm.SortOrder" />
                                 </label>
 
-                                <div class="editor-form__toggle">
-                                    <label class="editor-form__toggle-row">
-                                        <input type="checkbox" @bind="sectionForm.IsVisibleToGuests" />
-                                        <span>
-                                            Show this section to guests
-                                            <small>Guests only see sections that currently have visible items. Newly created empty sections still stay visible here so you can keep building them out.</small>
-                                        </span>
-                                    </label>
+                                <div class="editor-form__message">
+                                    <span>Guest visibility</span>
+                                    <div class="chip-list">
+                                        <button type="button" class="@GetChoiceChipClass(sectionForm.IsVisibleToGuests)" @onclick="() => sectionForm.IsVisibleToGuests = !sectionForm.IsVisibleToGuests">
+                                            @(sectionForm.IsVisibleToGuests ? "Visible to guests" : "Hidden from guests")
+                                        </button>
+                                    </div>
+                                    <p class="admin-field-note">Guests only see sections that currently have visible items. Newly created empty sections still stay visible here so you can keep building them out.</p>
                                 </div>
 
-                                <div class="editor-form__toggle">
-                                    <label class="editor-form__toggle-row">
-                                        <input type="checkbox" @bind="sectionForm.IsArchived" />
-                                        <span>
-                                            Archive this section
-                                            <small>Archived sections stay stored for later reuse. They remain hidden from guests.</small>
-                                        </span>
-                                    </label>
+                                <div class="editor-form__message">
+                                    <span>Archive state</span>
+                                    <div class="chip-list">
+                                        <button type="button" class="@GetChoiceChipClass(sectionForm.IsArchived)" @onclick="() => sectionForm.IsArchived = !sectionForm.IsArchived">
+                                            @(sectionForm.IsArchived ? "Archived" : "Active")
+                                        </button>
+                                    </div>
+                                    <p class="admin-field-note">Archived sections stay stored for later reuse. They remain hidden from guests.</p>
                                 </div>
                             </div>
 
@@ -480,15 +483,14 @@
                             <div class="editor-form__grid">
                                 <div class="editor-form__message">
                                     <span>Sections</span>
-                                    <div class="menu-editor-checkbox-stack">
+                                    <div class="chip-list">
                                         @foreach (var section in ItemSectionOptions)
                                         {
-                                            <label class="editor-form__toggle-row">
-                                                <input type="checkbox"
-                                                       checked="@itemForm.SelectedSectionIds.Contains(section.SectionId)"
-                                                       @onchange="args => HandleItemSectionSelectionChangedAsync(section.SectionId, args)" />
-                                                <span>@section.Name</span>
-                                            </label>
+                                            <button type="button"
+                                                    class="@GetChoiceChipClass(itemForm.SelectedSectionIds.Contains(section.SectionId))"
+                                                    @onclick="args => HandleItemSectionSelectionChangedAsync(section.SectionId, new ChangeEventArgs { Value = !itemForm.SelectedSectionIds.Contains(section.SectionId) })">
+                                                @section.Name
+                                            </button>
                                         }
                                     </div>
                                 </div>
@@ -563,87 +565,120 @@
                                 @if (GetItemEditorFamily() == MenuFamily.Food)
                                 {
                                     <div class="editor-form__message">
-                                        <label class="editor-form__toggle-row">
-                                            <input type="checkbox" @bind="itemForm.UseSectionVisibility" />
-                                            <span>
-                                                Use section menu defaults
-                                                <small>Turn this off to narrow the item to specific menus only.</small>
-                                            </span>
-                                        </label>
+                                        <span>Menu visibility mode</span>
+                                        <div class="chip-list">
+                                            <button type="button" class="@GetChoiceChipClass(itemForm.UseSectionVisibility)" @onclick="() => SetItemUseSectionVisibilityAsync(true)">Use section defaults</button>
+                                            <button type="button" class="@GetChoiceChipClass(!itemForm.UseSectionVisibility)" @onclick="() => SetItemUseSectionVisibilityAsync(false)">Override item menus</button>
+                                        </div>
+                                        <p class="admin-field-note">Turn section defaults off only when this specific item should appear on fewer menus than its assigned sections.</p>
                                     </div>
 
                                     <div class="editor-form__message">
                                         <span>Item menu visibility</span>
-                                        <div class="menu-editor-checkbox-stack">
-                                            <label class="editor-form__toggle-row">
-                                                <input type="checkbox" @bind="itemForm.ShowBreakfast" disabled="@itemForm.UseSectionVisibility" />
-                                                <span>Breakfast</span>
-                                            </label>
-                                            <label class="editor-form__toggle-row">
-                                                <input type="checkbox" @bind="itemForm.ShowLunch" disabled="@itemForm.UseSectionVisibility" />
-                                                <span>Lunch</span>
-                                            </label>
-                                            <label class="editor-form__toggle-row">
-                                                <input type="checkbox" @bind="itemForm.ShowDinner" disabled="@itemForm.UseSectionVisibility" />
-                                                <span>Dinner</span>
-                                            </label>
+                                        <div class="chip-list">
+                                            <button type="button" class="@GetChoiceChipClass(itemForm.ShowBreakfast, itemForm.UseSectionVisibility)" disabled="@itemForm.UseSectionVisibility" @onclick="() => ToggleItemMenuTabAsync(MenuTab.Breakfast)">Breakfast</button>
+                                            <button type="button" class="@GetChoiceChipClass(itemForm.ShowLunch, itemForm.UseSectionVisibility)" disabled="@itemForm.UseSectionVisibility" @onclick="() => ToggleItemMenuTabAsync(MenuTab.Lunch)">Lunch</button>
+                                            <button type="button" class="@GetChoiceChipClass(itemForm.ShowDinner, itemForm.UseSectionVisibility)" disabled="@itemForm.UseSectionVisibility" @onclick="() => ToggleItemMenuTabAsync(MenuTab.Dinner)">Dinner</button>
                                         </div>
                                     </div>
                                 }
 
-                                <div class="editor-form__toggle">
-                                    <label class="editor-form__toggle-row">
-                                        <input type="checkbox" @bind="itemForm.IsVisibleToGuests" />
-                                        <span>
-                                            Show this item to guests
-                                            <small>Hidden items stay in the editor but do not show on the public menu.</small>
-                                        </span>
-                                    </label>
+                                <div class="editor-form__message">
+                                    <span>Guest visibility</span>
+                                    <div class="chip-list">
+                                        <button type="button" class="@GetChoiceChipClass(itemForm.IsVisibleToGuests)" @onclick="() => itemForm.IsVisibleToGuests = !itemForm.IsVisibleToGuests">
+                                            @(itemForm.IsVisibleToGuests ? "Visible to guests" : "Hidden from guests")
+                                        </button>
+                                    </div>
+                                    <p class="admin-field-note">Hidden items stay in the editor but do not show on the public menu.</p>
                                 </div>
 
-                                <div class="editor-form__toggle">
-                                    <label class="editor-form__toggle-row">
-                                        <input type="checkbox" @bind="itemForm.IsArchived" />
-                                        <span>
-                                            Archive this item
-                                            <small>Archived items stay stored for future reuse and appear greyed out in the browser.</small>
-                                        </span>
-                                    </label>
+                                <div class="editor-form__message">
+                                    <span>Archive state</span>
+                                    <div class="chip-list">
+                                        <button type="button" class="@GetChoiceChipClass(itemForm.IsArchived)" @onclick="() => itemForm.IsArchived = !itemForm.IsArchived">
+                                            @(itemForm.IsArchived ? "Archived" : "Active")
+                                        </button>
+                                    </div>
+                                    <p class="admin-field-note">Archived items stay stored for future reuse and appear greyed out in the browser.</p>
                                 </div>
 
-                                <div class="editor-form__toggle">
-                                    <label class="editor-form__toggle-row">
-                                        <input type="checkbox" checked="@itemForm.IsSpecial" @onchange="HandleSpecialToggleChangedAsync" />
-                                        <span>
-                                            Is special
-                                            <small>Turn this on when the item is a recurring or dated special. Shared item fields stay here, and special-only schedule fields appear below.</small>
-                                        </span>
-                                    </label>
+                                <div class="editor-form__message">
+                                    <span>Item type</span>
+                                    <div class="chip-list">
+                                        <button type="button" class="@GetChoiceChipClass(!itemForm.IsSpecial)" @onclick="() => HandleSpecialToggleChangedAsync(new ChangeEventArgs { Value = false })">Standard item</button>
+                                        <button type="button" class="@GetChoiceChipClass(itemForm.IsSpecial)" @onclick="() => HandleSpecialToggleChangedAsync(new ChangeEventArgs { Value = true })">Special item</button>
+                                    </div>
+                                    <p class="admin-field-note">Shared item fields stay here. Turn on special mode when the item needs recurring or dated special scheduling.</p>
                                 </div>
+
+                                <label>
+                                    <span>Offer start date</span>
+                                    <CommitAwareInputText @bind-Value="itemForm.OfferStartsOnText" placeholder="YYYY-MM-DD" />
+                                </label>
+
+                                <label>
+                                    <span>Offer end date</span>
+                                    <CommitAwareInputText @bind-Value="itemForm.OfferEndsOnText" placeholder="YYYY-MM-DD" />
+                                </label>
 
                                 @if (!itemForm.IsSpecial)
                                 {
-                                    <label>
-                                        <span>Offer start date</span>
-                                        <CommitAwareInputText @bind-Value="itemForm.OfferStartsOnText" placeholder="YYYY-MM-DD" />
-                                    </label>
-
-                                    <label>
-                                        <span>Offer end date</span>
-                                        <CommitAwareInputText @bind-Value="itemForm.OfferEndsOnText" placeholder="YYYY-MM-DD" />
-                                    </label>
-
-                                    <div class="editor-form__toggle">
-                                        <label class="editor-form__toggle-row">
-                                            <input type="checkbox" @bind="itemForm.IsSeasonal" />
-                                            <span>
-                                                Seasonal item
-                                                <small>Use this for normal menu items that should show a seasonal badge while their date window is active.</small>
-                                            </span>
-                                        </label>
+                                    <div class="editor-form__message">
+                                        <span>Seasonal presentation</span>
+                                        <div class="chip-list">
+                                            <button type="button" class="@GetChoiceChipClass(itemForm.IsSeasonal)" @onclick="() => itemForm.IsSeasonal = !itemForm.IsSeasonal">Seasonal badge for dated offer</button>
+                                        </div>
+                                        <p class="admin-field-note">Use this when a normal dated item should show a seasonal badge while its lifetime window is active.</p>
                                     </div>
                                 }
-                                else
+
+                                <div class="editor-form__message">
+                                    <span>Recurring seasonal availability</span>
+                                    <div class="chip-list">
+                                        <button type="button" class="@GetChoiceChipClass(itemForm.UseRecurringSeasonWindow)" @onclick="() => SetRecurringSeasonWindowEnabledAsync(true)">Enable recurring season</button>
+                                        <button type="button" class="@GetChoiceChipClass(!itemForm.UseRecurringSeasonWindow)" @onclick="() => SetRecurringSeasonWindowEnabledAsync(false)">No recurring season</button>
+                                    </div>
+
+                                    @if (itemForm.UseRecurringSeasonWindow)
+                                    {
+                                        <div class="editor-form__grid menu-editor-season-grid">
+                                            <label>
+                                                <span>Start month</span>
+                                                <select @bind="itemForm.SeasonStartMonth">
+                                                    <option value=""></option>
+                                                    @foreach (var month in MonthOptions)
+                                                    {
+                                                        <option value="@month.Value">@month.Label</option>
+                                                    }
+                                                </select>
+                                            </label>
+
+                                            <label>
+                                                <span>Start day (optional)</span>
+                                                <input type="number" min="1" max="@GetMaxDayForMonth(itemForm.SeasonStartMonth, true)" @bind="itemForm.SeasonStartDay" />
+                                            </label>
+
+                                            <label>
+                                                <span>End month</span>
+                                                <select @bind="itemForm.SeasonEndMonth">
+                                                    <option value=""></option>
+                                                    @foreach (var month in MonthOptions)
+                                                    {
+                                                        <option value="@month.Value">@month.Label</option>
+                                                    }
+                                                </select>
+                                            </label>
+
+                                            <label>
+                                                <span>End day (optional)</span>
+                                                <input type="number" min="1" max="@GetMaxDayForMonth(itemForm.SeasonEndMonth, false)" @bind="itemForm.SeasonEndDay" placeholder="Last day of month" />
+                                            </label>
+                                        </div>
+                                    }
+                                </div>
+
+                                @if (itemForm.IsSpecial)
                                 {
                                     <div class="editor-form__message menu-editor-special-settings">
                                         <div class="admin-card__header">
@@ -662,26 +697,32 @@
 
                                             @if (itemForm.SpecialScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring)
                                             {
-                                                <label>
-                                                    <span>Weekday</span>
-                                                    <select @bind="itemForm.SpecialDayOfWeek">
-                                                        @foreach (var day in Enum.GetValues<DayOfWeek>())
+                                                <div class="editor-form__message">
+                                                    <span>Recurring weekdays</span>
+                                                    <div class="chip-list">
+                                                        @foreach (var day in OrderedDays)
                                                         {
-                                                            <option value="@day">@GetDayLabel(day)</option>
+                                                            <button type="button"
+                                                                    class="@GetChoiceChipClass(itemForm.SelectedSpecialDays.Contains(day))"
+                                                                    @onclick="() => ToggleSpecialDayAsync(day)">
+                                                                @GetDayLabel(day)
+                                                            </button>
                                                         }
-                                                    </select>
+                                                    </div>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <label>
+                                                    <span>Start date</span>
+                                                    <CommitAwareInputText @bind-Value="itemForm.SpecialStartDateText" placeholder="YYYY-MM-DD" />
+                                                </label>
+
+                                                <label>
+                                                    <span>End date</span>
+                                                    <CommitAwareInputText @bind-Value="itemForm.SpecialEndDateText" placeholder="YYYY-MM-DD" />
                                                 </label>
                                             }
-
-                                            <label>
-                                                <span>Start date</span>
-                                                <CommitAwareInputText @bind-Value="itemForm.SpecialStartDateText" placeholder="YYYY-MM-DD" />
-                                            </label>
-
-                                            <label>
-                                                <span>End date</span>
-                                                <CommitAwareInputText @bind-Value="itemForm.SpecialEndDateText" placeholder="YYYY-MM-DD" />
-                                            </label>
 
                                             <div>
                                                 <label for="special-start-time">Start time</label>
@@ -699,14 +740,12 @@
                                                                    ToggleAriaLabel="Show special end times" />
                                             </div>
 
-                                            <div class="editor-form__toggle">
-                                                <label class="editor-form__toggle-row">
-                                                    <input type="checkbox" @bind="itemForm.SpecialClosesNextDay" />
-                                                    <span>
-                                                        Closes next day
-                                                        <small>Use this when a special starts late and ends after midnight.</small>
-                                                    </span>
-                                                </label>
+                                            <div class="editor-form__message">
+                                                <span>Time handling</span>
+                                                <div class="chip-list">
+                                                    <button type="button" class="@GetChoiceChipClass(itemForm.SpecialClosesNextDay)" @onclick="() => itemForm.SpecialClosesNextDay = !itemForm.SpecialClosesNextDay">Closes next day</button>
+                                                </div>
+                                                <p class="admin-field-note">Use this when a special starts late and ends after midnight.</p>
                                             </div>
 
                                             <label class="editor-form__message">

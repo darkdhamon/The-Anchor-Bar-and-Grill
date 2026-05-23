@@ -20,6 +20,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<MenuItemSpecialEntity> MenuItemSpecials => Set<MenuItemSpecialEntity>();
 
+    public DbSet<MenuItemSpecialDayEntity> MenuItemSpecialDays => Set<MenuItemSpecialDayEntity>();
+
     public DbSet<MenuSectionTabEntity> MenuSectionTabs => Set<MenuSectionTabEntity>();
 
     public DbSet<MenuServiceWindowEntity> MenuServiceWindows => Set<MenuServiceWindowEntity>();

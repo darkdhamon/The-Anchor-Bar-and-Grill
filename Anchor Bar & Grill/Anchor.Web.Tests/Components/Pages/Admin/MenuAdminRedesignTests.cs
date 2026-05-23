@@ -66,10 +66,14 @@ public sealed class MenuAdminRedesignTests : BunitContext
 
         var cut = RenderMenuAdmin("/admin/menu?tab=food&food=breakfast");
 
-        var selectedChip = cut.FindAll(".menu-editor-filter-chip.is-selected")
+        var mealFilter = cut.FindAll(".menu-editor-filters")
+            .Single(section => section.TextContent.Contains("Meal filter", StringComparison.OrdinalIgnoreCase));
+
+        var selectedChip = mealFilter.GetElementsByTagName("button")
             .Single(button => string.Equals(button.TextContent.Trim(), "Breakfast", StringComparison.Ordinal));
 
         Assert.Equal("Breakfast", selectedChip.TextContent.Trim());
+        Assert.Contains("is-selected", selectedChip.ClassName, StringComparison.Ordinal);
         Assert.Contains("Breakfast Burrito", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Late Night Burger", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
@@ -97,7 +101,49 @@ public sealed class MenuAdminRedesignTests : BunitContext
 
         var cut = RenderMenuAdmin("/admin/menu");
 
-        Assert.DoesNotContain("Unassigned Platters", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        var browserText = cut.Find(".menu-editor-tree").TextContent;
+
+        Assert.DoesNotContain("Unassigned Platters", browserText, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void New_food_sections_default_to_lunch_and_dinner_visibility()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+
+        var cut = RenderMenuAdmin("/admin/menu");
+
+        cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Add section", StringComparison.Ordinal))
+            .Click();
+
+        var detailButtons = cut.FindAll(".menu-editor-detail button");
+        var breakfastChip = detailButtons.Single(button => string.Equals(button.TextContent.Trim(), "Breakfast", StringComparison.Ordinal));
+        var lunchChip = detailButtons.Single(button => string.Equals(button.TextContent.Trim(), "Lunch", StringComparison.Ordinal));
+        var dinnerChip = detailButtons.Single(button => string.Equals(button.TextContent.Trim(), "Dinner", StringComparison.Ordinal));
+
+        Assert.DoesNotContain("is-selected", breakfastChip.ClassName, StringComparison.Ordinal);
+        Assert.Contains("is-selected", lunchChip.ClassName, StringComparison.Ordinal);
+        Assert.Contains("is-selected", dinnerChip.ClassName, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Add_special_item_shows_weekday_chip_controls()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+
+        var cut = RenderMenuAdmin("/admin/menu");
+
+        cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Add special item", StringComparison.Ordinal))
+            .Click();
+
+        var detailButtons = cut.FindAll(".menu-editor-detail button");
+
+        Assert.Contains("Special settings", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(detailButtons, button => string.Equals(button.TextContent.Trim(), "Monday", StringComparison.Ordinal));
+        Assert.Contains(detailButtons, button => string.Equals(button.TextContent.Trim(), "Sunday", StringComparison.Ordinal));
+        Assert.Contains(detailButtons, button => string.Equals(button.TextContent.Trim(), "Enable recurring season", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -143,6 +189,8 @@ public sealed class MenuAdminRedesignTests : BunitContext
     public void Add_item_uses_selected_section_as_context()
     {
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+        var captureService = new CapturingMenuAdminManagementService();
+        Services.AddSingleton<IMenuManagementService>(captureService);
 
         var cut = RenderMenuAdmin("/admin/menu?tab=food&food=breakfast");
 
@@ -154,15 +202,17 @@ public sealed class MenuAdminRedesignTests : BunitContext
             .Single(button => string.Equals(button.TextContent.Trim(), "Add item", StringComparison.Ordinal))
             .Click();
 
-        var checkboxStacks = cut.FindAll(".menu-editor-checkbox-stack");
-        var sectionCheckboxes = checkboxStacks[0].GetElementsByTagName("input");
-        var menuVisibilityCheckboxes = checkboxStacks[1].GetElementsByTagName("input");
+        cut.Find("input[placeholder='Classic hamburger, wing night, old fashioned...']").Input("Sunrise Stack");
+        cut.FindAll(".menu-editor-price-row input")[0].Input("Regular");
+        cut.FindAll(".menu-editor-price-row input")[1].Input("13.00");
 
-        Assert.False(sectionCheckboxes[0].HasAttribute("checked"));
-        Assert.True(sectionCheckboxes[1].HasAttribute("checked"));
-        Assert.True(menuVisibilityCheckboxes[0].HasAttribute("checked"));
-        Assert.False(menuVisibilityCheckboxes[1].HasAttribute("checked"));
-        Assert.False(menuVisibilityCheckboxes[2].HasAttribute("checked"));
+        cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Create item", StringComparison.Ordinal))
+            .Click();
+
+        Assert.NotNull(captureService.LastSaveItemRequest);
+        Assert.Single(captureService.LastSaveItemRequest!.SectionAssignments);
+        Assert.Equal([MenuTab.Breakfast], captureService.LastSaveItemRequest.MenuTabs);
     }
 
     [Fact]

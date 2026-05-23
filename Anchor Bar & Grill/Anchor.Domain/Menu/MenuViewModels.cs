@@ -30,11 +30,36 @@ public sealed record MenuItemPriceVariantView(Guid? PriceVariantId, string Label
 
 public sealed record MenuItemSpecialPublicView(
     MenuItemSpecialScheduleKind ScheduleKind,
+    IReadOnlyList<DayOfWeek> DaysOfWeek,
     string BadgeLabel,
     string ScheduleSummary,
     string? TimeSummary,
     string? Callout,
-    bool IsToday);
+    bool IsToday)
+{
+    public MenuItemSpecialPublicView(
+        MenuItemSpecialScheduleKind scheduleKind,
+        string badgeLabel,
+        string scheduleSummary,
+        string? timeSummary,
+        string? callout,
+        bool isToday)
+        : this(scheduleKind, Array.Empty<DayOfWeek>(), badgeLabel, scheduleSummary, timeSummary, callout, isToday)
+    {
+    }
+
+    public MenuItemSpecialPublicView(
+        MenuItemSpecialScheduleKind scheduleKind,
+        DayOfWeek? dayOfWeek,
+        string badgeLabel,
+        string scheduleSummary,
+        string? timeSummary,
+        string? callout,
+        bool isToday)
+        : this(scheduleKind, dayOfWeek is null ? Array.Empty<DayOfWeek>() : [dayOfWeek.Value], badgeLabel, scheduleSummary, timeSummary, callout, isToday)
+    {
+    }
+}
 
 public sealed record PublicHomeSpecialView(
     Guid ItemId,
@@ -56,12 +81,47 @@ public sealed record PublicMenuItemView(
     string? OfferDateSummary,
     MenuItemSpecialPublicView? Special);
 
+public sealed record PublicMenuChildSectionView(
+    Guid SectionId,
+    string Name,
+    string? Callout,
+    IReadOnlyList<PublicMenuItemView> Items);
+
+public sealed record PublicMenuSectionEntryView(
+    int SortOrder,
+    PublicMenuItemView? Item,
+    PublicMenuChildSectionView? ChildSection)
+{
+    public bool IsChildSection => ChildSection is not null;
+}
+
 public sealed record PublicMenuSectionView(
     Guid SectionId,
     string Name,
     string? Callout,
     string AccentClass,
-    IReadOnlyList<PublicMenuItemView> Items);
+    IReadOnlyList<PublicMenuSectionEntryView> Entries)
+{
+    public PublicMenuSectionView(
+        Guid sectionId,
+        string name,
+        string? callout,
+        string accentClass,
+        IReadOnlyList<PublicMenuItemView> items)
+        : this(
+            sectionId,
+            name,
+            callout,
+            accentClass,
+            items.Select((item, index) => new PublicMenuSectionEntryView(index + 1, item, null)).ToArray())
+    {
+    }
+
+    public IReadOnlyList<PublicMenuItemView> Items =>
+        Entries
+            .SelectMany(entry => entry.ChildSection?.Items ?? (entry.Item is null ? Array.Empty<PublicMenuItemView>() : [entry.Item]))
+            .ToArray();
+}
 
 public sealed record PublicMenuView(
     MenuTab SelectedTab,
@@ -74,11 +134,28 @@ public sealed record MenuSectionAdminView(
     string Name,
     string? Callout,
     MenuFamily Family,
+    Guid? ParentSectionId,
+    string? ParentSectionName,
     IReadOnlyList<MenuTab> MenuTabs,
     int SortOrder,
     bool IsVisibleToGuests,
     bool IsArchived,
-    IReadOnlyList<string> StatusLabels);
+    IReadOnlyList<string> StatusLabels)
+{
+    public MenuSectionAdminView(
+        Guid sectionId,
+        string name,
+        string? callout,
+        MenuFamily family,
+        IReadOnlyList<MenuTab> menuTabs,
+        int sortOrder,
+        bool isVisibleToGuests,
+        bool isArchived,
+        IReadOnlyList<string> statusLabels)
+        : this(sectionId, name, callout, family, null, null, menuTabs, sortOrder, isVisibleToGuests, isArchived, statusLabels)
+    {
+    }
+}
 
 public sealed record MenuItemSectionAssignmentView(
     Guid SectionId,
@@ -97,18 +174,68 @@ public sealed record MenuItemAdminView(
     DateOnly? OfferStartsOn,
     DateOnly? OfferEndsOn,
     bool IsSeasonal,
+    int? SeasonStartMonth,
+    int? SeasonStartDay,
+    int? SeasonEndMonth,
+    int? SeasonEndDay,
     IReadOnlyList<MenuItemSectionAssignmentView> SectionAssignments,
     bool UsesSectionVisibility,
     IReadOnlyList<MenuTab> MenuTabs,
     IReadOnlyList<MenuItemPriceVariantView> PriceVariants,
     IReadOnlyList<string> StatusLabels,
     string? OfferDateSummary,
-    MenuItemSpecialAdminView? Special);
+    MenuItemSpecialAdminView? Special)
+{
+    public MenuItemAdminView(
+        Guid itemId,
+        MenuFamily family,
+        string name,
+        string description,
+        string? imagePath,
+        int sortOrder,
+        bool isVisibleToGuests,
+        bool isArchived,
+        DateOnly? offerStartsOn,
+        DateOnly? offerEndsOn,
+        bool isSeasonal,
+        IReadOnlyList<MenuItemSectionAssignmentView> sectionAssignments,
+        bool usesSectionVisibility,
+        IReadOnlyList<MenuTab> menuTabs,
+        IReadOnlyList<MenuItemPriceVariantView> priceVariants,
+        IReadOnlyList<string> statusLabels,
+        string? offerDateSummary,
+        MenuItemSpecialAdminView? special)
+        : this(
+            itemId,
+            family,
+            name,
+            description,
+            imagePath,
+            sortOrder,
+            isVisibleToGuests,
+            isArchived,
+            offerStartsOn,
+            offerEndsOn,
+            isSeasonal,
+            null,
+            null,
+            null,
+            null,
+            sectionAssignments,
+            usesSectionVisibility,
+            menuTabs,
+            priceVariants,
+            statusLabels,
+            offerDateSummary,
+            special)
+    {
+    }
+}
 
 public sealed record MenuItemSpecialAdminView(
     MenuItemSpecialScheduleKind ScheduleKind,
-    DayOfWeek? DayOfWeek,
-    DateOnly StartDate,
+    IReadOnlyList<DayOfWeek> DaysOfWeek,
+    DateOnly? StartDate,
     DateOnly? EndDate,
     TimeOnly? StartsAt,
     TimeOnly? EndsAt,
@@ -118,7 +245,41 @@ public sealed record MenuItemSpecialAdminView(
     string? TimeSummary,
     string? Callout,
     IReadOnlyList<string> StatusLabels,
-    bool IsToday);
+    bool IsToday)
+{
+    public MenuItemSpecialAdminView(
+        MenuItemSpecialScheduleKind scheduleKind,
+        DayOfWeek? dayOfWeek,
+        DateOnly? startDate,
+        DateOnly? endDate,
+        TimeOnly? startsAt,
+        TimeOnly? endsAt,
+        bool closesNextDay,
+        string badgeLabel,
+        string scheduleSummary,
+        string? timeSummary,
+        string? callout,
+        IReadOnlyList<string> statusLabels,
+        bool isToday)
+        : this(
+            scheduleKind,
+            dayOfWeek is null ? Array.Empty<DayOfWeek>() : [dayOfWeek.Value],
+            startDate,
+            endDate,
+            startsAt,
+            endsAt,
+            closesNextDay,
+            badgeLabel,
+            scheduleSummary,
+            timeSummary,
+            callout,
+            statusLabels,
+            isToday)
+    {
+    }
+
+    public DayOfWeek? DayOfWeek => DaysOfWeek.Count == 1 ? DaysOfWeek[0] : null;
+}
 
 public sealed record MenuTabHoursAdminView(
     MenuTab Tab,

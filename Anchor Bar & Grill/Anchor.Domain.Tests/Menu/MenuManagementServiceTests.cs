@@ -215,6 +215,34 @@ public sealed class MenuManagementServiceTests
     }
 
     [Fact]
+    public async Task SaveSectionAsync_rejects_parent_section_from_a_different_family()
+    {
+        var repository = new FakeMenuManagementRepository
+        {
+            SectionReferences =
+            {
+                [DrinkSectionId] = CreateSectionReference(DrinkSectionId, MenuFamily.Drink, [MenuTab.Drinks])
+            }
+        };
+        var service = CreateService(repository);
+
+        var result = await service.SaveSectionAsync(
+            new SaveMenuSectionRequest(
+                null,
+                "Breakfast Specials",
+                null,
+                MenuFamily.Food,
+                DrinkSectionId,
+                [MenuTab.Breakfast],
+                1,
+                true,
+                false));
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("same menu family", result.Errors[0], StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task SaveItemAsync_requires_weekday_for_weekly_specials()
     {
         var repository = CreateRepositoryWithFoodSection();
@@ -230,8 +258,8 @@ public sealed class MenuManagementServiceTests
                 [new SaveMenuItemPriceVariantRequest(null, "Regular", 11m, 1)],
                 new SaveMenuItemSpecialRequest(
                     MenuItemSpecialScheduleKind.WeeklyRecurring,
+                    Array.Empty<DayOfWeek>(),
                     null,
-                    new DateOnly(2026, 1, 1),
                     null,
                     new TimeOnly(17, 0),
                     null,
@@ -239,7 +267,37 @@ public sealed class MenuManagementServiceTests
                     "$11 basket special")));
 
         Assert.False(result.Succeeded);
-        Assert.Contains("Choose a weekday", result.Errors[0], StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Choose at least one weekday", result.Errors[0], StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task SaveItemAsync_persists_recurring_season_window_fields()
+    {
+        var repository = CreateRepositoryWithFoodSection();
+        var service = CreateService(repository);
+
+        var result = await service.SaveItemAsync(
+            CreateItemRequest(
+                null,
+                FoodSectionId,
+                "Pumpkin Pancakes",
+                "Seasonal breakfast stack.",
+                [MenuTab.Breakfast],
+                [new SaveMenuItemPriceVariantRequest(null, "Regular", 12m, 1)])
+            with
+            {
+                SeasonStartMonth = 10,
+                SeasonStartDay = 15,
+                SeasonEndMonth = 4,
+                SeasonEndDay = 1
+            });
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(repository.LastItemRequest);
+        Assert.Equal(10, repository.LastItemRequest!.SeasonStartMonth);
+        Assert.Equal(15, repository.LastItemRequest.SeasonStartDay);
+        Assert.Equal(4, repository.LastItemRequest.SeasonEndMonth);
+        Assert.Equal(1, repository.LastItemRequest.SeasonEndDay);
     }
 
     [Fact]
@@ -258,8 +316,8 @@ public sealed class MenuManagementServiceTests
                 [new SaveMenuItemPriceVariantRequest(null, "Regular", 16m, 1)],
                 new SaveMenuItemSpecialRequest(
                     MenuItemSpecialScheduleKind.WeeklyRecurring,
-                    DayOfWeek.Wednesday,
-                    new DateOnly(2026, 1, 1),
+                    [DayOfWeek.Wednesday],
+                    null,
                     null,
                     new TimeOnly(22, 0),
                     null,
@@ -271,7 +329,7 @@ public sealed class MenuManagementServiceTests
     }
 
     [Fact]
-    public async Task SaveItemAsync_clears_standard_offer_fields_for_special_items()
+    public async Task SaveItemAsync_preserves_item_offer_fields_for_special_items()
     {
         var repository = CreateRepositoryWithFoodSection();
         var service = CreateService(repository);
@@ -286,8 +344,8 @@ public sealed class MenuManagementServiceTests
                 [new SaveMenuItemPriceVariantRequest(null, "Regular", 16m, 1)],
                 new SaveMenuItemSpecialRequest(
                     MenuItemSpecialScheduleKind.WeeklyRecurring,
-                    DayOfWeek.Wednesday,
-                    new DateOnly(2026, 1, 1),
+                    [DayOfWeek.Wednesday],
+                    null,
                     null,
                     new TimeOnly(17, 0),
                     null,
@@ -299,9 +357,9 @@ public sealed class MenuManagementServiceTests
 
         Assert.True(result.Succeeded);
         Assert.NotNull(repository.LastItemRequest);
-        Assert.Null(repository.LastItemRequest!.OfferStartsOn);
-        Assert.Null(repository.LastItemRequest.OfferEndsOn);
-        Assert.False(repository.LastItemRequest.IsSeasonal);
+        Assert.Equal(new DateOnly(2026, 5, 1), repository.LastItemRequest!.OfferStartsOn);
+        Assert.Equal(new DateOnly(2026, 5, 31), repository.LastItemRequest.OfferEndsOn);
+        Assert.True(repository.LastItemRequest.IsSeasonal);
         Assert.NotNull(repository.LastItemRequest.Special);
         Assert.Equal("$16 dozen special", repository.LastItemRequest.Special!.Callout);
     }

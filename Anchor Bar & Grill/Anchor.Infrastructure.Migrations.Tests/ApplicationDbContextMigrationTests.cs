@@ -45,6 +45,7 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Contains("20260519134817_RefactorRecurringSpecialsToMenuItemSpecials", appliedMigrations);
             Assert.Contains("20260522221240_AddMenuSectionCalloutsAndUniqueMenuNames", appliedMigrations);
             Assert.Contains("20260522233151_AddMenuSectionVisibilityAndMultiSectionAssignments", appliedMigrations);
+            Assert.Contains("20260523013508_AddMenuHierarchyAndSeasonalAvailability", appliedMigrations);
             Assert.Empty(pendingMigrations);
             Assert.True(await context.Database.CanConnectAsync());
 
@@ -86,6 +87,7 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Contains("MenuItems", tableNames);
             Assert.Contains("MenuItemPriceVariants", tableNames);
             Assert.Contains("MenuItemSectionAssignments", tableNames);
+            Assert.Contains("MenuItemSpecialDays", tableNames);
             Assert.Contains("MenuItemTabs", tableNames);
             Assert.Contains("MenuItemSpecials", tableNames);
             Assert.Contains("MenuSectionTabs", tableNames);
@@ -99,14 +101,20 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.True(await context.MenuItems.AnyAsync(item => item.MenuItemId == Guid.Parse("6BAA63B3-55C9-4E47-8555-803573B9B38D") && item.Name == "Sunday Pork Chop Dinner"));
             Assert.True(await context.MenuItemPriceVariants.AnyAsync(variant => variant.Label == "Bowl" && variant.Amount == 6m));
             Assert.True(await context.MenuItemTabs.AnyAsync(link => link.MenuItemId == Guid.Parse("33D64E7B-D5B7-481A-97FC-7F250A68C27E") && link.Tab == MenuTab.Dinner));
-            Assert.True(await context.MenuItemSpecials.AnyAsync(special => special.MenuItemId == Guid.Parse("33D64E7B-D5B7-481A-97FC-7F250A68C27E") && special.DayOfWeek == DayOfWeek.Monday && special.StartsAt == new TimeOnly(17, 0)));
+            Assert.True(await context.MenuItemSpecialDays.AnyAsync(day => day.MenuItemId == Guid.Parse("33D64E7B-D5B7-481A-97FC-7F250A68C27E") && day.DayOfWeek == DayOfWeek.Monday));
+            Assert.True(await context.MenuItemSpecials.AnyAsync(special => special.MenuItemId == Guid.Parse("33D64E7B-D5B7-481A-97FC-7F250A68C27E") && special.StartsAt == new TimeOnly(17, 0) && special.StartDate == null));
             Assert.True(await context.MenuItemSpecials.AnyAsync(special => special.MenuItemId == Guid.Parse("6BAA63B3-55C9-4E47-8555-803573B9B38D") && special.Callout == "$17 dinner plate"));
             Assert.True(await context.MenuServiceWindows.AnyAsync(window => window.Tab == MenuTab.Drinks && window.DayOfWeek == DayOfWeek.Friday && window.ClosesNextDay));
             var menuSectionColumns = await GetColumnNamesAsync(connectionString, "MenuSections");
             var menuItemColumns = await GetColumnNamesAsync(connectionString, "MenuItems");
             Assert.Contains("Callout", menuSectionColumns);
+            Assert.Contains("ParentSectionId", menuSectionColumns);
             Assert.Contains("NormalizedName", menuSectionColumns);
             Assert.Contains("NormalizedName", menuItemColumns);
+            Assert.Contains("SeasonStartMonth", menuItemColumns);
+            Assert.Contains("SeasonStartDay", menuItemColumns);
+            Assert.Contains("SeasonEndMonth", menuItemColumns);
+            Assert.Contains("SeasonEndDay", menuItemColumns);
             Assert.Contains("UsesSectionVisibility", menuItemColumns);
             Assert.DoesNotContain("MenuSectionId", menuItemColumns);
         }
@@ -294,6 +302,10 @@ public sealed class ApplicationDbContextMigrationTests
                 .Select(assignment => assignment.MenuSectionId)
                 .ToListAsync();
             var promotedSpecial = await context.MenuItemSpecials.SingleAsync(special => special.MenuItemId == customSpecialId);
+            var promotedSpecialDays = await context.MenuItemSpecialDays
+                .Where(day => day.MenuItemId == customSpecialId)
+                .Select(day => day.DayOfWeek)
+                .ToListAsync();
 
             Assert.Equal("Thursday Burger Blitz", promotedItem.Name);
             Assert.Equal("Custom recurring special saved before the refactor migration.", promotedItem.Description);
@@ -306,8 +318,8 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Equal(11m, promotedPriceVariants[0].Amount);
             Assert.Equal([MenuTab.Dinner], promotedTabs);
             Assert.Equal(MenuItemSpecialScheduleKind.WeeklyRecurring, promotedSpecial.ScheduleKind);
-            Assert.Equal(DayOfWeek.Thursday, promotedSpecial.DayOfWeek);
-            Assert.Equal(new DateOnly(2026, 1, 1), promotedSpecial.StartDate);
+            Assert.Equal([DayOfWeek.Thursday], promotedSpecialDays);
+            Assert.Null(promotedSpecial.StartDate);
             Assert.Equal(new TimeOnly(17, 30), promotedSpecial.StartsAt);
             Assert.Equal(new TimeOnly(22, 0), promotedSpecial.EndsAt);
             Assert.False(promotedSpecial.ClosesNextDay);

@@ -24,6 +24,14 @@ public sealed class MenuItemEntity
 
     public bool IsSeasonal { get; set; }
 
+    public int? SeasonStartMonth { get; set; }
+
+    public int? SeasonStartDay { get; set; }
+
+    public int? SeasonEndMonth { get; set; }
+
+    public int? SeasonEndDay { get; set; }
+
     public ICollection<MenuItemPriceVariantEntity> PriceVariants { get; set; } = [];
 
     public bool UsesSectionVisibility { get; set; } = true;

@@ -7,6 +7,7 @@ public sealed class MenuManagementService(
     public async Task<MenuOperationResult> SaveSectionAsync(SaveMenuSectionRequest request, CancellationToken cancellationToken = default)
     {
         MenuSectionReferenceRecord? existingSection = null;
+        MenuManagementSnapshot? snapshot = null;
         if (request.SectionId is { } sectionId)
         {
             existingSection = await repository.GetSectionReferenceAsync(sectionId, cancellationToken);
@@ -42,6 +43,32 @@ public sealed class MenuManagementService(
                     : "Food sections must appear on at least one of Breakfast, Lunch, or Dinner.");
         }
 
+        if (request.SectionId is not null && request.ParentSectionId == request.SectionId)
+        {
+            return MenuOperationResult.Failure("A section cannot be its own parent.");
+        }
+
+        if (request.ParentSectionId is { } parentSectionId)
+        {
+            var parentSection = await repository.GetSectionReferenceAsync(parentSectionId, cancellationToken);
+            if (parentSection is null)
+            {
+                return MenuOperationResult.Failure("Choose a valid parent section before saving.");
+            }
+
+            if (parentSection.Family != request.Family)
+            {
+                return MenuOperationResult.Failure("Parent and child sections must both belong to the same menu family.");
+            }
+
+            snapshot = await repository.GetMenuManagementSnapshotAsync(cancellationToken);
+            if (request.SectionId is { } currentSectionId
+                && IsSectionDescendant(snapshot.Sections, parentSectionId, currentSectionId))
+            {
+                return MenuOperationResult.Failure("A section cannot move under one of its own descendants.");
+            }
+        }
+
         var duplicateSectionId = await repository.FindSectionIdByNormalizedNameAsync(
             MenuNameRules.NormalizeForLookup(normalizedName),
             cancellationToken);
@@ -62,6 +89,7 @@ public sealed class MenuManagementService(
             {
                 Name = normalizedName,
                 Callout = normalizedCallout,
+                ParentSectionId = request.ParentSectionId,
                 MenuTabs = normalizedSectionTabs
             },
             cancellationToken);
@@ -131,6 +159,24 @@ public sealed class MenuManagementService(
             return MenuOperationResult.Failure("Menu item description cannot be longer than 1000 characters.");
         }
 
+        if (request.OfferStartsOn is not null
+            && request.OfferEndsOn is not null
+            && request.OfferEndsOn < request.OfferStartsOn)
+        {
+            return MenuOperationResult.Failure("Offer end date cannot be earlier than the offer start date.");
+        }
+
+        var normalizedSeasonalWindow = NormalizeSeasonalWindow(
+            request.SeasonStartMonth,
+            request.SeasonStartDay,
+            request.SeasonEndMonth,
+            request.SeasonEndDay,
+            out var seasonalWindowError);
+        if (seasonalWindowError is not null)
+        {
+            return MenuOperationResult.Failure(seasonalWindowError);
+        }
+
         var normalizedPriceVariants = request.PriceVariants
             .Select(variant => variant with { Label = variant.Label.Trim() })
             .ToArray();
@@ -187,14 +233,6 @@ public sealed class MenuManagementService(
             return MenuOperationResult.Failure("Item menu visibility cannot include menus that are not allowed by the selected sections.");
         }
 
-        if (request.Special is null
-            && request.OfferStartsOn is not null
-            && request.OfferEndsOn is not null
-            && request.OfferEndsOn < request.OfferStartsOn)
-        {
-            return MenuOperationResult.Failure("Offer end date cannot be earlier than the offer start date.");
-        }
-
         SaveMenuItemSpecialRequest? normalizedSpecial = null;
         if (request.Special is { } special)
         {
@@ -204,12 +242,22 @@ public sealed class MenuManagementService(
                 return MenuOperationResult.Failure("Special callouts cannot be longer than 100 characters.");
             }
 
-            if (special.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring && special.DayOfWeek is null)
+            var normalizedSpecialDays = special.DaysOfWeek
+                .Distinct()
+                .OrderBy(day => Array.IndexOf(MenuPresentationRules.DayOrder.ToArray(), day))
+                .ToArray();
+
+            if (special.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring && normalizedSpecialDays.Length == 0)
             {
-                return MenuOperationResult.Failure("Choose a weekday for recurring specials.");
+                return MenuOperationResult.Failure("Choose at least one weekday for recurring specials.");
             }
 
-            if (special.EndDate is not null && special.EndDate < special.StartDate)
+            if (special.ScheduleKind == MenuItemSpecialScheduleKind.Dated && special.StartDate is null)
+            {
+                return MenuOperationResult.Failure("Choose a start date for dated specials.");
+            }
+
+            if (special.EndDate is not null && special.StartDate is not null && special.EndDate < special.StartDate)
             {
                 return MenuOperationResult.Failure("Special end date cannot be earlier than the special start date.");
             }
@@ -229,8 +277,14 @@ public sealed class MenuManagementService(
 
             normalizedSpecial = special with
             {
-                DayOfWeek = special.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring
-                    ? special.DayOfWeek
+                DaysOfWeek = special.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring
+                    ? normalizedSpecialDays
+                    : Array.Empty<DayOfWeek>(),
+                StartDate = special.ScheduleKind == MenuItemSpecialScheduleKind.Dated
+                    ? special.StartDate
+                    : null,
+                EndDate = special.ScheduleKind == MenuItemSpecialScheduleKind.Dated
+                    ? special.EndDate
                     : null,
                 Callout = normalizedCallout
             };
@@ -242,9 +296,13 @@ public sealed class MenuManagementService(
                 Name = normalizedName,
                 Description = normalizedDescription,
                 ImagePath = NormalizeOptionalValue(request.ImagePath),
-                OfferStartsOn = normalizedSpecial is null ? request.OfferStartsOn : null,
-                OfferEndsOn = normalizedSpecial is null ? request.OfferEndsOn : null,
-                IsSeasonal = normalizedSpecial is null && request.IsSeasonal,
+                OfferStartsOn = request.OfferStartsOn,
+                OfferEndsOn = request.OfferEndsOn,
+                IsSeasonal = request.IsSeasonal,
+                SeasonStartMonth = normalizedSeasonalWindow?.StartMonth,
+                SeasonStartDay = normalizedSeasonalWindow?.StartDay,
+                SeasonEndMonth = normalizedSeasonalWindow?.EndMonth,
+                SeasonEndDay = normalizedSeasonalWindow?.EndDay,
                 PriceVariants = normalizedPriceVariants,
                 SectionAssignments = normalizedSectionAssignments,
                 MenuTabs = request.UsesSectionVisibility ? Array.Empty<MenuTab>() : normalizedTabs,
@@ -422,12 +480,77 @@ public sealed class MenuManagementService(
             ? null
             : value.Trim();
 
+    private static SeasonalWindow? NormalizeSeasonalWindow(
+        int? seasonStartMonth,
+        int? seasonStartDay,
+        int? seasonEndMonth,
+        int? seasonEndDay,
+        out string? error)
+    {
+        error = null;
+        var hasAnyValue = seasonStartMonth is not null
+            || seasonStartDay is not null
+            || seasonEndMonth is not null
+            || seasonEndDay is not null;
+
+        if (!hasAnyValue)
+        {
+            return null;
+        }
+
+        if (seasonStartMonth is null || seasonEndMonth is null)
+        {
+            error = "Recurring seasonal items need both a start month and an end month.";
+            return null;
+        }
+
+        if (seasonStartMonth is < 1 or > 12 || seasonEndMonth is < 1 or > 12)
+        {
+            error = "Seasonal months must be valid month numbers.";
+            return null;
+        }
+
+        if (seasonStartDay is < 1 or > 31 || seasonEndDay is < 1 or > 31)
+        {
+            error = "Seasonal day values must be between 1 and 31.";
+            return null;
+        }
+
+        return new SeasonalWindow(seasonStartMonth.Value, seasonStartDay, seasonEndMonth.Value, seasonEndDay);
+    }
+
     private static MenuTab[] NormalizeSectionTabs(MenuFamily family, IReadOnlyList<MenuTab> requestedTabs) =>
         requestedTabs
             .Distinct()
             .Where(tab => family == MenuFamily.Drink ? tab == MenuTab.Drinks : tab != MenuTab.Drinks)
             .OrderBy(tab => tab)
             .ToArray();
+
+    private static bool IsSectionDescendant(
+        IReadOnlyList<MenuSectionRecord> sections,
+        Guid candidateParentId,
+        Guid currentSectionId)
+    {
+        var parentLookup = sections.ToDictionary(section => section.SectionId, section => section.ParentSectionId);
+        var currentParentId = candidateParentId;
+
+        while (parentLookup.TryGetValue(currentParentId, out var nextParentId))
+        {
+            if (currentParentId == currentSectionId)
+            {
+                return true;
+            }
+
+            if (nextParentId is null)
+            {
+                break;
+            }
+
+            currentParentId = nextParentId.Value;
+        }
+
+        return currentParentId == currentSectionId;
+    }
 
     private static MenuOperationResult? ValidateSortOrderRequests(
         IReadOnlyList<SaveMenuSortOrderRequest> requests,
@@ -455,4 +578,6 @@ public sealed class MenuManagementService(
 
         return null;
     }
+
+    private sealed record SeasonalWindow(int StartMonth, int? StartDay, int EndMonth, int? EndDay);
 }

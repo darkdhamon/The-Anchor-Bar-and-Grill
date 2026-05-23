@@ -245,8 +245,8 @@ public sealed class MenuRepositoriesTests
                 [MenuTab.Dinner],
                 new SaveMenuItemSpecialRequest(
                     MenuItemSpecialScheduleKind.WeeklyRecurring,
-                    DayOfWeek.Monday,
-                    new DateOnly(2026, 1, 1),
+                    [DayOfWeek.Monday],
+                    null,
                     null,
                     new TimeOnly(17, 0),
                     null,
@@ -258,7 +258,8 @@ public sealed class MenuRepositoriesTests
             .Include(item => item.PriceVariants)
             .Include(item => item.MenuTabs)
             .Include(item => item.SectionAssignments)
-            .Include(item => item.Special)
+            .Include(item => item.Special!)
+                .ThenInclude(special => special.Days)
             .SingleAsync(item => item.MenuItemId == itemId);
 
         Assert.Equal("Test Burger Night", savedItem.Name);
@@ -266,8 +267,69 @@ public sealed class MenuRepositoriesTests
         Assert.Contains(savedItem.MenuTabs, link => link.Tab == MenuTab.Dinner);
         Assert.Contains(savedItem.SectionAssignments, assignment => assignment.MenuSectionId == BurgersSectionId);
         Assert.NotNull(savedItem.Special);
-        Assert.Equal(DayOfWeek.Monday, savedItem.Special!.DayOfWeek);
+        Assert.Equal([DayOfWeek.Monday], savedItem.Special!.Days.Select(day => day.DayOfWeek).ToArray());
+        Assert.Null(savedItem.Special.StartDate);
         Assert.Equal("$12 basket special", savedItem.Special.Callout);
+    }
+
+    [Fact]
+    public async Task UpsertSectionAsync_persists_parent_section_relationship()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+        var repository = new MenuManagementRepository(context.DbContext);
+
+        var childSectionId = await repository.UpsertSectionAsync(
+            new SaveMenuSectionRequest(
+                null,
+                "Burger Specials",
+                "Rotating burger features.",
+                MenuFamily.Food,
+                BurgersSectionId,
+                [MenuTab.Lunch, MenuTab.Dinner],
+                25,
+                true,
+                false));
+        await repository.SaveChangesAsync();
+
+        var savedSection = await context.DbContext.MenuSections.SingleAsync(section => section.MenuSectionId == childSectionId);
+
+        Assert.Equal(BurgersSectionId, savedSection.ParentSectionId);
+    }
+
+    [Fact]
+    public async Task UpsertItemAsync_persists_recurring_season_fields()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+        var repository = new MenuManagementRepository(context.DbContext);
+
+        var itemId = await repository.UpsertItemAsync(
+            CreateItemRequest(
+                null,
+                "Pumpkin Pancakes",
+                "Seasonal breakfast stack.",
+                25,
+                [new SaveMenuItemPriceVariantRequest(null, "Regular", 12m, 1)],
+                [new SaveMenuItemSectionAssignmentRequest(BurgersSectionId, 25)],
+                false,
+                [MenuTab.Dinner],
+                null)
+            with
+            {
+                OfferStartsOn = new DateOnly(2026, 10, 1),
+                OfferEndsOn = new DateOnly(2027, 4, 15),
+                SeasonStartMonth = 10,
+                SeasonStartDay = 15,
+                SeasonEndMonth = 4,
+                SeasonEndDay = 1
+            });
+        await repository.SaveChangesAsync();
+
+        var savedItem = await context.DbContext.MenuItems.SingleAsync(item => item.MenuItemId == itemId);
+
+        Assert.Equal(10, savedItem.SeasonStartMonth);
+        Assert.Equal(15, savedItem.SeasonStartDay);
+        Assert.Equal(4, savedItem.SeasonEndMonth);
+        Assert.Equal(1, savedItem.SeasonEndDay);
     }
 
     [Fact]

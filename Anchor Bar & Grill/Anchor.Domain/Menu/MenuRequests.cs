@@ -5,10 +5,25 @@ public sealed record SaveMenuSectionRequest(
     string Name,
     string? Callout,
     MenuFamily Family,
+    Guid? ParentSectionId,
     IReadOnlyList<MenuTab> MenuTabs,
     int SortOrder,
     bool IsVisibleToGuests,
-    bool IsArchived);
+    bool IsArchived)
+{
+    public SaveMenuSectionRequest(
+        Guid? sectionId,
+        string name,
+        string? callout,
+        MenuFamily family,
+        IReadOnlyList<MenuTab> menuTabs,
+        int sortOrder,
+        bool isVisibleToGuests,
+        bool isArchived)
+        : this(sectionId, name, callout, family, null, menuTabs, sortOrder, isVisibleToGuests, isArchived)
+    {
+    }
+}
 
 public sealed record SaveMenuItemPriceVariantRequest(
     Guid? PriceVariantId,
@@ -20,13 +35,37 @@ public sealed record SaveMenuItemSectionAssignmentRequest(Guid SectionId, int So
 
 public sealed record SaveMenuItemSpecialRequest(
     MenuItemSpecialScheduleKind ScheduleKind,
-    DayOfWeek? DayOfWeek,
-    DateOnly StartDate,
+    IReadOnlyList<DayOfWeek> DaysOfWeek,
+    DateOnly? StartDate,
     DateOnly? EndDate,
     TimeOnly? StartsAt,
     TimeOnly? EndsAt,
     bool ClosesNextDay,
-    string? Callout);
+    string? Callout)
+{
+    public SaveMenuItemSpecialRequest(
+        MenuItemSpecialScheduleKind scheduleKind,
+        DayOfWeek? dayOfWeek,
+        DateOnly? startDate,
+        DateOnly? endDate,
+        TimeOnly? startsAt,
+        TimeOnly? endsAt,
+        bool closesNextDay,
+        string? callout)
+        : this(
+            scheduleKind,
+            dayOfWeek is null ? Array.Empty<DayOfWeek>() : [dayOfWeek.Value],
+            startDate,
+            endDate,
+            startsAt,
+            endsAt,
+            closesNextDay,
+            callout)
+    {
+    }
+
+    public DayOfWeek? DayOfWeek => DaysOfWeek.Count == 1 ? DaysOfWeek[0] : null;
+}
 
 public sealed record SaveMenuItemRequest(
     Guid? ItemId,
@@ -39,11 +78,55 @@ public sealed record SaveMenuItemRequest(
     DateOnly? OfferStartsOn,
     DateOnly? OfferEndsOn,
     bool IsSeasonal,
+    int? SeasonStartMonth,
+    int? SeasonStartDay,
+    int? SeasonEndMonth,
+    int? SeasonEndDay,
     IReadOnlyList<SaveMenuItemPriceVariantRequest> PriceVariants,
     IReadOnlyList<SaveMenuItemSectionAssignmentRequest> SectionAssignments,
     bool UsesSectionVisibility,
     IReadOnlyList<MenuTab> MenuTabs,
-    SaveMenuItemSpecialRequest? Special);
+    SaveMenuItemSpecialRequest? Special)
+{
+    public SaveMenuItemRequest(
+        Guid? itemId,
+        string name,
+        string description,
+        string? imagePath,
+        int sortOrder,
+        bool isVisibleToGuests,
+        bool isArchived,
+        DateOnly? offerStartsOn,
+        DateOnly? offerEndsOn,
+        bool isSeasonal,
+        IReadOnlyList<SaveMenuItemPriceVariantRequest> priceVariants,
+        IReadOnlyList<SaveMenuItemSectionAssignmentRequest> sectionAssignments,
+        bool usesSectionVisibility,
+        IReadOnlyList<MenuTab> menuTabs,
+        SaveMenuItemSpecialRequest? special)
+        : this(
+            itemId,
+            name,
+            description,
+            imagePath,
+            sortOrder,
+            isVisibleToGuests,
+            isArchived,
+            offerStartsOn,
+            offerEndsOn,
+            isSeasonal,
+            null,
+            null,
+            null,
+            null,
+            priceVariants,
+            sectionAssignments,
+            usesSectionVisibility,
+            menuTabs,
+            special)
+    {
+    }
+}
 
 public sealed record SaveMenuServiceWindowDayRequest(
     DayOfWeek DayOfWeek,

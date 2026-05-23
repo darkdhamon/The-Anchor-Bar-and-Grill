@@ -50,15 +50,6 @@ public partial class Menu
 
     private static string GetTabHref(string queryValue) => $"/menu?tab={Uri.EscapeDataString(queryValue)}";
 
-    private static string GetBadgeClass(string label) =>
-        label switch
-        {
-            "Coming Soon" => "status-pill--coming-soon",
-            "Seasonal" => "status-pill--seasonal",
-            "Today" => "status-pill--today",
-            _ => "status-pill--limited"
-        };
-
     private static string GetSelectedTabLabel(MenuTab tab) =>
         tab switch
         {
@@ -87,10 +78,8 @@ public partial class Menu
             _ => "This tab has been created, but there is no visible guest content assigned to it yet."
         };
 
-    private static string GetPriceSummary(PublicMenuItemView item) =>
-        item.PriceVariants.Count == 1
-            ? item.PriceVariants[0].PriceDisplay
-            : string.Join(" / ", item.PriceVariants.Select(variant => variant.PriceDisplay));
+    private static int GetSectionItemCount(PublicMenuSectionView section) =>
+        section.Entries.Sum(entry => entry.ChildSection?.Items.Count ?? (entry.Item is null ? 0 : 1));
 
     private static bool Assign(MenuTab value, out MenuTab target)
     {

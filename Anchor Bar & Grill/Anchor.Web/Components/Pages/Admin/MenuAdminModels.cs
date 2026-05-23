@@ -63,6 +63,8 @@ internal sealed class MenuSectionFormModel
 
     public MenuFamily Family { get; set; } = MenuFamily.Food;
 
+    public Guid? ParentSectionId { get; set; }
+
     public bool ShowBreakfast { get; set; }
 
     public bool ShowLunch { get; set; } = true;
@@ -111,6 +113,16 @@ internal sealed class MenuItemFormModel
 
     public bool IsSeasonal { get; set; }
 
+    public bool UseRecurringSeasonWindow { get; set; }
+
+    public int? SeasonStartMonth { get; set; }
+
+    public int? SeasonStartDay { get; set; }
+
+    public int? SeasonEndMonth { get; set; }
+
+    public int? SeasonEndDay { get; set; }
+
     public bool UseSectionVisibility { get; set; } = true;
 
     public HashSet<Guid> SelectedSectionIds { get; } = [];
@@ -129,7 +141,7 @@ internal sealed class MenuItemFormModel
 
     public MenuItemSpecialScheduleKind SpecialScheduleKind { get; set; } = MenuItemSpecialScheduleKind.WeeklyRecurring;
 
-    public DayOfWeek SpecialDayOfWeek { get; set; } = DayOfWeek.Monday;
+    public HashSet<DayOfWeek> SelectedSpecialDays { get; } = [];
 
     public string? SpecialStartDateText { get; set; }
 

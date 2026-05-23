@@ -15,6 +15,7 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
             .Select(section => new MenuSectionReferenceRecord(
                 section.MenuSectionId,
                 section.Family,
+                section.ParentSectionId,
                 section.MenuTabs
                     .OrderBy(link => link.Tab)
                     .Select(link => link.Tab)
@@ -29,6 +30,7 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
             .Select(section => new MenuSectionReferenceRecord(
                 section.MenuSectionId,
                 section.Family,
+                section.ParentSectionId,
                 section.MenuTabs
                     .OrderBy(link => link.Tab)
                     .Select(link => link.Tab)
@@ -76,8 +78,9 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
             .Select(item => (Guid?)item.MenuItemId)
             .SingleOrDefaultAsync(cancellationToken);
 
-    public Task<bool> SectionHasDependentsAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
-        dbContext.MenuItemSectionAssignments.AnyAsync(assignment => assignment.MenuSectionId == sectionId, cancellationToken);
+    public async Task<bool> SectionHasDependentsAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
+        await dbContext.MenuItemSectionAssignments.AnyAsync(assignment => assignment.MenuSectionId == sectionId, cancellationToken)
+        || await dbContext.MenuSections.AnyAsync(section => section.ParentSectionId == sectionId, cancellationToken);
 
     public async Task<Guid> UpsertSectionAsync(SaveMenuSectionRequest request, CancellationToken cancellationToken = default)
     {
@@ -98,6 +101,7 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
         entity.NormalizedName = MenuNameRules.NormalizeForLookup(request.Name);
         entity.Callout = request.Callout;
         entity.Family = request.Family;
+        entity.ParentSectionId = request.ParentSectionId;
         entity.SortOrder = request.SortOrder;
         entity.IsVisibleToGuests = request.IsVisibleToGuests;
         entity.IsArchived = request.IsArchived;
@@ -125,7 +129,8 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
             entity = await dbContext.MenuItems
                 .Include(item => item.MenuTabs)
                 .Include(item => item.SectionAssignments)
-                .Include(item => item.Special)
+                .Include(item => item.Special!)
+                .ThenInclude(special => special.Days)
                 .SingleAsync(item => item.MenuItemId == itemId, cancellationToken);
         }
         else
@@ -144,6 +149,10 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
         entity.OfferStartsOn = request.OfferStartsOn;
         entity.OfferEndsOn = request.OfferEndsOn;
         entity.IsSeasonal = request.IsSeasonal;
+        entity.SeasonStartMonth = request.SeasonStartMonth;
+        entity.SeasonStartDay = request.SeasonStartDay;
+        entity.SeasonEndMonth = request.SeasonEndMonth;
+        entity.SeasonEndDay = request.SeasonEndDay;
         entity.UsesSectionVisibility = request.UsesSectionVisibility;
 
         await SyncPriceVariantsAsync(entity.MenuItemId, request.PriceVariants, existingPriceVariantIds, cancellationToken);
@@ -162,13 +171,13 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
         {
             entity.Special ??= new MenuItemSpecialEntity { MenuItemId = entity.MenuItemId };
             entity.Special.ScheduleKind = request.Special.ScheduleKind;
-            entity.Special.DayOfWeek = request.Special.DayOfWeek;
             entity.Special.StartDate = request.Special.StartDate;
             entity.Special.EndDate = request.Special.EndDate;
             entity.Special.StartsAt = request.Special.StartsAt;
             entity.Special.EndsAt = request.Special.EndsAt;
             entity.Special.ClosesNextDay = request.Special.ClosesNextDay;
             entity.Special.Callout = request.Special.Callout;
+            SyncSpecialDays(entity.Special, request.Special.DaysOfWeek);
         }
 
         return entity.MenuItemId;
@@ -287,6 +296,30 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
         }
     }
 
+    private static void SyncSpecialDays(MenuItemSpecialEntity entity, IReadOnlyList<DayOfWeek> requestedDays)
+    {
+        var requestedDaySet = requestedDays
+            .Distinct()
+            .ToHashSet();
+        var existingDaySet = entity.Days
+            .Select(day => day.DayOfWeek)
+            .ToHashSet();
+
+        foreach (var day in entity.Days.Where(day => !requestedDaySet.Contains(day.DayOfWeek)).ToArray())
+        {
+            entity.Days.Remove(day);
+        }
+
+        foreach (var dayOfWeek in requestedDaySet.Where(day => !existingDaySet.Contains(day)))
+        {
+            entity.Days.Add(new MenuItemSpecialDayEntity
+            {
+                MenuItemId = entity.MenuItemId,
+                DayOfWeek = dayOfWeek
+            });
+        }
+    }
+
     public async Task UpsertServiceWindowsAsync(SaveMenuServiceWindowRequest request, CancellationToken cancellationToken = default)
     {
         var existing = await dbContext.MenuServiceWindows
@@ -376,7 +409,8 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
             .Include(menuItem => menuItem.PriceVariants)
             .Include(menuItem => menuItem.MenuTabs)
             .Include(menuItem => menuItem.SectionAssignments)
-            .Include(menuItem => menuItem.Special)
+            .Include(menuItem => menuItem.Special!)
+            .ThenInclude(special => special.Days)
             .SingleAsync(menuItem => menuItem.MenuItemId == itemId, cancellationToken);
         dbContext.MenuItems.Remove(item);
     }

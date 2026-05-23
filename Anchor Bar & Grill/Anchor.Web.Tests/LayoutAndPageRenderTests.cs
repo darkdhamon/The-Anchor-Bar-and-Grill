@@ -818,6 +818,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                     "Appetizers",
                     "Shareables for the table.",
                     "accent-blue",
+                    (IReadOnlyList<PublicMenuItemView>)
                     [
                         new(
                             Guid.Parse("A35ED7CC-E947-4BEC-8B0A-8C2B8B73BFAB"),
@@ -861,6 +862,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                     "Burgers",
                     null,
                     "accent-magenta",
+                    (IReadOnlyList<PublicMenuItemView>)
                     [
                         new(
                             Guid.Parse("7D14308C-C286-4B2D-B58C-A8F74F8DBA0A"),
@@ -908,6 +910,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                     "Specials",
                     null,
                     "accent-gold",
+                    (IReadOnlyList<PublicMenuItemView>)
                     [
                         new(
                             Guid.Parse("DDFFDAE0-E918-43C2-B682-AE3FD5EC50EF"),
@@ -930,6 +933,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                     "Burgers",
                     null,
                     "accent-magenta",
+                    (IReadOnlyList<PublicMenuItemView>)
                     [
                         new(
                             Guid.Parse("DDFFDAE0-E918-43C2-B682-AE3FD5EC50EF"),
@@ -1103,6 +1107,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                     "Soft Drinks",
                     null,
                     "accent-blue",
+                    (IReadOnlyList<PublicMenuItemView>)
                     [
                         new(
                             Guid.Parse("634A9095-9BBA-46CD-A409-15717A90A11E"),

@@ -14,6 +14,10 @@ public sealed class MenuSectionEntityConfiguration : IEntityTypeConfiguration<Me
         builder.Property(section => section.NormalizedName).HasMaxLength(100).IsRequired();
         builder.Property(section => section.Callout).HasMaxLength(200);
         builder.Property(section => section.Family).IsRequired();
+        builder.HasOne(section => section.ParentSection)
+            .WithMany(section => section.ChildSections)
+            .HasForeignKey(section => section.ParentSectionId)
+            .OnDelete(DeleteBehavior.Restrict);
         builder.Property(section => section.SortOrder).IsRequired();
         builder.Property(section => section.IsVisibleToGuests).IsRequired();
         builder.Property(section => section.IsArchived).IsRequired();
@@ -34,6 +38,10 @@ public sealed class MenuItemEntityConfiguration : IEntityTypeConfiguration<MenuI
         builder.Property(item => item.ImagePath).HasMaxLength(300);
         builder.Property(item => item.OfferStartsOn).HasColumnType("date");
         builder.Property(item => item.OfferEndsOn).HasColumnType("date");
+        builder.Property(item => item.SeasonStartMonth);
+        builder.Property(item => item.SeasonStartDay);
+        builder.Property(item => item.SeasonEndMonth);
+        builder.Property(item => item.SeasonEndDay);
         builder.Property(item => item.UsesSectionVisibility).IsRequired();
         builder.HasIndex(item => item.NormalizedName).IsUnique();
         builder.HasOne(item => item.Special)
@@ -120,6 +128,20 @@ public sealed class MenuItemSpecialEntityConfiguration : IEntityTypeConfiguratio
         builder.Property(special => special.EndsAt).HasColumnType("time");
         builder.Property(special => special.Callout).HasMaxLength(100);
         builder.HasData(MenuSeedData.Specials);
+    }
+}
+
+public sealed class MenuItemSpecialDayEntityConfiguration : IEntityTypeConfiguration<MenuItemSpecialDayEntity>
+{
+    public void Configure(EntityTypeBuilder<MenuItemSpecialDayEntity> builder)
+    {
+        builder.ToTable("MenuItemSpecialDays");
+        builder.HasKey(day => new { day.MenuItemId, day.DayOfWeek });
+        builder.HasOne(day => day.Special)
+            .WithMany(special => special.Days)
+            .HasForeignKey(day => day.MenuItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasData(MenuSeedData.SpecialDays);
     }
 }
 

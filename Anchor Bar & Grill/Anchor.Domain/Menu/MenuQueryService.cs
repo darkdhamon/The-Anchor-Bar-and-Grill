@@ -19,12 +19,10 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
         var visibleSections = snapshot.Sections
             .Where(section => section.MenuTabs.Contains(requestedTab))
             .ToArray();
-        var visibleSectionIds = visibleSections
-            .Select(section => section.SectionId)
-            .ToHashSet();
+        var visibleSectionsById = visibleSections.ToDictionary(section => section.SectionId);
 
         var visibleItems = snapshot.Items
-            .Where(item => item.SectionAssignments.Any(assignment => visibleSectionIds.Contains(assignment.SectionId)))
+            .Where(item => item.SectionAssignments.Any(assignment => visibleSectionsById.ContainsKey(assignment.SectionId)))
             .ToArray();
 
         var publicItems = visibleItems
@@ -44,6 +42,7 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
                     ? null
                     : new MenuItemSpecialPublicView(
                         item.Special.ScheduleKind,
+                        item.Special.DaysOfWeek,
                         MenuPresentationRules.GetSpecialBadgeLabel(item.Special),
                         MenuPresentationRules.FormatSpecialScheduleSummary(item.Special),
                         MenuPresentationRules.FormatSpecialTimeSummary(item.Special),
@@ -51,32 +50,13 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
                         MenuPresentationRules.IsSpecialToday(item.Special, today))))
             .ToDictionary(item => item.ItemId);
 
-        var itemsBySection = visibleItems
+        var visibleAssignments = visibleItems
             .SelectMany(item => item.SectionAssignments
-                .Where(assignment => visibleSectionIds.Contains(assignment.SectionId))
-                .Select(assignment => new { assignment.SectionId, Item = item }))
-            .GroupBy(entry => entry.SectionId)
-            .ToDictionary(
-                group => group.Key,
-                group => (IReadOnlyList<PublicMenuItemView>)group
-                    .OrderByDescending(entry => entry.Item.Special is not null)
-                    .ThenBy(entry => entry.Item.SectionAssignments.Single(assignment => assignment.SectionId == group.Key).SortOrder)
-                    .ThenBy(entry => entry.Item.Name, StringComparer.OrdinalIgnoreCase)
-                    .Select(entry => publicItems[entry.Item.ItemId])
-                    .ToArray());
-
-        var standardSections = visibleSections
-            .Where(section => visibleSectionIds.Contains(section.SectionId))
-            .OrderBy(section => section.SortOrder)
-            .ThenBy(section => section.Name, StringComparer.OrdinalIgnoreCase)
-            .Select((section, index) => new PublicMenuSectionView(
-                section.SectionId,
-                section.Name,
-                section.Callout,
-                GetAccentClass(index),
-                itemsBySection.GetValueOrDefault(section.SectionId, Array.Empty<PublicMenuItemView>())))
+                .Where(assignment => visibleSectionsById.ContainsKey(assignment.SectionId))
+                .Select(assignment => new VisibleAssignment(item, assignment)))
             .ToArray();
 
+        var standardSections = BuildStandardSections(visibleSections, visibleAssignments, publicItems);
         var specialsItems = visibleItems
             .Where(item => item.Special is not null)
             .OrderBy(item => item.SortOrder)
@@ -92,7 +72,9 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
                 "Specials",
                 null,
                 "accent-gold",
-                specialsItems));
+                specialsItems
+                    .Select((item, index) => new PublicMenuSectionEntryView(index + 1, item, null))
+                    .ToArray()));
         }
 
         sections.AddRange(standardSections);
@@ -106,16 +88,14 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
                 tabsWithContent.Contains(tab)))
             .ToArray();
 
-        var serviceHours = BuildServiceHours(snapshot.ServiceWindows, today);
-
-        return new PublicMenuView(snapshot.Tab, tabs, serviceHours, sections);
+        return new PublicMenuView(snapshot.Tab, tabs, BuildServiceHours(snapshot.ServiceWindows, today), sections);
     }
 
     public async Task<IReadOnlyList<PublicHomeSpecialView>> GetHomeSpecialsAsync(DateOnly today, CancellationToken cancellationToken = default) =>
         (await repository.GetHomeSpecialItemsAsync(today, today.AddDays(30), cancellationToken))
         .Where(item => item.Special is not null)
         .OrderBy(item => item.Special!.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring
-            ? Array.IndexOf(MenuPresentationRules.DayOrder.ToArray(), item.Special.DayOfWeek ?? DayOfWeek.Monday)
+            ? Array.IndexOf(MenuPresentationRules.DayOrder.ToArray(), item.Special.DaysOfWeek.FirstOrDefault())
             : 7)
         .ThenBy(item => item.Special!.StartDate)
         .ThenBy(item => item.SortOrder)
@@ -134,6 +114,7 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
     public async Task<MenuManagementView> GetMenuManagementViewAsync(DateOnly today, CancellationToken cancellationToken = default)
     {
         var snapshot = await repository.GetMenuManagementSnapshotAsync(cancellationToken);
+        var sectionLookup = snapshot.Sections.ToDictionary(section => section.SectionId);
 
         var tabs = snapshot.ServiceWindows
             .GroupBy(window => window.Tab)
@@ -156,6 +137,7 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
 
         var sections = snapshot.Sections
             .OrderBy(section => section.Family)
+            .ThenBy(section => section.ParentSectionId.HasValue ? 1 : 0)
             .ThenBy(section => section.SortOrder)
             .ThenBy(section => section.Name, StringComparer.OrdinalIgnoreCase)
             .Select(section => new MenuSectionAdminView(
@@ -163,6 +145,10 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
                 section.Name,
                 section.Callout,
                 section.Family,
+                section.ParentSectionId,
+                section.ParentSectionId is { } parentSectionId && sectionLookup.TryGetValue(parentSectionId, out var parentSection)
+                    ? parentSection.Name
+                    : null,
                 section.MenuTabs,
                 section.SortOrder,
                 section.IsVisibleToGuests,
@@ -193,6 +179,10 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
                 item.OfferStartsOn,
                 item.OfferEndsOn,
                 item.IsSeasonal,
+                item.SeasonStartMonth,
+                item.SeasonStartDay,
+                item.SeasonEndMonth,
+                item.SeasonEndDay,
                 item.SectionAssignments
                     .OrderBy(assignment => assignment.SectionName, StringComparer.OrdinalIgnoreCase)
                     .Select(assignment => new MenuItemSectionAssignmentView(
@@ -213,7 +203,7 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
                     ? null
                     : new MenuItemSpecialAdminView(
                         item.Special.ScheduleKind,
-                        item.Special.DayOfWeek,
+                        item.Special.DaysOfWeek,
                         item.Special.StartDate,
                         item.Special.EndDate,
                         item.Special.StartsAt,
@@ -229,6 +219,113 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
 
         return new MenuManagementView(tabs, sections, items);
     }
+
+    private static IReadOnlyList<PublicMenuSectionView> BuildStandardSections(
+        IReadOnlyList<MenuSectionRecord> visibleSections,
+        IReadOnlyList<VisibleAssignment> visibleAssignments,
+        IReadOnlyDictionary<Guid, PublicMenuItemView> publicItems)
+    {
+        var visibleSectionIds = visibleSections
+            .Select(section => section.SectionId)
+            .ToHashSet();
+        var assignmentsBySection = visibleAssignments
+            .GroupBy(entry => entry.Assignment.SectionId)
+            .ToDictionary(group => group.Key, group => group.ToArray());
+
+        var childSectionsByParent = visibleSections
+            .Where(section => section.ParentSectionId.HasValue)
+            .GroupBy(section => section.ParentSectionId!.Value)
+            .ToDictionary(group => group.Key, group => group.ToArray());
+        var renderableSectionIds = new Dictionary<Guid, bool>();
+
+        bool HasRenderableContent(Guid sectionId)
+        {
+            if (renderableSectionIds.TryGetValue(sectionId, out var isRenderable))
+            {
+                return isRenderable;
+            }
+
+            if (!visibleSectionIds.Contains(sectionId))
+            {
+                renderableSectionIds[sectionId] = false;
+                return false;
+            }
+
+            var hasDirectItems = assignmentsBySection.ContainsKey(sectionId);
+            var hasVisibleChildContent = childSectionsByParent.TryGetValue(sectionId, out var children) &&
+                children.Any(child => HasRenderableContent(child.SectionId));
+
+            isRenderable = hasDirectItems || hasVisibleChildContent;
+            renderableSectionIds[sectionId] = isRenderable;
+            return isRenderable;
+        }
+
+        var rootSections = visibleSections
+            .Where(section => HasRenderableContent(section.SectionId))
+            .Where(section => section.ParentSectionId is null || !HasRenderableContent(section.ParentSectionId.Value))
+            .OrderBy(section => section.SortOrder)
+            .ThenBy(section => section.Name, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return rootSections
+            .Select((section, index) => new PublicMenuSectionView(
+                section.SectionId,
+                section.Name,
+                section.Callout,
+                GetAccentClass(index),
+                BuildSectionEntries(section, visibleSections, renderableSectionIds, assignmentsBySection, publicItems)))
+            .ToArray();
+    }
+
+    private static IReadOnlyList<PublicMenuSectionEntryView> BuildSectionEntries(
+        MenuSectionRecord section,
+        IReadOnlyList<MenuSectionRecord> visibleSections,
+        IReadOnlyDictionary<Guid, bool> renderableSectionIds,
+        IReadOnlyDictionary<Guid, VisibleAssignment[]> assignmentsBySection,
+        IReadOnlyDictionary<Guid, PublicMenuItemView> publicItems)
+    {
+        var childSections = visibleSections
+            .Where(candidate => candidate.ParentSectionId == section.SectionId)
+            .Where(candidate => renderableSectionIds.GetValueOrDefault(candidate.SectionId))
+            .ToArray();
+
+        var directItems = assignmentsBySection.GetValueOrDefault(section.SectionId, [])
+            .OrderByDescending(entry => entry.Item.Special is not null)
+            .ThenBy(entry => entry.Assignment.SortOrder)
+            .ThenBy(entry => entry.Item.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(entry => new PublicMenuSectionEntryView(
+                GetEntrySortOrder(entry.Assignment.SortOrder, entry.Item.Special is not null),
+                publicItems[entry.Item.ItemId],
+                null));
+
+        var childEntries = childSections
+            .OrderBy(child => child.SortOrder)
+            .ThenBy(child => child.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(child => new PublicMenuSectionEntryView(
+                child.SortOrder,
+                null,
+                new PublicMenuChildSectionView(
+                    child.SectionId,
+                    child.Name,
+                    child.Callout,
+                    assignmentsBySection[child.SectionId]
+                        .OrderByDescending(entry => entry.Item.Special is not null)
+                        .ThenBy(entry => entry.Assignment.SortOrder)
+                        .ThenBy(entry => entry.Item.Name, StringComparer.OrdinalIgnoreCase)
+                        .Select(entry => publicItems[entry.Item.ItemId])
+                        .ToArray())));
+
+        return directItems
+            .Concat(childEntries)
+            .OrderBy(entry => entry.SortOrder)
+            .ThenBy(entry => entry.IsChildSection ? 1 : 0)
+            .ToArray();
+    }
+
+    private static int GetEntrySortOrder(int sortOrder, bool isSpecial) =>
+        isSpecial
+            ? sortOrder
+            : 10_000 + sortOrder;
 
     private static string GetAccentClass(int index) =>
         (index % 4) switch
@@ -252,4 +349,6 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
                 window.ClosesAt,
                 window.ClosesNextDay))
             .ToArray();
+
+    private sealed record VisibleAssignment(MenuItemRecord Item, MenuItemSectionAssignmentRecord Assignment);
 }

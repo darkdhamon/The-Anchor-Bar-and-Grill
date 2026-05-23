@@ -1,4 +1,5 @@
 using Anchor.Domain.Menu;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Anchor.Infrastructure.Data.Menu;
 
@@ -10,9 +11,27 @@ public sealed class MenuItemSpecialEntity
 
     public MenuItemSpecialScheduleKind ScheduleKind { get; set; }
 
-    public DayOfWeek? DayOfWeek { get; set; }
+    public ICollection<MenuItemSpecialDayEntity> Days { get; set; } = [];
 
-    public DateOnly StartDate { get; set; }
+    [NotMapped]
+    public DayOfWeek? DayOfWeek
+    {
+        get => Days.Count == 1 ? Days.First().DayOfWeek : null;
+        set
+        {
+            Days.Clear();
+            if (value is { } dayOfWeek)
+            {
+                Days.Add(new MenuItemSpecialDayEntity
+                {
+                    MenuItemId = MenuItemId,
+                    DayOfWeek = dayOfWeek
+                });
+            }
+        }
+    }
+
+    public DateOnly? StartDate { get; set; }
 
     public DateOnly? EndDate { get; set; }
 

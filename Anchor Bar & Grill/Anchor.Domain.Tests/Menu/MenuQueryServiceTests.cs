@@ -232,6 +232,84 @@ public sealed class MenuQueryServiceTests
     }
 
     [Fact]
+    public async Task GetPublicMenuAsync_renders_visible_child_sections_inside_their_parent()
+    {
+        var today = new DateOnly(2026, 5, 22);
+        var parentSectionId = Guid.Parse("D5D5E4B2-7DE8-4D14-8B8E-6161F3E77372");
+        var childSectionId = Guid.Parse("C3E6E48C-B9D9-4D95-AFB1-6F7D2FD79C44");
+
+        var repository = new FakeMenuQueryRepository
+        {
+            Snapshot = new PublicMenuSnapshot(
+                MenuTab.Breakfast,
+                [
+                    CreateSection(parentSectionId, "Breakfast", [MenuTab.Breakfast]),
+                    CreateSection(childSectionId, "Pancakes", [MenuTab.Breakfast], parentSectionId: parentSectionId)
+                ],
+                [
+                    CreateItem(
+                        "Blueberry Pancakes",
+                        "Weekend stack.",
+                        3,
+                        [new MenuItemSectionAssignmentRecord(childSectionId, "Pancakes", 3)],
+                        [MenuTab.Breakfast],
+                        null,
+                        null,
+                        false,
+                        [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 11m, 1)])
+                ],
+                [CreateWindow(MenuTab.Breakfast, DayOfWeek.Friday, true, new TimeOnly(9, 0), new TimeOnly(12, 0), false)]),
+            TabsWithContent = [MenuTab.Breakfast]
+        };
+
+        var result = await new MenuQueryService(repository).GetPublicMenuAsync(MenuTab.Breakfast, today);
+
+        var rootSection = Assert.Single(result.Sections);
+        Assert.Equal("Breakfast", rootSection.Name);
+        var childEntry = Assert.Single(rootSection.Entries, entry => entry.ChildSection is not null);
+        Assert.Equal("Pancakes", childEntry.ChildSection!.Name);
+        Assert.Equal("Blueberry Pancakes", Assert.Single(childEntry.ChildSection.Items).Name);
+    }
+
+    [Fact]
+    public async Task GetPublicMenuAsync_promotes_visible_child_section_when_parent_is_not_visible_for_that_tab()
+    {
+        var today = new DateOnly(2026, 5, 22);
+        var parentSectionId = Guid.Parse("1A035410-65C9-4D46-9B8A-5CF1D8547CB2");
+        var childSectionId = Guid.Parse("A17D846F-1BA3-4F53-9B09-1EDC2C57F912");
+
+        var repository = new FakeMenuQueryRepository
+        {
+            Snapshot = new PublicMenuSnapshot(
+                MenuTab.Lunch,
+                [
+                    CreateSection(parentSectionId, "Breakfast", [MenuTab.Breakfast]),
+                    CreateSection(childSectionId, "Breakfast Specials", [MenuTab.Lunch], parentSectionId: parentSectionId)
+                ],
+                [
+                    CreateItem(
+                        "Everything Toast",
+                        "Cross-service favorite.",
+                        1,
+                        [new MenuItemSectionAssignmentRecord(childSectionId, "Breakfast Specials", 1)],
+                        [MenuTab.Lunch],
+                        null,
+                        null,
+                        false,
+                        [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 9m, 1)])
+                ],
+                [CreateWindow(MenuTab.Lunch, DayOfWeek.Friday, true, new TimeOnly(11, 0), new TimeOnly(16, 0), false)]),
+            TabsWithContent = [MenuTab.Lunch]
+        };
+
+        var result = await new MenuQueryService(repository).GetPublicMenuAsync(MenuTab.Lunch, today);
+
+        var rootSection = Assert.Single(result.Sections);
+        Assert.Equal("Breakfast Specials", rootSection.Name);
+        Assert.Equal("Everything Toast", Assert.Single(rootSection.Items).Name);
+    }
+
+    [Fact]
     public async Task GetHomeSpecialsAsync_projects_special_items_for_homepage()
     {
         var today = new DateOnly(2026, 5, 18);
@@ -333,12 +411,18 @@ public sealed class MenuQueryServiceTests
     private static MenuServiceWindowRecord CreateWindow(MenuTab tab, DayOfWeek day, bool isAvailable, TimeOnly? opensAt, TimeOnly? closesAt, bool closesNextDay) =>
         new(tab, day, isAvailable, opensAt, closesAt, closesNextDay);
 
-    private static MenuSectionRecord CreateSection(Guid sectionId, string name, IReadOnlyList<MenuTab> menuTabs, string? callout = null) =>
+    private static MenuSectionRecord CreateSection(
+        Guid sectionId,
+        string name,
+        IReadOnlyList<MenuTab> menuTabs,
+        string? callout = null,
+        Guid? parentSectionId = null) =>
         new(
             sectionId,
             name,
             callout,
             MenuFamily.Food,
+            parentSectionId,
             menuTabs,
             1,
             true,

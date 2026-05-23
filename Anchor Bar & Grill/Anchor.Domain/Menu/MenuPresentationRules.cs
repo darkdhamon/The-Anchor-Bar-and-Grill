@@ -68,6 +68,11 @@ internal static class MenuPresentationRules
             return null;
         }
 
+        if (MenuAvailabilityRules.HasRecurringSeason(item))
+        {
+            return $"Seasonal {FormatSeasonWindow(item)}";
+        }
+
         if (item.OfferStartsOn is null)
         {
             return item.OfferEndsOn is null
@@ -95,10 +100,11 @@ internal static class MenuPresentationRules
     {
         if (item.Special is { } special)
         {
-            List<string> specialLabels = [];
+        List<string> specialLabels = [];
             if (special.ScheduleKind == MenuItemSpecialScheduleKind.Dated
-                && special.StartDate > today
-                && special.StartDate <= today.AddDays(30))
+                && special.StartDate is { } specialStart
+                && specialStart > today
+                && specialStart <= today.AddDays(30))
             {
                 specialLabels.Add("Coming Soon");
             }
@@ -108,12 +114,20 @@ internal static class MenuPresentationRules
 
         List<string> labels = [];
 
-        if (item.OfferStartsOn is { } startsOn && startsOn > today && startsOn <= today.AddDays(30))
+        if (!MenuAvailabilityRules.HasRecurringSeason(item)
+            && item.OfferStartsOn is { } startsOn
+            && startsOn > today
+            && startsOn <= today.AddDays(30))
         {
             labels.Add("Coming Soon");
         }
 
-        if (IsActiveDatedOffer(item, today))
+        if (MenuAvailabilityRules.HasRecurringSeason(item)
+            && MenuAvailabilityRules.IsItemWithinRecurringSeason(item, today))
+        {
+            labels.Add("Seasonal");
+        }
+        else if (IsActiveDatedOffer(item, today))
         {
             labels.Add(item.IsSeasonal ? "Seasonal" : "Limited Time");
         }
@@ -186,8 +200,9 @@ internal static class MenuPresentationRules
         }
 
         if (special.ScheduleKind == MenuItemSpecialScheduleKind.Dated
-            && special.StartDate > today
-            && special.StartDate <= today.AddDays(30))
+            && special.StartDate is { } specialStart
+            && specialStart > today
+            && specialStart <= today.AddDays(30))
         {
             labels.Add("Coming Soon");
         }
@@ -209,33 +224,29 @@ internal static class MenuPresentationRules
     public static string GetSpecialBadgeLabel(MenuItemSpecialRecord special) =>
         special.ScheduleKind switch
         {
-            MenuItemSpecialScheduleKind.WeeklyRecurring => GetDayLabel(special.DayOfWeek ?? DayOfWeek.Monday),
-            MenuItemSpecialScheduleKind.Dated when special.EndDate is { } endDate && endDate > special.StartDate
-                => $"{special.StartDate:MMM d} - {endDate:MMM d}",
-            _ => $"{special.StartDate:MMM d}"
+            MenuItemSpecialScheduleKind.WeeklyRecurring => FormatWeeklySpecialBadge(special.DaysOfWeek),
+            MenuItemSpecialScheduleKind.Dated when special.StartDate is { } startDate && special.EndDate is { } endDate && endDate > startDate
+                => $"{startDate:MMM d} - {endDate:MMM d}",
+            MenuItemSpecialScheduleKind.Dated when special.StartDate is { } startDate
+                => $"{startDate:MMM d}",
+            _ => "Special"
         };
 
     public static string FormatSpecialScheduleSummary(MenuItemSpecialRecord special)
     {
         if (special.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring)
         {
-            var baseSummary = $"Every {GetDayLabel(special.DayOfWeek ?? DayOfWeek.Monday)}";
-            if (special.EndDate is { } endDate)
-            {
-                return $"{baseSummary} through {endDate:MMM d}";
-            }
-
-            return special.StartDate > DateOnly.MinValue
-                ? $"{baseSummary} starting {special.StartDate:MMM d}"
-                : baseSummary;
+            return $"Every {FormatDayList(special.DaysOfWeek)}";
         }
 
-        if (special.EndDate is { } datedEnd && datedEnd > special.StartDate)
+        if (special.StartDate is { } datedStart && special.EndDate is { } datedEnd && datedEnd > datedStart)
         {
-            return $"{special.StartDate:MMM d} - {datedEnd:MMM d}";
+            return $"{datedStart:MMM d} - {datedEnd:MMM d}";
         }
 
-        return $"{special.StartDate:MMM d} only";
+        return special.StartDate is { } singleDate
+            ? $"{singleDate:MMM d} only"
+            : "Limited-time special";
     }
 
     public static string? FormatSpecialTimeSummary(MenuItemSpecialRecord special)
@@ -265,9 +276,12 @@ internal static class MenuPresentationRules
     {
         if (special.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring)
         {
-            return special.DayOfWeek == today.DayOfWeek
-                && special.StartDate <= today
-                && (special.EndDate is null || special.EndDate >= today);
+            return special.DaysOfWeek.Contains(today.DayOfWeek);
+        }
+
+        if (special.StartDate is null)
+        {
+            return false;
         }
 
         var effectiveEnd = special.EndDate ?? special.StartDate;
@@ -285,6 +299,66 @@ internal static class MenuPresentationRules
         target = value;
         return true;
     }
+
+    private static string FormatSeasonWindow(MenuItemRecord item)
+    {
+        if (!MenuAvailabilityRules.HasRecurringSeason(item))
+        {
+            return string.Empty;
+        }
+
+        var startDay = MenuAvailabilityRules.GetEffectiveDay(2024, item.SeasonStartMonth!.Value, item.SeasonStartDay, true);
+        var endDay = MenuAvailabilityRules.GetEffectiveDay(2024, item.SeasonEndMonth!.Value, item.SeasonEndDay, false);
+        var start = new DateOnly(2024, item.SeasonStartMonth.Value, startDay);
+        var end = new DateOnly(2024, item.SeasonEndMonth!.Value, endDay);
+
+        return $"{start:MMM d} - {end:MMM d}";
+    }
+
+    private static string FormatWeeklySpecialBadge(IReadOnlyList<DayOfWeek> days)
+    {
+        var orderedDays = OrderDays(days);
+        return orderedDays.Count switch
+        {
+            0 => "Weekly",
+            1 => GetDayLabel(orderedDays[0]),
+            2 => $"{GetDayAbbreviation(orderedDays[0])} & {GetDayAbbreviation(orderedDays[1])}",
+            _ => "Weekly"
+        };
+    }
+
+    private static string FormatDayList(IReadOnlyList<DayOfWeek> days)
+    {
+        var orderedDays = OrderDays(days)
+            .Select(GetDayLabel)
+            .ToArray();
+        return orderedDays.Length switch
+        {
+            0 => "selected days",
+            1 => orderedDays[0],
+            2 => $"{orderedDays[0]} and {orderedDays[1]}",
+            _ => string.Join(", ", orderedDays[..^1]) + $", and {orderedDays[^1]}"
+        };
+    }
+
+    private static IReadOnlyList<DayOfWeek> OrderDays(IReadOnlyList<DayOfWeek> days) =>
+        days
+            .Distinct()
+            .OrderBy(day => Array.IndexOf(OrderedDays, day))
+            .ToArray();
+
+    private static string GetDayAbbreviation(DayOfWeek dayOfWeek) =>
+        dayOfWeek switch
+        {
+            DayOfWeek.Monday => "Mon",
+            DayOfWeek.Tuesday => "Tue",
+            DayOfWeek.Wednesday => "Wed",
+            DayOfWeek.Thursday => "Thu",
+            DayOfWeek.Friday => "Fri",
+            DayOfWeek.Saturday => "Sat",
+            DayOfWeek.Sunday => "Sun",
+            _ => dayOfWeek.ToString()
+        };
 
     private static bool IsActiveDatedOffer(MenuItemRecord item, DateOnly today) =>
         item.OfferEndsOn is not null

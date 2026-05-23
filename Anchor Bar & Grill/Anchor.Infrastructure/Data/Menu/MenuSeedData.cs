@@ -17,8 +17,6 @@ internal static class MenuSeedData
     private static readonly Guid DessertsSectionId = Guid.Parse("A8F0B603-E02D-49F5-873D-1BB6BFC16C0F");
 
     private static readonly DateOnly OfferReferenceDate = new(2026, 5, 17);
-    private static readonly DateOnly SpecialStartDate = new(2026, 1, 1);
-
     private static SeedMenuItem CreateItem(
         Guid itemId,
         Guid sectionId,
@@ -93,7 +91,6 @@ internal static class MenuSeedData
 
     private static MenuItemSpecialEntity WeeklySpecial(
         Guid itemId,
-        DayOfWeek dayOfWeek,
         TimeOnly? startsAt,
         TimeOnly? endsAt,
         bool closesNextDay,
@@ -102,14 +99,19 @@ internal static class MenuSeedData
         {
             MenuItemId = itemId,
             ScheduleKind = MenuItemSpecialScheduleKind.WeeklyRecurring,
-            DayOfWeek = dayOfWeek,
-            StartDate = SpecialStartDate,
+            StartDate = null,
             EndDate = null,
             StartsAt = startsAt,
             EndsAt = endsAt,
             ClosesNextDay = closesNextDay,
             Callout = callout
         };
+
+    private static MenuItemSpecialDayEntity SpecialDay(Guid itemId, DayOfWeek dayOfWeek) => new()
+    {
+        MenuItemId = itemId,
+        DayOfWeek = dayOfWeek
+    };
 
     private static DateOnly OfferStartingIn(int offsetDays) => OfferReferenceDate.AddDays(offsetDays);
 
@@ -244,11 +246,20 @@ internal static class MenuSeedData
 
     public static IReadOnlyList<MenuItemSpecialEntity> Specials { get; } =
     [
-        WeeklySpecial(Guid.Parse("33D64E7B-D5B7-481A-97FC-7F250A68C27E"), DayOfWeek.Monday, new TimeOnly(17, 0), null, false, "$11 basket special"),
-        WeeklySpecial(Guid.Parse("5EE7BBEA-C2F4-4D5B-BCDB-BD0FD0A06704"), DayOfWeek.Tuesday, new TimeOnly(16, 0), null, false, "$10 dinner feature"),
-        WeeklySpecial(Guid.Parse("7E8222C3-63EC-4B4B-B777-D1E3AA7C5A86"), DayOfWeek.Wednesday, new TimeOnly(17, 0), null, false, "$16 dozen special"),
-        WeeklySpecial(Guid.Parse("88BB945A-B7B4-4725-972B-60A042E524E9"), DayOfWeek.Friday, new TimeOnly(16, 0), null, false, "$15 dinner plate"),
-        WeeklySpecial(Guid.Parse("6BAA63B3-55C9-4E47-8555-803573B9B38D"), DayOfWeek.Sunday, new TimeOnly(15, 0), null, false, "$17 dinner plate")
+        WeeklySpecial(Guid.Parse("33D64E7B-D5B7-481A-97FC-7F250A68C27E"), new TimeOnly(17, 0), null, false, "$11 basket special"),
+        WeeklySpecial(Guid.Parse("5EE7BBEA-C2F4-4D5B-BCDB-BD0FD0A06704"), new TimeOnly(16, 0), null, false, "$10 dinner feature"),
+        WeeklySpecial(Guid.Parse("7E8222C3-63EC-4B4B-B777-D1E3AA7C5A86"), new TimeOnly(17, 0), null, false, "$16 dozen special"),
+        WeeklySpecial(Guid.Parse("88BB945A-B7B4-4725-972B-60A042E524E9"), new TimeOnly(16, 0), null, false, "$15 dinner plate"),
+        WeeklySpecial(Guid.Parse("6BAA63B3-55C9-4E47-8555-803573B9B38D"), new TimeOnly(15, 0), null, false, "$17 dinner plate")
+    ];
+
+    public static IReadOnlyList<MenuItemSpecialDayEntity> SpecialDays { get; } =
+    [
+        SpecialDay(Guid.Parse("33D64E7B-D5B7-481A-97FC-7F250A68C27E"), DayOfWeek.Monday),
+        SpecialDay(Guid.Parse("5EE7BBEA-C2F4-4D5B-BCDB-BD0FD0A06704"), DayOfWeek.Tuesday),
+        SpecialDay(Guid.Parse("7E8222C3-63EC-4B4B-B777-D1E3AA7C5A86"), DayOfWeek.Wednesday),
+        SpecialDay(Guid.Parse("88BB945A-B7B4-4725-972B-60A042E524E9"), DayOfWeek.Friday),
+        SpecialDay(Guid.Parse("6BAA63B3-55C9-4E47-8555-803573B9B38D"), DayOfWeek.Sunday)
     ];
 
     public static IReadOnlyList<MenuServiceWindowEntity> ServiceWindows { get; } =
