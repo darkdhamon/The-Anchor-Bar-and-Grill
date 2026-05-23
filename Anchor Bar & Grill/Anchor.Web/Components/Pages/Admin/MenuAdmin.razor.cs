@@ -40,6 +40,7 @@ public partial class MenuAdmin
     private Guid? pendingSectionDeleteId;
     private Guid? pendingItemDeleteId;
     private MenuBrowserDragState? dragState;
+    private readonly HashSet<Guid> expandedBrowserSectionIds = [];
     private string sectionSnapshot = string.Empty;
     private string itemSnapshot = string.Empty;
     private string hoursSnapshot = string.Empty;
@@ -2354,6 +2355,11 @@ public partial class MenuAdmin
     {
         List<string> classes = ["menu-editor-tree__section"];
 
+        if (IsBrowserSectionExpanded(browserSection.Section.SectionId))
+        {
+            classes.Add("is-expanded");
+        }
+
         if (browserSection.Section.IsArchived)
         {
             classes.Add("is-archived");
@@ -2369,6 +2375,16 @@ public partial class MenuAdmin
         }
 
         return string.Join(' ', classes);
+    }
+
+    private bool IsBrowserSectionExpanded(Guid sectionId) => expandedBrowserSectionIds.Contains(sectionId);
+
+    private void ToggleBrowserSectionExpanded(Guid sectionId)
+    {
+        if (!expandedBrowserSectionIds.Add(sectionId))
+        {
+            expandedBrowserSectionIds.Remove(sectionId);
+        }
     }
 
     private string GetTreeRowClass(MenuAdminDetailKind kind, Guid id, bool isArchived, bool isVisibleToGuests, bool isContextMuted = false)

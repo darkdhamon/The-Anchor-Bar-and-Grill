@@ -266,6 +266,12 @@
 
                                         <div class="menu-editor-tree__actions">
                                             <button type="button"
+                                                    class="menu-editor-tree__icon-button menu-editor-tree__toggle"
+                                                    aria-expanded="@IsBrowserSectionExpanded(browserSection.Section.SectionId)"
+                                                    @onclick="() => ToggleBrowserSectionExpanded(browserSection.Section.SectionId)">
+                                                @(IsBrowserSectionExpanded(browserSection.Section.SectionId) ? "Hide" : "Show")
+                                            </button>
+                                            <button type="button"
                                                     class="menu-editor-tree__icon-button"
                                                     title="Move section up"
                                                     disabled="@(!CanMoveSection(browserSection.Section, -1))"
@@ -284,7 +290,7 @@
                                         </div>
                                     </div>
 
-                                    @if (browserSection.ChildSections.Count > 0 && browserSection.Entries.Count > 0)
+                                    @if (IsBrowserSectionExpanded(browserSection.Section.SectionId) && browserSection.ChildSections.Count > 0 && browserSection.Entries.Count > 0)
                                     {
                                         <div class="menu-editor-tree__group menu-editor-tree__group--mixed">
                                             @foreach (var entry in browserSection.Entries)
@@ -378,7 +384,7 @@
                                             }
                                         </div>
                                     }
-                                    else if (browserSection.Items.Count > 0)
+                                    else if (IsBrowserSectionExpanded(browserSection.Section.SectionId) && browserSection.Items.Count > 0)
                                     {
                                         <div class="menu-editor-tree__group">
                                             <p class="menu-editor-tree__group-label">Items</p>

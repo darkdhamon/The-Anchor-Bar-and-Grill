@@ -66,6 +66,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
 
         var cut = RenderMenuAdmin("/admin/menu?tab=food&food=breakfast");
+        ExpandBrowserSection(cut, "Breakfast Plates");
 
         var mealFilter = cut.FindAll(".menu-editor-filters")
             .Single(section => section.TextContent.Contains("Meal filter", StringComparison.OrdinalIgnoreCase));
@@ -89,6 +90,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
         cut.FindAll(".menu-editor-filter-chip")
             .Single(button => string.Equals(button.TextContent.Trim(), "Specials", StringComparison.Ordinal))
             .Click();
+        ExpandAllBrowserSections(cut);
 
         Assert.Contains("Late Night Burger", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Secret Nachos", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -160,6 +162,16 @@ public sealed class MenuAdminRedesignTests : BunitContext
                 "Breakfast Plates",
                 StringComparison.Ordinal));
 
+        breakfastSection.GetElementsByTagName("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Show", StringComparison.Ordinal))
+            .Click();
+
+        breakfastSection = cut.FindAll("article.menu-editor-tree__section")
+            .Single(section => string.Equals(
+                section.QuerySelector(":scope > .menu-editor-tree__row .menu-editor-tree__title")?.TextContent.Trim(),
+                "Breakfast Plates",
+                StringComparison.Ordinal));
+
         var orderedRows = breakfastSection.QuerySelectorAll(".menu-editor-tree__group .menu-editor-tree__row .menu-editor-tree__title")
             .Select(title => title.TextContent.Trim())
             .ToArray();
@@ -172,6 +184,24 @@ public sealed class MenuAdminRedesignTests : BunitContext
     }
 
     [Fact]
+    public void Browser_sections_start_collapsed_by_default()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+
+        var cut = RenderMenuAdmin("/admin/menu?tab=food&food=breakfast");
+
+        var breakfastSection = cut.FindAll("article.menu-editor-tree__section")
+            .Single(section => string.Equals(
+                section.QuerySelector(":scope > .menu-editor-tree__row .menu-editor-tree__title")?.TextContent.Trim(),
+                "Breakfast Plates",
+                StringComparison.Ordinal));
+
+        Assert.DoesNotContain("is-expanded", breakfastSection.ClassName, StringComparison.Ordinal);
+        Assert.Empty(breakfastSection.QuerySelectorAll(".menu-editor-tree__group"));
+        Assert.Contains("Show", breakfastSection.TextContent, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Both_filter_shows_archived_and_hidden_rows_with_different_states()
     {
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
@@ -181,6 +211,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
         cut.FindAll(".menu-editor-segmented__button")
             .Single(button => string.Equals(button.TextContent.Trim(), "Both", StringComparison.Ordinal))
             .Click();
+        ExpandBrowserSection(cut, "Appetizers");
 
         var archivedRow = cut.FindAll(".menu-editor-tree__row")
             .Single(row => row.TextContent.Contains("Retired Nachos", StringComparison.OrdinalIgnoreCase));
@@ -202,6 +233,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
         cut.FindAll(".menu-editor-segmented__button")
             .Single(button => string.Equals(button.TextContent.Trim(), "Archived", StringComparison.Ordinal))
             .Click();
+        ExpandBrowserSection(cut, "Appetizers");
 
         var section = cut.FindAll(".menu-editor-tree__section")
             .Single(row => row.TextContent.Contains("Appetizers", StringComparison.OrdinalIgnoreCase));
@@ -307,6 +339,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
         Services.AddSingleton<IMenuManagementService>(captureService);
 
         var cut = RenderMenuAdmin("/admin/menu?tab=drinks");
+        ExpandBrowserSection(cut, "Cocktails");
 
         cut.FindAll(".menu-editor-tree__select")
             .Single(button => button.TextContent.Contains("Old Fashioned", StringComparison.OrdinalIgnoreCase))
@@ -330,6 +363,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
         Services.AddSingleton<IMenuManagementService>(captureService);
 
         var cut = RenderMenuAdmin("/admin/menu?tab=drinks");
+        ExpandBrowserSection(cut, "Cocktails");
 
         cut.FindAll(".menu-editor-tree__select")
             .Single(button => button.TextContent.Contains("Old Fashioned", StringComparison.OrdinalIgnoreCase))
@@ -424,6 +458,29 @@ public sealed class MenuAdminRedesignTests : BunitContext
             }));
             builder.CloseComponent();
         });
+    }
+
+    private static void ExpandAllBrowserSections(IRenderedComponent<ContainerFragment> cut)
+    {
+        foreach (var toggle in cut.FindAll(".menu-editor-tree__toggle")
+                     .Where(button => string.Equals(button.TextContent.Trim(), "Show", StringComparison.Ordinal))
+                     .ToArray())
+        {
+            toggle.Click();
+        }
+    }
+
+    private static void ExpandBrowserSection(IRenderedComponent<ContainerFragment> cut, string sectionTitle)
+    {
+        var section = cut.FindAll("article.menu-editor-tree__section")
+            .Single(card => string.Equals(
+                card.QuerySelector(":scope > .menu-editor-tree__row .menu-editor-tree__title")?.TextContent.Trim(),
+                sectionTitle,
+                StringComparison.Ordinal));
+
+        section.GetElementsByTagName("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Show", StringComparison.Ordinal))
+            .Click();
     }
 
     private static ClaimsPrincipal CreateUser(string userName, params string[] roles)

@@ -74,6 +74,7 @@ public sealed class MenuAdminOrderingTests : BunitContext
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
 
         var cut = RenderMenuAdmin("/admin/menu?tab=food&food=all");
+        ExpandSection(cut, "Appetizers");
         var appetizersSection = GetSectionElement(cut, "Appetizers");
 
         appetizersSection.QuerySelectorAll("button[title='Move item down']")[0].Click();
@@ -114,6 +115,7 @@ public sealed class MenuAdminOrderingTests : BunitContext
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
 
         var cut = RenderMenuAdmin("/admin/menu?tab=food&food=all");
+        ExpandSection(cut, "Appetizers");
         var source = cut.FindAll(".menu-editor-tree__row")
             .Single(row => row.TextContent.Contains("Loaded Nachos", StringComparison.OrdinalIgnoreCase));
 
@@ -135,6 +137,7 @@ public sealed class MenuAdminOrderingTests : BunitContext
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
 
         var cut = RenderMenuAdmin("/admin/menu?tab=food&food=breakfast");
+        ExpandSection(cut, "Breakfast Plates");
         var breakfastSection = GetSectionElement(cut, "Breakfast Plates");
 
         breakfastSection.QuerySelectorAll("button[title='Move subsection up']")[0].Click();
@@ -170,6 +173,18 @@ public sealed class MenuAdminOrderingTests : BunitContext
             }));
             builder.CloseComponent();
         });
+    }
+
+    private static void ExpandSection(IRenderedComponent<ContainerFragment> cut, string title)
+    {
+        var section = GetSectionElement(cut, title);
+        var toggle = section.QuerySelector("button.menu-editor-tree__toggle");
+
+        if (toggle is not null
+            && string.Equals(toggle.TextContent.Trim(), "Show", StringComparison.Ordinal))
+        {
+            toggle.Click();
+        }
     }
 
     private static IElement GetSectionElement(IRenderedComponent<ContainerFragment> cut, string title) =>

@@ -1901,6 +1901,10 @@ button.menu-editor-filter-chip {
     background: rgba(247, 247, 244, 0.04);
 }
 
+.menu-editor-tree__section:not(.is-expanded) {
+    gap: 0;
+}
+
 .menu-editor-tree__section.is-context-muted {
     opacity: 0.82;
 }
@@ -2169,6 +2173,10 @@ button.menu-editor-filter-chip {
     background: transparent;
     border-color: var(--outline);
     color: var(--text-primary);
+}
+
+.menu-editor-tree__toggle {
+    min-width: 4.25rem;
 }
 
 .action-button--success {
