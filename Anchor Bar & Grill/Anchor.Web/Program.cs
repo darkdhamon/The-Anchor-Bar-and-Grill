@@ -10,12 +10,18 @@ using Anchor.Web.Components.Account;
 using Anchor.Web.Configuration;
 using Anchor.Web.Data;
 using Anchor.Web.Issues;
+using Microsoft.AspNetCore.Hosting.StaticWebAssets;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+if (builder.Environment.IsDevelopment())
+{
+    StaticWebAssetsLoader.UseStaticWebAssets(builder.Environment, builder.Configuration);
+}
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();

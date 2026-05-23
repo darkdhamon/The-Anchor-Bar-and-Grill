@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Anchor.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -64,6 +65,37 @@ public sealed class ThemePersistenceIntegrationTests : IClassFixture<WebApplicat
         Assert.Contains("Secure Access", markup, StringComparison.Ordinal);
         Assert.Contains("account-form__divider", markup, StringComparison.Ordinal);
         Assert.Contains("Log in with a passkey", markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AccountLogin_EmittedLocalStaticAssets_LoadSuccessfully()
+    {
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
+
+        var markup = await client.GetStringAsync("/Account/Login");
+
+        var assetLinks = Regex.Matches(markup, "(?:href|src)=\"([^\"]+)\"", RegexOptions.IgnoreCase)
+            .Select(match => match.Groups[1].Value)
+            .Where(value =>
+                !value.StartsWith("https://", StringComparison.OrdinalIgnoreCase) &&
+                (value.Contains(".css", StringComparison.OrdinalIgnoreCase) ||
+                 value.Contains(".js", StringComparison.OrdinalIgnoreCase)))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        Assert.NotEmpty(assetLinks);
+
+        foreach (var assetLink in assetLinks)
+        {
+            using var response = await client.GetAsync(assetLink);
+
+            Assert.True(
+                response.IsSuccessStatusCode,
+                $"Expected static asset '{assetLink}' to load successfully, but it returned {(int)response.StatusCode}.");
+        }
     }
 
     private static void EnsureDatabaseReady()

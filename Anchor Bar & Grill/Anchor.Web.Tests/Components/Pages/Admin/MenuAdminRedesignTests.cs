@@ -131,6 +131,34 @@ public sealed class MenuAdminRedesignTests : BunitContext
     }
 
     [Fact]
+    public void New_drink_sections_can_enable_drinks_visibility_and_save()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+        var captureService = new CapturingMenuAdminManagementService();
+        Services.AddSingleton<IMenuManagementService>(captureService);
+
+        var cut = RenderMenuAdmin("/admin/menu?tab=drinks");
+
+        cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Add section", StringComparison.Ordinal))
+            .Click();
+
+        var drinksChip = cut.FindAll(".menu-editor-detail button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Drinks", StringComparison.Ordinal));
+
+        drinksChip.Click();
+        cut.Find("input[placeholder='Appetizers, Wings, Cocktails...']").Input("Mocktails");
+
+        cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Create section", StringComparison.Ordinal))
+            .Click();
+
+        Assert.NotNull(captureService.LastSaveSectionRequest);
+        Assert.Equal(MenuFamily.Drink, captureService.LastSaveSectionRequest!.Family);
+        Assert.Equal([MenuTab.Drinks], captureService.LastSaveSectionRequest.MenuTabs);
+    }
+
+    [Fact]
     public void Add_special_item_shows_weekday_chip_controls()
     {
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
@@ -698,10 +726,14 @@ public sealed class MenuAdminRedesignTests : BunitContext
 
     private sealed class CapturingMenuAdminManagementService : IMenuManagementService
     {
+        public SaveMenuSectionRequest? LastSaveSectionRequest { get; private set; }
         public SaveMenuItemRequest? LastSaveItemRequest { get; private set; }
 
-        public Task<MenuOperationResult> SaveSectionAsync(SaveMenuSectionRequest request, CancellationToken cancellationToken = default) =>
-            Task.FromResult(MenuOperationResult.Success(request.SectionId ?? Guid.NewGuid()));
+        public Task<MenuOperationResult> SaveSectionAsync(SaveMenuSectionRequest request, CancellationToken cancellationToken = default)
+        {
+            LastSaveSectionRequest = request;
+            return Task.FromResult(MenuOperationResult.Success(request.SectionId ?? Guid.NewGuid()));
+        }
 
         public Task<MenuOperationResult> SaveItemAsync(SaveMenuItemRequest request, CancellationToken cancellationToken = default)
         {

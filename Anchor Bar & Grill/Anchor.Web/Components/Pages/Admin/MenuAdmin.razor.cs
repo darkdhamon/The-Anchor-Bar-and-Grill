@@ -1116,7 +1116,6 @@ public partial class MenuAdmin
             sectionForm.ShowBreakfast = false;
             sectionForm.ShowLunch = false;
             sectionForm.ShowDinner = false;
-            sectionForm.ShowDrinks = false;
             return;
         }
 
