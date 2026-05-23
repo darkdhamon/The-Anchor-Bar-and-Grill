@@ -71,39 +71,41 @@
                 <div class="menu-editor-shell__content">
                     <div class="menu-editor-hours-layout">
                         <section class="admin-card menu-editor-hours-summary-panel">
-                            <div class="admin-card__header">
-                                <h2>Current hour summaries</h2>
-                                <span class="admin-card__badge">@HoursSummaryCards.Count tab@(HoursSummaryCards.Count == 1 ? string.Empty : "s")</span>
+                            <div class="admin-card__header menu-editor-hours-summary-panel__header">
+                                <div>
+                                    <h2>Current hour summaries</h2>
+                                    <p class="admin-field-note menu-editor-hours-summary-panel__intro">Compare the grouped guest-facing hours here, then pick any service card to jump straight into that editor.</p>
+                                </div>
+                                <div class="menu-editor-hours-summary-panel__badges">
+                                    <span class="admin-card__badge">@HoursSummaryCards.Count service@(HoursSummaryCards.Count == 1 ? string.Empty : "s")</span>
+                                    <span class="admin-card__badge menu-editor-hours-summary-panel__active-badge">Editing @GetTabLabel(serviceWindowForm.Tab)</span>
+                                </div>
                             </div>
 
                             <div class="menu-editor-hours-summaries">
                                 @foreach (var hourCard in HoursSummaryCards)
                                 {
-                                    <article class="menu-editor-hours-summary @(serviceWindowForm.Tab == hourCard.Tab ? "is-selected" : null)">
-                                        <div class="menu-editor-hours-summary__header">
-                                            <div>
-                                                <p class="menu-editor-hours-summary__eyebrow">@hourCard.Label</p>
-                                                <h3>@GetTabLabel(hourCard.Tab)</h3>
-                                            </div>
-                                            <button type="button"
-                                                    class="action-button @(serviceWindowForm.Tab == hourCard.Tab ? "action-button--primary" : "action-button--secondary")"
-                                                    @onclick="() => SelectHoursTabAsync(hourCard.Tab)">
-                                                @(serviceWindowForm.Tab == hourCard.Tab ? "Editing" : "Edit hours")
-                                            </button>
-                                        </div>
+                                    <button type="button"
+                                            class="menu-editor-hours-summary @(serviceWindowForm.Tab == hourCard.Tab ? "is-selected" : null)"
+                                            @onclick="() => SelectHoursTabAsync(hourCard.Tab)">
+                                        <span class="menu-editor-hours-summary__header">
+                                            <span class="menu-editor-hours-summary__service">
+                                                <span class="menu-editor-hours-summary__eyebrow">Guest-facing service</span>
+                                                <span class="menu-editor-hours-summary__title">@GetTabLabel(hourCard.Tab)</span>
+                                            </span>
+                                            <span class="menu-editor-hours-summary__state-badge">@(serviceWindowForm.Tab == hourCard.Tab ? "Editing" : "Click to edit")</span>
+                                        </span>
 
-                                        <div class="menu-editor-hours-summary__rows">
+                                        <span class="menu-editor-hours-summary__rows">
                                             @foreach (var row in hourCard.Card.Rows)
                                             {
-                                                <div class="menu-editor-hours-summary__row @(row.IncludesToday ? "is-today" : null)">
-                                                    <span class="menu-editor-hours-summary__row-copy">
-                                                        <span>@row.Label</span>
-                                                    </span>
+                                                <span class="menu-editor-hours-summary__row @(row.IncludesToday ? "is-today" : null)">
+                                                    <span class="menu-editor-hours-summary__row-copy">@row.Label</span>
                                                     <strong>@row.Summary</strong>
-                                                </div>
+                                                </span>
                                             }
-                                        </div>
-                                    </article>
+                                        </span>
+                                    </button>
                                 }
                             </div>
                         </section>
@@ -184,7 +186,7 @@
                             <div class="menu-editor-guide__content">
                                 <section class="menu-editor-guide__section">
                                     <p class="menu-editor-guide__eyebrow">1. Review the summaries</p>
-                                    <p>Use the hour summary cards to scan each menu tab before editing so you can see grouped public hours at a glance.</p>
+                                    <p>Use the hour summary cards to scan each menu tab before editing. Click any card to jump straight into that service without hunting through the smaller tab buttons first.</p>
                                 </section>
 
                                 <section class="menu-editor-guide__section">

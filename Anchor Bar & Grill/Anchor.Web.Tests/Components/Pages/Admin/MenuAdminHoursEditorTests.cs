@@ -86,6 +86,22 @@ public sealed class MenuAdminHoursEditorTests : BunitContext
     }
 
     [Fact]
+    public void Clicking_a_summary_card_switches_the_hours_editor_tab()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+
+        var cut = RenderMenuAdmin();
+
+        cut.FindAll(".menu-editor-hours-summary")
+            .Single(card => card.TextContent.Contains("Dinner", StringComparison.OrdinalIgnoreCase))
+            .Click();
+
+        cut.WaitForAssertion(() => Assert.Equal("4:00 PM", GetOpenTimeValue(cut, DayOfWeek.Tuesday)));
+        Assert.DoesNotContain("Edit hours", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Click to edit", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Saved_hours_remain_after_switching_to_another_tab_and_back()
     {
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
