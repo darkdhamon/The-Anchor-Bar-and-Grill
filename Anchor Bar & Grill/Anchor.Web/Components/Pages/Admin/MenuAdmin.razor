@@ -70,7 +70,7 @@
             {
                 <div class="menu-editor-shell__content">
                     <div class="menu-editor-hours-layout">
-                        <section class="admin-card">
+                        <section class="admin-card menu-editor-hours-summary-panel">
                             <div class="admin-card__header">
                                 <h2>Current hour summaries</h2>
                                 <span class="admin-card__badge">@HoursSummaryCards.Count tab@(HoursSummaryCards.Count == 1 ? string.Empty : "s")</span>
@@ -108,7 +108,7 @@
                             </div>
                         </section>
 
-                        <section class="admin-card">
+                        <section class="admin-card menu-editor-hours-detail-panel">
                             <div class="admin-card__header">
                                 <h2>Edit @GetTabLabel(serviceWindowForm.Tab) hours</h2>
                                 <span class="admin-card__badge">@HoursEditorStateLabel</span>
@@ -174,6 +174,40 @@
 
                             <p class="admin-field-note">Type shorthand like <code>1300</code>, <code>930</code>, or <code>1pm</code>, or open the list for a nearby half-hour pick. Save stays disabled until every available day has valid opening and closing times. Use <strong>Closes next day</strong> when the tab stays open past midnight.</p>
                         </section>
+
+                        <aside class="admin-card menu-editor-guide menu-editor-hours-guide" aria-label="How to use the hours editor">
+                            <div class="admin-card__header">
+                                <h2>How to use this page</h2>
+                                <span class="admin-card__badge">Hours guide</span>
+                            </div>
+
+                            <div class="menu-editor-guide__content">
+                                <section class="menu-editor-guide__section">
+                                    <p class="menu-editor-guide__eyebrow">1. Review the summaries</p>
+                                    <p>Use the hour summary cards to scan each menu tab before editing so you can see grouped public hours at a glance.</p>
+                                </section>
+
+                                <section class="menu-editor-guide__section">
+                                    <p class="menu-editor-guide__eyebrow">2. Pick the tab you want</p>
+                                    <p>Select Breakfast, Lunch, Dinner, or Drinks before editing. The editor only saves the tab that is currently active.</p>
+                                </section>
+
+                                <section class="menu-editor-guide__section">
+                                    <p class="menu-editor-guide__eyebrow">3. Mark availability first</p>
+                                    <p>Turn <strong>Available</strong> on only for the days that service should run. Unavailable days stay out of the public hours list automatically.</p>
+                                </section>
+
+                                <section class="menu-editor-guide__section">
+                                    <p class="menu-editor-guide__eyebrow">4. Type or pick times</p>
+                                    <p>Use shorthand like <code>1300</code> or <code>1pm</code>, or open the time list for a nearby half-hour pick. Use <strong>Closes next day</strong> when a service crosses midnight.</p>
+                                </section>
+
+                                <section class="menu-editor-guide__section">
+                                    <p class="menu-editor-guide__eyebrow">5. Save when the state is valid</p>
+                                    <p>The save button stays disabled until every available day has both a valid opening and closing time. Save once the card shows the tab is ready.</p>
+                                </section>
+                            </div>
+                        </aside>
                     </div>
                 </div>
             }

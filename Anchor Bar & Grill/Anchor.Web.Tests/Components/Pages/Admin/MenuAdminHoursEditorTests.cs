@@ -73,6 +73,19 @@ public sealed class MenuAdminHoursEditorTests : BunitContext
     }
 
     [Fact]
+    public void Hours_workspace_renders_a_right_side_quick_guide()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+
+        var cut = RenderMenuAdmin();
+
+        Assert.NotNull(cut.Find(".menu-editor-hours-guide"));
+        Assert.Contains("How to use this page", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Review the summaries", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("The editor only saves the tab that is currently active", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Saved_hours_remain_after_switching_to_another_tab_and_back()
     {
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));

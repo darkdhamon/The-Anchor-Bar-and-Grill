@@ -1721,8 +1721,23 @@ html.anchor-theme-dark .site-shell {
 }
 
 .menu-editor-hours-layout {
-    grid-template-columns: minmax(320px, 0.92fr) minmax(0, 1.08fr);
+    grid-template-areas:
+        "summaries"
+        "editor"
+        "guide";
     align-items: start;
+}
+
+.menu-editor-hours-summary-panel {
+    grid-area: summaries;
+}
+
+.menu-editor-hours-detail-panel {
+    grid-area: editor;
+}
+
+.menu-editor-hours-guide {
+    grid-area: guide;
 }
 
 .menu-editor-hours-summaries {
@@ -2493,6 +2508,11 @@ button.menu-editor-filter-chip {
         grid-template-areas: "browser detail guide";
     }
 
+    .menu-editor-hours-layout {
+        grid-template-columns: minmax(300px, 0.72fr) minmax(0, 1fr) minmax(280px, 0.54fr);
+        grid-template-areas: "summaries editor guide";
+    }
+
     .menu-admin-page .editor-form__grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
@@ -2517,6 +2537,10 @@ button.menu-editor-filter-chip {
 
     .menu-editor-workspace {
         grid-template-columns: minmax(360px, 0.84fr) minmax(0, 1.12fr) minmax(300px, 0.56fr);
+    }
+
+    .menu-editor-hours-layout {
+        grid-template-columns: minmax(320px, 0.76fr) minmax(0, 1.08fr) minmax(300px, 0.58fr);
     }
 }
 
