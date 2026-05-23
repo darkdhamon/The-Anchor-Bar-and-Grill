@@ -8,23 +8,16 @@
 <div class="menu-page">
     @if (menuView is null)
     {
-        <section class="page-hero page-hero--section">
-            <p class="page-hero__eyebrow">Food &amp; Drink</p>
-            <h1>Menu</h1>
-            <p class="page-hero__lead">Loading the latest menu details.</p>
+        <section class="section-shell">
+            <article class="feature-card menu-empty-state">
+                <p class="feature-card__eyebrow">Food &amp; Drink</p>
+                <h2>Loading the latest menu details.</h2>
+                <p>Pulling the latest service hours, sections, and items now.</p>
+            </article>
         </section>
     }
     else
     {
-        <section class="page-hero page-hero--section">
-            <p class="page-hero__eyebrow">Food &amp; Drink</p>
-            <h1>Browse the menu</h1>
-            <p class="page-hero__lead">
-                Choose Breakfast, Lunch, Dinner, or Drinks from the sidebar to switch the active service hours
-                and the menu sections guests can order from right now.
-            </p>
-        </section>
-
         <section class="section-shell">
             <div class="menu-layout">
                 <aside class="feature-card feature-card--tight menu-sidebar" aria-label="Menu navigation">

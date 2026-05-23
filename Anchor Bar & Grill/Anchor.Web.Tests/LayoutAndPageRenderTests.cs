@@ -262,11 +262,9 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         var accordions = cut.FindAll(".menu-accordion__section");
 
         Assert.NotNull(cut.Find(".menu-page"));
-        Assert.Contains("Browse the menu", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Browse by service", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Appetizers", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Choose Breakfast, Lunch, Dinner, or Drinks from the sidebar", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Lunch hours", sidebarHours, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Tuesday-Saturday", sidebarHours, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Not served", sidebarHours, StringComparison.OrdinalIgnoreCase);
