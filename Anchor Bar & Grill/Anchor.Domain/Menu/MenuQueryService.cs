@@ -288,13 +288,17 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
             .Where(candidate => candidate.ParentSectionId == section.SectionId)
             .Where(candidate => renderableSectionIds.GetValueOrDefault(candidate.SectionId))
             .ToArray();
+        var useMixedSectionOrdering = childSections.Length > 0;
 
         var directItems = assignmentsBySection.GetValueOrDefault(section.SectionId, [])
             .OrderByDescending(entry => entry.Item.Special is not null)
             .ThenBy(entry => entry.Assignment.SortOrder)
             .ThenBy(entry => entry.Item.Name, StringComparer.OrdinalIgnoreCase)
             .Select(entry => new PublicMenuSectionEntryView(
-                GetEntrySortOrder(entry.Assignment.SortOrder, entry.Item.Special is not null),
+                GetEntrySortOrder(
+                    entry.Assignment.SortOrder,
+                    !useMixedSectionOrdering,
+                    entry.Item.Special is not null),
                 publicItems[entry.Item.ItemId],
                 null));
 
@@ -322,10 +326,17 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
             .ToArray();
     }
 
-    private static int GetEntrySortOrder(int sortOrder, bool isSpecial) =>
-        isSpecial
+    private static int GetEntrySortOrder(int sortOrder, bool preserveSpecialPriority, bool isSpecial)
+    {
+        if (!preserveSpecialPriority)
+        {
+            return sortOrder;
+        }
+
+        return isSpecial
             ? sortOrder
             : 10_000 + sortOrder;
+    }
 
     private static string GetAccentClass(int index) =>
         (index % 4) switch

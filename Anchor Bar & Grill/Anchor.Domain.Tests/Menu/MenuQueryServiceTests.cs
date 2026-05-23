@@ -272,6 +272,76 @@ public sealed class MenuQueryServiceTests
     }
 
     [Fact]
+    public async Task GetPublicMenuAsync_preserves_mixed_parent_section_order_for_child_sections_and_direct_items()
+    {
+        var today = new DateOnly(2026, 5, 22);
+        var parentSectionId = Guid.Parse("B1A8C19F-C0D5-41A5-82D7-EE84B0C5B289");
+        var childSectionId = Guid.Parse("3AFC6D55-6AE6-423C-AE2A-B1F70A7E39F5");
+
+        var repository = new FakeMenuQueryRepository
+        {
+            Snapshot = new PublicMenuSnapshot(
+                MenuTab.Breakfast,
+                [
+                    CreateSection(parentSectionId, "Breakfast Specials", [MenuTab.Breakfast]),
+                    CreateSection(childSectionId, "Omelets", [MenuTab.Breakfast], "Choice of breakfast potato or hashbrowns.", parentSectionId, 11)
+                ],
+                [
+                    CreateItem(
+                        "Everything Toast",
+                        "Breakfast favorite.",
+                        1,
+                        [new MenuItemSectionAssignmentRecord(parentSectionId, "Breakfast Specials", 1)],
+                        [MenuTab.Breakfast],
+                        null,
+                        null,
+                        false,
+                        [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 13m, 1)]),
+                    CreateItem(
+                        "Red Eye",
+                        "Breakfast plate.",
+                        2,
+                        [new MenuItemSectionAssignmentRecord(parentSectionId, "Breakfast Specials", 2)],
+                        [MenuTab.Breakfast],
+                        null,
+                        null,
+                        false,
+                        [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 12m, 1)]),
+                    CreateItem(
+                        "Breakfast Skillet",
+                        "Hearty skillet.",
+                        3,
+                        [new MenuItemSectionAssignmentRecord(parentSectionId, "Breakfast Specials", 3)],
+                        [MenuTab.Breakfast],
+                        null,
+                        null,
+                        false,
+                        [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 14m, 1)]),
+                    CreateItem(
+                        "Ham & Cheese",
+                        "Classic omelet.",
+                        11,
+                        [new MenuItemSectionAssignmentRecord(childSectionId, "Omelets", 1)],
+                        [MenuTab.Breakfast],
+                        null,
+                        null,
+                        false,
+                        [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 13m, 1)])
+                ],
+                [CreateWindow(MenuTab.Breakfast, DayOfWeek.Friday, true, new TimeOnly(9, 0), new TimeOnly(12, 0), false)]),
+            TabsWithContent = [MenuTab.Breakfast]
+        };
+
+        var result = await new MenuQueryService(repository).GetPublicMenuAsync(MenuTab.Breakfast, today);
+
+        var rootSection = Assert.Single(result.Sections);
+        Assert.Equal(
+            ["Everything Toast", "Red Eye", "Breakfast Skillet", "Omelets"],
+            rootSection.Entries.Select(entry => entry.Item?.Name ?? entry.ChildSection!.Name).ToArray());
+        Assert.Equal("Ham & Cheese", Assert.Single(rootSection.Entries.Last().ChildSection!.Items).Name);
+    }
+
+    [Fact]
     public async Task GetPublicMenuAsync_promotes_visible_child_section_when_parent_is_not_visible_for_that_tab()
     {
         var today = new DateOnly(2026, 5, 22);
@@ -416,7 +486,8 @@ public sealed class MenuQueryServiceTests
         string name,
         IReadOnlyList<MenuTab> menuTabs,
         string? callout = null,
-        Guid? parentSectionId = null) =>
+        Guid? parentSectionId = null,
+        int sortOrder = 1) =>
         new(
             sectionId,
             name,
@@ -424,7 +495,7 @@ public sealed class MenuQueryServiceTests
             MenuFamily.Food,
             parentSectionId,
             menuTabs,
-            1,
+            sortOrder,
             true,
             false);
 
