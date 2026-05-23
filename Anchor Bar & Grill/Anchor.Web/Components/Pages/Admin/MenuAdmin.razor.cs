@@ -1332,58 +1332,131 @@ public partial class MenuAdmin
                      .ThenBy(section => section.Name, StringComparer.OrdinalIgnoreCase))
         {
             var sectionMatchesMenu = MatchesSectionFilter(section, foodFilter);
-            var childSections = Sections
-                .Where(candidate => candidate.ParentSectionId == section.SectionId && candidate.Family == family)
-                .ToArray();
             var sectionItems = Items
                 .Where(item => item.SectionAssignments.Any(assignment => assignment.SectionId == section.SectionId))
                 .Where(item => item.Family == family)
                 .ToArray();
-
-            var itemEntries = Items
-                .Where(item => item.SectionAssignments.Any(assignment => assignment.SectionId == section.SectionId))
-                .Where(item => item.Family == family)
-                .Where(item => sectionMatchesMenu)
-                .Where(item => MatchesItemFilter(item, foodFilter))
-                .Where(item => MatchesArchiveFilter(item.IsArchived, archiveFilter))
-                .Where(item => MatchesContentFilter(item, contentFilter))
-                .OrderByDescending(item => item.Special is not null)
-                .ThenBy(item => GetSectionAssignmentSortOrder(item, section.SectionId))
-                .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
-                .Select(item => new MenuAdminBrowserItemViewModel(item, section.SectionId, false))
-                .ToArray();
+            var itemEntries = BuildBrowserItemEntries(section, sectionMatchesMenu, family, foodFilter, archiveFilter, contentFilter);
+            var childSections = BuildBrowserChildSections(section.SectionId, family, foodFilter, archiveFilter, contentFilter);
 
             var keepEmptySectionVisible = sectionItems.Length == 0
                 && (detailKind == MenuAdminDetailKind.Section && sectionForm.SectionId == section.SectionId
                     || sessionVisibleEmptySectionIds.Contains(section.SectionId));
             var sectionMatches = MatchesArchiveFilter(section.IsArchived, archiveFilter);
-            if (!sectionMatchesMenu && !keepEmptySectionVisible && itemEntries.Length == 0)
-            {
-                continue;
-            }
-
-            if (!keepEmptySectionVisible && !sectionMatches && itemEntries.Length == 0)
-            {
-                continue;
-            }
-
-            if (!keepEmptySectionVisible && sectionItems.Length == 0 && childSections.Length == 0)
-            {
-                continue;
-            }
-
-            if (!keepEmptySectionVisible && contentFilter != MenuContentFilter.All && itemEntries.Length == 0 && childSections.Length == 0)
+            if (!ShouldIncludeBrowserSection(
+                    sectionMatchesMenu,
+                    sectionMatches,
+                    keepEmptySectionVisible,
+                    sectionItems.Length,
+                    childSections.Length,
+                    itemEntries.Length,
+                    contentFilter))
             {
                 continue;
             }
 
             browserSections.Add(new MenuAdminBrowserSectionViewModel(
                 section,
-                IsContextMuted: !sectionMatches && archiveFilter != MenuArchiveFilter.Both && itemEntries.Length > 0,
+                IsContextMuted: !sectionMatches && archiveFilter != MenuArchiveFilter.Both && (itemEntries.Length > 0 || childSections.Length > 0),
+                ChildSections: childSections,
                 Items: itemEntries));
         }
 
         return browserSections;
+    }
+
+    private MenuAdminBrowserItemViewModel[] BuildBrowserItemEntries(
+        MenuSectionAdminView section,
+        bool sectionMatchesMenu,
+        MenuFamily family,
+        MenuTab? foodFilter,
+        MenuArchiveFilter archiveFilter,
+        MenuContentFilter contentFilter) =>
+        Items
+            .Where(item => item.SectionAssignments.Any(assignment => assignment.SectionId == section.SectionId))
+            .Where(item => item.Family == family)
+            .Where(_ => sectionMatchesMenu)
+            .Where(item => MatchesItemFilter(item, foodFilter))
+            .Where(item => MatchesArchiveFilter(item.IsArchived, archiveFilter))
+            .Where(item => MatchesContentFilter(item, contentFilter))
+            .OrderByDescending(item => item.Special is not null)
+            .ThenBy(item => GetSectionAssignmentSortOrder(item, section.SectionId))
+            .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(item => new MenuAdminBrowserItemViewModel(item, section.SectionId, false))
+            .ToArray();
+
+    private MenuAdminBrowserChildSectionViewModel[] BuildBrowserChildSections(
+        Guid parentSectionId,
+        MenuFamily family,
+        MenuTab? foodFilter,
+        MenuArchiveFilter archiveFilter,
+        MenuContentFilter contentFilter)
+    {
+        List<MenuAdminBrowserChildSectionViewModel> childSections = [];
+
+        foreach (var childSection in GetOrderedSections(family, parentSectionId))
+        {
+            var childMatchesMenu = MatchesSectionFilter(childSection, foodFilter);
+            var childItems = Items
+                .Where(item => item.SectionAssignments.Any(assignment => assignment.SectionId == childSection.SectionId))
+                .Where(item => item.Family == family)
+                .ToArray();
+            var childItemEntries = BuildBrowserItemEntries(childSection, childMatchesMenu, family, foodFilter, archiveFilter, contentFilter);
+            var keepEmptyChildVisible = childItems.Length == 0
+                && (detailKind == MenuAdminDetailKind.Section && sectionForm.SectionId == childSection.SectionId
+                    || sessionVisibleEmptySectionIds.Contains(childSection.SectionId));
+            var childMatchesArchive = MatchesArchiveFilter(childSection.IsArchived, archiveFilter);
+
+            if (!ShouldIncludeBrowserSection(
+                    childMatchesMenu,
+                    childMatchesArchive,
+                    keepEmptyChildVisible,
+                    childItems.Length,
+                    0,
+                    childItemEntries.Length,
+                    contentFilter))
+            {
+                continue;
+            }
+
+            childSections.Add(new MenuAdminBrowserChildSectionViewModel(
+                childSection,
+                IsContextMuted: !childMatchesArchive && archiveFilter != MenuArchiveFilter.Both && childItemEntries.Length > 0));
+        }
+
+        return childSections.ToArray();
+    }
+
+    private static bool ShouldIncludeBrowserSection(
+        bool sectionMatchesMenu,
+        bool sectionMatchesArchive,
+        bool keepEmptySectionVisible,
+        int sectionItemCount,
+        int visibleChildSectionCount,
+        int visibleItemCount,
+        MenuContentFilter contentFilter)
+    {
+        if (!sectionMatchesMenu && !keepEmptySectionVisible && visibleItemCount == 0 && visibleChildSectionCount == 0)
+        {
+            return false;
+        }
+
+        if (!keepEmptySectionVisible && !sectionMatchesArchive && visibleItemCount == 0 && visibleChildSectionCount == 0)
+        {
+            return false;
+        }
+
+        if (!keepEmptySectionVisible && sectionItemCount == 0 && visibleChildSectionCount == 0)
+        {
+            return false;
+        }
+
+        if (!keepEmptySectionVisible && contentFilter != MenuContentFilter.All && visibleItemCount == 0 && visibleChildSectionCount == 0)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     private static bool MatchesArchiveFilter(bool isArchived, MenuArchiveFilter archiveFilter) =>
@@ -1426,8 +1499,15 @@ public partial class MenuAdmin
             return;
         }
 
+        var sourceSection = Sections.SingleOrDefault(section => section.SectionId == state.RecordId && section.Family == state.Family);
+        if (sourceSection is null || sourceSection.ParentSectionId != targetSection.ParentSectionId)
+        {
+            dragState = null;
+            return;
+        }
+
         dragState = null;
-        await ReorderSectionsAsync(state.RecordId, targetSection.SectionId, targetSection.Family);
+        await ReorderSectionsAsync(state.RecordId, targetSection.SectionId, targetSection.Family, targetSection.ParentSectionId);
     }
 
     private async Task DropItemAsync(MenuAdminBrowserItemViewModel targetItem)
@@ -1452,7 +1532,7 @@ public partial class MenuAdmin
 
     private async Task MoveSectionAsync(MenuSectionAdminView section, int direction)
     {
-        var siblings = GetOrderedSections(section.Family);
+        var siblings = GetOrderedSections(section.Family, section.ParentSectionId);
         var currentIndex = Array.FindIndex(siblings, sibling => sibling.SectionId == section.SectionId);
         var targetIndex = currentIndex + direction;
 
@@ -1461,7 +1541,7 @@ public partial class MenuAdmin
             return;
         }
 
-        await ReorderSectionsAsync(section.SectionId, siblings[targetIndex].SectionId, section.Family);
+        await ReorderSectionsAsync(section.SectionId, siblings[targetIndex].SectionId, section.Family, section.ParentSectionId);
     }
 
     private async Task MoveItemAsync(MenuAdminBrowserItemViewModel itemEntry, int direction)
@@ -1478,9 +1558,9 @@ public partial class MenuAdmin
         await ReorderItemsAsync(itemEntry.Item.ItemId, siblings[targetIndex].ItemId, itemEntry.SectionId, itemEntry.Item.Special is not null);
     }
 
-    private async Task ReorderSectionsAsync(Guid sourceSectionId, Guid targetSectionId, MenuFamily family)
+    private async Task ReorderSectionsAsync(Guid sourceSectionId, Guid targetSectionId, MenuFamily family, Guid? parentSectionId)
     {
-        var orderedSections = GetOrderedSections(family).ToList();
+        var orderedSections = GetOrderedSections(family, parentSectionId).ToList();
         if (!MoveIntoTargetSlot(orderedSections, section => section.SectionId, sourceSectionId, targetSectionId))
         {
             return;
@@ -1506,9 +1586,9 @@ public partial class MenuAdmin
         }
     }
 
-    private MenuSectionAdminView[] GetOrderedSections(MenuFamily family) =>
+    private MenuSectionAdminView[] GetOrderedSections(MenuFamily family, Guid? parentSectionId) =>
         Sections
-            .Where(section => section.Family == family)
+            .Where(section => section.Family == family && section.ParentSectionId == parentSectionId)
             .OrderBy(section => section.SortOrder)
             .ThenBy(section => section.Name, StringComparer.OrdinalIgnoreCase)
             .ToArray();
@@ -1584,7 +1664,7 @@ public partial class MenuAdmin
 
     private bool CanMoveSection(MenuSectionAdminView section, int direction)
     {
-        var siblings = GetOrderedSections(section.Family);
+        var siblings = GetOrderedSections(section.Family, section.ParentSectionId);
         var currentIndex = Array.FindIndex(siblings, sibling => sibling.SectionId == section.SectionId);
         var targetIndex = currentIndex + direction;
         return currentIndex >= 0 && targetIndex >= 0 && targetIndex < siblings.Length;

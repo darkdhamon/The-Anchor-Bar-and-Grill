@@ -307,6 +307,53 @@
                                         </div>
                                     </div>
 
+                                    @if (browserSection.ChildSections.Count > 0)
+                                    {
+                                        <div class="menu-editor-tree__group">
+                                            <p class="menu-editor-tree__group-label">Subsections</p>
+                                            @foreach (var childSection in browserSection.ChildSections)
+                                            {
+                                                <div class="@($"{GetTreeRowClass(MenuAdminDetailKind.Section, childSection.Section.SectionId, childSection.Section.IsArchived, childSection.Section.IsVisibleToGuests, childSection.IsContextMuted)} menu-editor-tree__row--subsection")">
+                                                    <button type="button" class="menu-editor-tree__select" @onclick="() => SelectSection(childSection.Section)">
+                                                        <span class="menu-editor-tree__title">@childSection.Section.Name</span>
+                                                        <span class="menu-editor-tree__subtitle">
+                                                            Child section
+                                                            @if (!string.IsNullOrWhiteSpace(childSection.Section.Callout))
+                                                            {
+                                                                <span> | @childSection.Section.Callout</span>
+                                                            }
+                                                        </span>
+                                                    </button>
+
+                                                    <div class="menu-editor-tree__chips">
+                                                        <span class="chip chip--neutral">Order @childSection.Section.SortOrder</span>
+                                                        @foreach (var label in childSection.Section.StatusLabels)
+                                                        {
+                                                            <span class="status-pill @(GetStatusClass(label))">@label</span>
+                                                        }
+                                                    </div>
+
+                                                    <div class="menu-editor-tree__actions">
+                                                        <button type="button"
+                                                                class="menu-editor-tree__icon-button"
+                                                                title="Move subsection up"
+                                                                disabled="@(!CanMoveSection(childSection.Section, -1))"
+                                                                @onclick="() => MoveSectionAsync(childSection.Section, -1)">
+                                                            Up
+                                                        </button>
+                                                        <button type="button"
+                                                                class="menu-editor-tree__icon-button"
+                                                                title="Move subsection down"
+                                                                disabled="@(!CanMoveSection(childSection.Section, 1))"
+                                                                @onclick="() => MoveSectionAsync(childSection.Section, 1)">
+                                                            Down
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+
                                     @if (browserSection.Items.Count > 0)
                                     {
                                         <div class="menu-editor-tree__group">
@@ -787,6 +834,40 @@
                         </div>
                     }
                 </section>
+
+                <aside class="admin-card menu-editor-guide" aria-label="How to use the menu editor">
+                    <div class="admin-card__header">
+                        <h2>How to use this page</h2>
+                        <span class="admin-card__badge">Quick guide</span>
+                    </div>
+
+                    <div class="menu-editor-guide__content">
+                        <section class="menu-editor-guide__section">
+                            <p class="menu-editor-guide__eyebrow">1. Browse the catalog</p>
+                            <p>Use the meal, content, and archive filters on the left to narrow the current workspace before you edit anything.</p>
+                        </section>
+
+                        <section class="menu-editor-guide__section">
+                            <p class="menu-editor-guide__eyebrow">2. Order sections and subsections</p>
+                            <p>Each section card shows its direct child subsection headers so you can adjust subsection order without expanding another nested item list there.</p>
+                        </section>
+
+                        <section class="menu-editor-guide__section">
+                            <p class="menu-editor-guide__eyebrow">3. Edit from the center panel</p>
+                            <p>Select a section or item to load it into the detail pane, make your changes, then use the explicit save button at the bottom of that form.</p>
+                        </section>
+
+                        <section class="menu-editor-guide__section">
+                            <p class="menu-editor-guide__eyebrow">4. Create in context</p>
+                            <p>Choose a section first when you can. The top toolbar uses the current selection so new items and special items start in the right place.</p>
+                        </section>
+
+                        <section class="menu-editor-guide__section">
+                            <p class="menu-editor-guide__eyebrow">5. Use archive before delete</p>
+                            <p>Archive is the safe way to hide something from guests while keeping it ready for reuse. Delete is permanent and always requires confirmation.</p>
+                        </section>
+                    </div>
+                </aside>
             </div>
         }
     }

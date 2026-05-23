@@ -147,6 +147,31 @@ public sealed class MenuAdminRedesignTests : BunitContext
     }
 
     [Fact]
+    public void Parent_section_cards_show_subsection_headers_and_workspace_guide()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+
+        var cut = RenderMenuAdmin("/admin/menu?tab=food&food=breakfast");
+
+        var breakfastSection = cut.FindAll("article.menu-editor-tree__section")
+            .Single(section => string.Equals(
+                section.QuerySelector(":scope > .menu-editor-tree__row .menu-editor-tree__title")?.TextContent.Trim(),
+                "Breakfast Plates",
+                StringComparison.Ordinal));
+
+        var subsectionGroup = breakfastSection.QuerySelectorAll(".menu-editor-tree__group")
+            .Single(group => string.Equals(
+                group.QuerySelector(".menu-editor-tree__group-label")?.TextContent.Trim(),
+                "Subsections",
+                StringComparison.Ordinal));
+
+        Assert.Contains("Omelets", subsectionGroup.TextContent, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Denver Omelet", subsectionGroup.TextContent, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("How to use this page", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("menu-editor-guide", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Both_filter_shows_archived_and_hidden_rows_with_different_states()
     {
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
@@ -418,12 +443,14 @@ public sealed class MenuAdminRedesignTests : BunitContext
     {
         internal static readonly Guid AppetizersSectionId = Guid.Parse("D8F92296-4F3C-4B88-B2D4-D1775F54A1D1");
         private static readonly Guid BreakfastSectionId = Guid.Parse("8A88226D-F45A-4E15-9420-8E1828654A73");
+        private static readonly Guid OmeletsSectionId = Guid.Parse("A2FCA86D-BBF5-490D-84FB-A5D08A21F89F");
         private static readonly Guid CocktailsSectionId = Guid.Parse("5E3C8768-2020-4C8A-A565-B2B981AAB1B1");
         private static readonly Guid EmptyFoodSectionId = Guid.Parse("266FAF80-C3BA-4D60-BD70-7B2224D52671");
         private static readonly Guid ActiveSpecialItemId = Guid.Parse("A4CC9DA8-54AE-4FA9-85D1-2E666FCF4B18");
         private static readonly Guid HiddenFoodItemId = Guid.Parse("89CE687D-62E8-453F-8D08-12D74F85FCB9");
         private static readonly Guid ArchivedFoodItemId = Guid.Parse("44AA62BE-4B4D-46C7-A3D3-5088BF3B58DD");
         private static readonly Guid BreakfastItemId = Guid.Parse("797FEE70-BA14-46A5-AB88-DCDA3DAF7262");
+        private static readonly Guid OmeletItemId = Guid.Parse("65D6966E-0DC9-43F3-8A97-41DDFE372B67");
         private static readonly Guid DrinkItemId = Guid.Parse("0A5B6B42-778E-49D3-8568-9AB1A785432D");
         internal static readonly Guid DrinkItemPriceVariantId = Guid.Parse("B81338F8-E82A-4B8A-B9B0-2D831B2C5520");
         private static readonly DateOnly Today = new(2026, 5, 18);
@@ -459,6 +486,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
             [
                 MenuAdminViewFactory.Section(AppetizersSectionId, "Appetizers", MenuFamily.Food, [MenuTab.Lunch, MenuTab.Dinner], 1, callout: "Shareables for the table."),
                 MenuAdminViewFactory.Section(BreakfastSectionId, "Breakfast Plates", MenuFamily.Food, [MenuTab.Breakfast], 2),
+                MenuAdminViewFactory.Section(OmeletsSectionId, "Omelets", MenuFamily.Food, [MenuTab.Breakfast], 1, parentSectionId: BreakfastSectionId, parentSectionName: "Breakfast Plates"),
                 MenuAdminViewFactory.Section(EmptyFoodSectionId, "Unassigned Platters", MenuFamily.Food, [MenuTab.Lunch], 3),
                 MenuAdminViewFactory.Section(CocktailsSectionId, "Cocktails", MenuFamily.Drink, [MenuTab.Drinks], 1)
             ];
@@ -521,6 +549,15 @@ public sealed class MenuAdminRedesignTests : BunitContext
                     [MenuAdminViewFactory.Assignment(BreakfastSectionId, "Breakfast Plates", 1)],
                     [MenuTab.Breakfast],
                     [new MenuItemPriceVariantView("Regular", 11m, 1)]),
+                MenuAdminViewFactory.Item(
+                    OmeletItemId,
+                    MenuFamily.Food,
+                    "Denver Omelet",
+                    "Child section breakfast item.",
+                    1,
+                    [MenuAdminViewFactory.Assignment(OmeletsSectionId, "Omelets", 1)],
+                    [MenuTab.Breakfast],
+                    [new MenuItemPriceVariantView("Regular", 12m, 1)]),
                 MenuAdminViewFactory.Item(
                     DrinkItemId,
                     MenuFamily.Drink,

@@ -13,12 +13,16 @@ internal static class MenuAdminViewFactory
         bool isVisibleToGuests = true,
         bool isArchived = false,
         string? callout = null,
+        Guid? parentSectionId = null,
+        string? parentSectionName = null,
         IReadOnlyList<string>? statusLabels = null) =>
         new(
             sectionId,
             name,
             callout,
             family,
+            parentSectionId,
+            parentSectionName,
             menuTabs,
             sortOrder,
             isVisibleToGuests,
