@@ -273,13 +273,14 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
                 section.Name,
                 section.Callout,
                 GetAccentClass(index),
-                BuildSectionEntries(section, visibleSections, renderableSectionIds, assignmentsBySection, publicItems)))
+                BuildSectionEntries(section, visibleSections, childSectionsByParent, renderableSectionIds, assignmentsBySection, publicItems)))
             .ToArray();
     }
 
     private static IReadOnlyList<PublicMenuSectionEntryView> BuildSectionEntries(
         MenuSectionRecord section,
         IReadOnlyList<MenuSectionRecord> visibleSections,
+        IReadOnlyDictionary<Guid, MenuSectionRecord[]> childSectionsByParent,
         IReadOnlyDictionary<Guid, bool> renderableSectionIds,
         IReadOnlyDictionary<Guid, VisibleAssignment[]> assignmentsBySection,
         IReadOnlyDictionary<Guid, PublicMenuItemView> publicItems)
@@ -289,6 +290,51 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
             .Where(candidate => renderableSectionIds.GetValueOrDefault(candidate.SectionId))
             .ToArray();
         var useMixedSectionOrdering = childSections.Length > 0;
+        var subtreeAssignmentsBySection = new Dictionary<Guid, VisibleAssignment[]>();
+
+        VisibleAssignment[] GetVisibleAssignmentsForSubtree(Guid sectionId)
+        {
+            if (subtreeAssignmentsBySection.TryGetValue(sectionId, out var cachedAssignments))
+            {
+                return cachedAssignments;
+            }
+
+            var collectedAssignments = new List<VisibleAssignment>();
+            var sectionStack = new Stack<Guid>();
+            var visitedSectionIds = new HashSet<Guid>();
+            sectionStack.Push(sectionId);
+
+            while (sectionStack.Count > 0)
+            {
+                var currentSectionId = sectionStack.Pop();
+                if (!visitedSectionIds.Add(currentSectionId))
+                {
+                    continue;
+                }
+
+                if (assignmentsBySection.TryGetValue(currentSectionId, out var directAssignments))
+                {
+                    collectedAssignments.AddRange(directAssignments);
+                }
+
+                if (!childSectionsByParent.TryGetValue(currentSectionId, out var descendants))
+                {
+                    continue;
+                }
+
+                foreach (var descendant in descendants)
+                {
+                    if (renderableSectionIds.GetValueOrDefault(descendant.SectionId))
+                    {
+                        sectionStack.Push(descendant.SectionId);
+                    }
+                }
+            }
+
+            cachedAssignments = collectedAssignments.ToArray();
+            subtreeAssignmentsBySection[sectionId] = cachedAssignments;
+            return cachedAssignments;
+        }
 
         var directItems = assignmentsBySection.GetValueOrDefault(section.SectionId, [])
             .OrderByDescending(entry => entry.Item.Special is not null)
@@ -312,7 +358,7 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
                     child.SectionId,
                     child.Name,
                     child.Callout,
-                    assignmentsBySection[child.SectionId]
+                    GetVisibleAssignmentsForSubtree(child.SectionId)
                         .OrderByDescending(entry => entry.Item.Special is not null)
                         .ThenBy(entry => entry.Assignment.SortOrder)
                         .ThenBy(entry => entry.Item.Name, StringComparer.OrdinalIgnoreCase)

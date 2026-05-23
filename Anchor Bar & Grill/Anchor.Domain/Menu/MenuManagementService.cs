@@ -61,6 +61,11 @@ public sealed class MenuManagementService(
                 return MenuOperationResult.Failure("Parent and child sections must both belong to the same menu family.");
             }
 
+            if (parentSection.ParentSectionId is not null)
+            {
+                return MenuOperationResult.Failure("Choose a top-level parent section. Subsections cannot contain nested subsections.");
+            }
+
             snapshot = await repository.GetMenuManagementSnapshotAsync(cancellationToken);
             if (request.SectionId is { } currentSectionId
                 && IsSectionDescendant(snapshot.Sections, parentSectionId, currentSectionId))

@@ -55,6 +55,22 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
             .Distinct()
             .ToHashSet();
 
+        foreach (var sectionId in visibleSectionIds.ToArray())
+        {
+            var currentSectionId = sectionId;
+            var visitedSectionIds = new HashSet<Guid>();
+
+            while (sectionsById.TryGetValue(currentSectionId, out var currentSection)
+                && currentSection.ParentSectionId is { } parentSectionId
+                && visitedSectionIds.Add(parentSectionId)
+                && sectionsById.TryGetValue(parentSectionId, out var parentSection)
+                && parentSection.MenuTabs.Contains(tab))
+            {
+                visibleSectionIds.Add(parentSectionId);
+                currentSectionId = parentSectionId;
+            }
+        }
+
         var windows = await dbContext.MenuServiceWindows
             .AsNoTracking()
             .Where(window => window.Tab == tab)

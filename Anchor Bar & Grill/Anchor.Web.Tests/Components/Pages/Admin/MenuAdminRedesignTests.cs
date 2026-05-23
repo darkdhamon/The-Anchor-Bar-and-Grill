@@ -167,6 +167,26 @@ public sealed class MenuAdminRedesignTests : BunitContext
     }
 
     [Fact]
+    public void Parent_section_picker_only_offers_top_level_sections()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+
+        var cut = RenderMenuAdmin("/admin/menu?tab=food&food=breakfast");
+
+        cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Add section", StringComparison.Ordinal))
+            .Click();
+
+        var parentSelect = cut.FindAll(".menu-editor-detail select")[1];
+        var optionLabels = parentSelect.GetElementsByTagName("option")
+            .Select(option => option.TextContent.Trim())
+            .ToArray();
+
+        Assert.Contains("Breakfast Plates", optionLabels);
+        Assert.DoesNotContain("Omelets", optionLabels);
+    }
+
+    [Fact]
     public void Add_special_item_shows_weekday_chip_controls()
     {
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));

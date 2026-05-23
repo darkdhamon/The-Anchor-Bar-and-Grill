@@ -162,6 +162,91 @@ public sealed class MenuRepositoriesTests
     }
 
     [Fact]
+    public async Task GetPublicMenuSnapshotAsync_includes_visible_ancestor_sections_for_descendant_content()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+
+        var rootSectionId = Guid.NewGuid();
+        var childSectionId = Guid.NewGuid();
+        var itemId = Guid.NewGuid();
+
+        context.DbContext.MenuSections.AddRange(
+            new MenuSectionEntity
+            {
+                MenuSectionId = rootSectionId,
+                Name = "Breakfast Specials",
+                NormalizedName = MenuNameRules.NormalizeForLookup("Breakfast Specials"),
+                Family = MenuFamily.Food,
+                SortOrder = 90,
+                IsVisibleToGuests = true,
+                IsArchived = false
+            },
+            new MenuSectionEntity
+            {
+                MenuSectionId = childSectionId,
+                Name = "Omelets",
+                NormalizedName = MenuNameRules.NormalizeForLookup("Omelets"),
+                Family = MenuFamily.Food,
+                ParentSectionId = rootSectionId,
+                SortOrder = 91,
+                IsVisibleToGuests = true,
+                IsArchived = false
+            });
+        context.DbContext.MenuSectionTabs.AddRange(
+            new MenuSectionTabEntity
+            {
+                MenuSectionId = rootSectionId,
+                Tab = MenuTab.Breakfast
+            },
+            new MenuSectionTabEntity
+            {
+                MenuSectionId = childSectionId,
+                Tab = MenuTab.Breakfast
+            });
+        context.DbContext.MenuItems.Add(new MenuItemEntity
+        {
+            MenuItemId = itemId,
+            Name = "Ham & Cheese",
+            NormalizedName = MenuNameRules.NormalizeForLookup("Ham & Cheese"),
+            Description = "Classic omelet.",
+            SortOrder = 1,
+            IsVisibleToGuests = true,
+            IsArchived = false
+        });
+        context.DbContext.MenuItemSectionAssignments.Add(new MenuItemSectionAssignmentEntity
+        {
+            MenuItemId = itemId,
+            MenuSectionId = childSectionId,
+            SortOrder = 1
+        });
+        context.DbContext.MenuItemTabs.Add(new MenuItemTabEntity
+        {
+            MenuItemId = itemId,
+            Tab = MenuTab.Breakfast
+        });
+        context.DbContext.MenuItemPriceVariants.Add(new MenuItemPriceVariantEntity
+        {
+            MenuItemPriceVariantId = Guid.NewGuid(),
+            MenuItemId = itemId,
+            Label = "Regular",
+            Amount = 13m,
+            SortOrder = 1
+        });
+        await context.DbContext.SaveChangesAsync();
+
+        var repository = new MenuQueryRepository(context.DbContext);
+
+        var snapshot = await repository.GetPublicMenuSnapshotAsync(
+            MenuTab.Breakfast,
+            new DateOnly(2026, 5, 22),
+            new DateOnly(2026, 6, 21));
+
+        Assert.Contains(snapshot.Sections, section => section.SectionId == rootSectionId);
+        Assert.Contains(snapshot.Sections, section => section.SectionId == childSectionId);
+        Assert.Contains(snapshot.Items, item => item.ItemId == itemId);
+    }
+
+    [Fact]
     public async Task GetPublicServiceWindowsAsync_returns_all_public_service_windows()
     {
         await using var context = await SqliteIdentityTestContext.CreateAsync();

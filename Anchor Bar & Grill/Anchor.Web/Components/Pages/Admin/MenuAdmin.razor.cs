@@ -105,6 +105,7 @@ public partial class MenuAdmin
         Sections
             .Where(section => section.Family == sectionForm.Family)
             .Where(section => section.SectionId != sectionForm.SectionId)
+            .Where(section => section.ParentSectionId is null)
             .OrderBy(section => section.SortOrder)
             .ThenBy(section => section.Name, StringComparer.OrdinalIgnoreCase)
             .ToArray();

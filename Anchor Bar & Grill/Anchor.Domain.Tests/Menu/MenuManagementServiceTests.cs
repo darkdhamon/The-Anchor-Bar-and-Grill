@@ -243,6 +243,37 @@ public sealed class MenuManagementServiceTests
     }
 
     [Fact]
+    public async Task SaveSectionAsync_rejects_parent_section_that_is_already_a_child_section()
+    {
+        var rootSectionId = Guid.NewGuid();
+        var childSectionId = Guid.NewGuid();
+        var repository = new FakeMenuManagementRepository
+        {
+            SectionReferences =
+            {
+                [rootSectionId] = CreateSectionReference(rootSectionId, MenuFamily.Food, [MenuTab.Breakfast]),
+                [childSectionId] = CreateSectionReference(childSectionId, MenuFamily.Food, [MenuTab.Breakfast], rootSectionId)
+            }
+        };
+        var service = CreateService(repository);
+
+        var result = await service.SaveSectionAsync(
+            new SaveMenuSectionRequest(
+                null,
+                "Omelet Toppings",
+                null,
+                MenuFamily.Food,
+                childSectionId,
+                [MenuTab.Breakfast],
+                3,
+                true,
+                false));
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("top-level parent section", result.Errors[0], StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task SaveItemAsync_requires_weekday_for_weekly_specials()
     {
         var repository = CreateRepositoryWithFoodSection();
@@ -642,8 +673,12 @@ public sealed class MenuManagementServiceTests
             menuTabs,
             special);
 
-    private static MenuSectionReferenceRecord CreateSectionReference(Guid sectionId, MenuFamily family, IReadOnlyList<MenuTab> menuTabs) =>
-        new(sectionId, family, menuTabs, false);
+    private static MenuSectionReferenceRecord CreateSectionReference(
+        Guid sectionId,
+        MenuFamily family,
+        IReadOnlyList<MenuTab> menuTabs,
+        Guid? parentSectionId = null) =>
+        new(sectionId, family, parentSectionId, menuTabs, false);
 
     private static MenuItemSectionAssignmentRecord CreateAssignment(Guid sectionId, string sectionName, int sortOrder = 1) =>
         new(sectionId, sectionName, sortOrder);
