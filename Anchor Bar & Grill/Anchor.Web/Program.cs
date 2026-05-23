@@ -9,6 +9,7 @@ using Anchor.Web.Components;
 using Anchor.Web.Components.Account;
 using Anchor.Web.Configuration;
 using Anchor.Web.Data;
+using Anchor.Web.Images;
 using Anchor.Web.Issues;
 using Microsoft.AspNetCore.Hosting.StaticWebAssets;
 using Microsoft.AspNetCore.Authentication;
@@ -48,6 +49,7 @@ builder.Services.AddAnchorDomainServices();
 builder.Services.AddGitHubIssueServices(builder.Configuration);
 builder.Services.AddProductionExceptionIssueReporting(builder.Configuration);
 builder.Services.AddScoped<IConfirmedAccountConfigurationStore, JsonConfirmedAccountConfigurationStore>();
+builder.Services.AddScoped<IMenuItemImageStorage, LocalMenuItemImageStorage>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");

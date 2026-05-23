@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Anchor.Domain.Identity;
 using Anchor.Domain.Menu;
 using Anchor.Web.Components.Pages.Admin;
+using Anchor.Web.Images;
 using Anchor.Web.Tests.Support;
 using Bunit;
 using Bunit.Rendering;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,6 +43,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
 
         Services.AddSingleton<IMenuQueryService>(new StaticMenuAdminQueryService());
         Services.AddSingleton<IMenuManagementService>(new StaticMenuAdminManagementService());
+        Services.AddSingleton<IMenuItemImageStorage>(new StaticMenuItemImageStorage());
     }
 
     [Fact]
@@ -420,6 +423,62 @@ public sealed class MenuAdminRedesignTests : BunitContext
     }
 
     [Fact]
+    public void Item_editor_shows_image_thumbnail_and_preview_modal_markup()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+
+        var cut = RenderMenuAdmin("/admin/menu?tab=drinks");
+        ExpandBrowserSection(cut, "Cocktails");
+
+        cut.FindAll(".menu-editor-tree__select")
+            .Single(button => button.TextContent.Contains("Old Fashioned", StringComparison.OrdinalIgnoreCase))
+            .Click();
+
+        Assert.NotNull(cut.Find(".menu-editor-image-preview__trigger"));
+        Assert.Contains("image-preview-modal", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.True(cut.Find(".image-preview-modal-backdrop").HasAttribute("hidden"));
+        Assert.Contains("/images/menu/wings.svg", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Item_upload_updates_image_path_immediately_before_save()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+        var captureService = new CapturingMenuAdminManagementService();
+        var imageStorage = new CapturingMenuItemImageStorage("/images/gallery/menuitems/mocktail.webp");
+        Services.AddSingleton<IMenuManagementService>(captureService);
+        Services.AddSingleton<IMenuItemImageStorage>(imageStorage);
+
+        var cut = RenderMenuAdmin("/admin/menu?tab=drinks");
+
+        cut.FindAll(".menu-editor-tree__select")
+            .Single(button => button.TextContent.Contains("Cocktails", StringComparison.OrdinalIgnoreCase))
+            .Click();
+
+        cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Add item", StringComparison.Ordinal))
+            .Click();
+
+        cut.Find("input[placeholder='Classic hamburger, wing night, old fashioned...']").Input("Cranberry Spritz");
+        cut.FindAll(".menu-editor-price-row input")[0].Input("Regular");
+        cut.FindAll(".menu-editor-price-row input")[1].Input("6.00");
+
+        cut.FindComponent<InputFile>().UploadFiles(
+            InputFileContent.CreateFromBinary([0x01, 0x02, 0x03], "mocktail.png", contentType: "image/png"));
+
+        Assert.Equal("mocktail.png", imageStorage.LastFileName);
+        Assert.Contains("Image uploaded.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("/images/gallery/menuitems/mocktail.webp", cut.Markup, StringComparison.OrdinalIgnoreCase);
+
+        cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Create item", StringComparison.Ordinal))
+            .Click();
+
+        Assert.NotNull(captureService.LastSaveItemRequest);
+        Assert.Equal("/images/gallery/menuitems/mocktail.webp", captureService.LastSaveItemRequest!.ImagePath);
+    }
+
+    [Fact]
     public void Duplicate_item_name_blur_prompts_to_edit_the_existing_item()
     {
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
@@ -662,7 +721,8 @@ public sealed class MenuAdminRedesignTests : BunitContext
                     1,
                     [MenuAdminViewFactory.Assignment(CocktailsSectionId, "Cocktails", 1)],
                     [MenuTab.Drinks],
-                    [new MenuItemPriceVariantView(DrinkItemPriceVariantId, "Regular", 12m, 1)])
+                    [new MenuItemPriceVariantView(DrinkItemPriceVariantId, "Regular", 12m, 1)],
+                    imagePath: "images/menu/wings.svg")
             ];
 
             return Task.FromResult(new MenuManagementView(tabs, sections, items));
@@ -697,6 +757,33 @@ public sealed class MenuAdminRedesignTests : BunitContext
 
         public Task<MenuOperationResult> DeleteItemAsync(Guid itemId, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success(itemId));
+    }
+
+    private sealed class StaticMenuItemImageStorage : IMenuItemImageStorage
+    {
+        public Task<string> SaveImageAsync(
+            Stream source,
+            string originalFileName,
+            string? contentType,
+            long declaredLength,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult("/images/gallery/menuitems/mock-image.webp");
+    }
+
+    private sealed class CapturingMenuItemImageStorage(string savedPath) : IMenuItemImageStorage
+    {
+        public string? LastFileName { get; private set; }
+
+        public Task<string> SaveImageAsync(
+            Stream source,
+            string originalFileName,
+            string? contentType,
+            long declaredLength,
+            CancellationToken cancellationToken = default)
+        {
+            LastFileName = originalFileName;
+            return Task.FromResult(savedPath);
+        }
     }
 
     private sealed class FailingMenuAdminManagementService : IMenuManagementService

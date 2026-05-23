@@ -5,6 +5,7 @@ using Anchor.Domain.Menu;
 using Anchor.Web.Components.Layout;
 using Anchor.Web.Components.Pages;
 using Anchor.Web.Components.Pages.Admin;
+using Anchor.Web.Images;
 using Anchor.Web.Tests.Support;
 using Bunit;
 using Bunit.JSInterop;
@@ -46,6 +47,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Services.AddSingleton<TimeProvider>(timeProvider);
         Services.AddSingleton<IMenuQueryService>(menuQueryService);
         Services.AddSingleton<IMenuManagementService>(new FakeMenuManagementService());
+        Services.AddSingleton<IMenuItemImageStorage>(new TestMenuItemImageStorage());
     }
 
     [Fact]

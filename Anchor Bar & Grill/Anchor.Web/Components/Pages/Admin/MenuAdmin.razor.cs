@@ -2,7 +2,9 @@ using System.Globalization;
 using Anchor.Domain.Menu;
 using Anchor.Web.Components.Pages;
 using Anchor.Web.Components.Shared;
+using Anchor.Web.Images;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Logging;
 
@@ -46,6 +48,9 @@ public partial class MenuAdmin
     private string hoursSnapshot = string.Empty;
     private readonly HashSet<Guid> sessionVisibleEmptySectionIds = [];
     private MenuAdminDuplicateItemPromptViewModel? duplicateItemPrompt;
+    private string? itemImageUploadStatusMessage;
+    private string? itemImageUploadErrorMessage;
+    private bool isItemImageUploading;
 
     [Inject]
     private IMenuQueryService MenuQueryService { get; set; } = null!;
@@ -58,6 +63,9 @@ public partial class MenuAdmin
 
     [Inject]
     private ILogger<MenuAdmin> Logger { get; set; } = null!;
+
+    [Inject]
+    private IMenuItemImageStorage MenuItemImageStorage { get; set; } = null!;
 
     [SupplyParameterFromQuery(Name = "tab")]
     private string? RequestedEditorTab { get; set; }
@@ -117,6 +125,7 @@ public partial class MenuAdmin
     private bool HoursHaveValidationErrors => !TryValidateHoursForm(serviceWindowForm, out _);
 
     private bool CanSaveHours => HoursHaveUnsavedChanges && !HoursHaveValidationErrors;
+    private string? CurrentItemImagePreviewPath => MenuImagePathDisplay.Normalize(itemForm.ImagePath);
 
     private string HoursEditorStateLabel =>
         !HoursHaveUnsavedChanges
@@ -301,6 +310,7 @@ public partial class MenuAdmin
     private void ResetItemForm()
     {
         ClearDuplicateItemPrompt();
+        ClearItemImageFeedback();
         itemForm = CreateDefaultItemForm();
         var defaultSectionId = Sections
             .Where(section => section.Family == MenuFamily.Food)
@@ -382,6 +392,7 @@ public partial class MenuAdmin
     {
         ClearPendingDeletes();
         ClearDuplicateItemPrompt();
+        ClearItemImageFeedback();
         itemForm = CreateDefaultItemForm(isSpecial);
 
         var contextSection = ResolveContextSection(family);
@@ -506,6 +517,7 @@ public partial class MenuAdmin
     {
         ClearPendingDeletes();
         ClearDuplicateItemPrompt();
+        ClearItemImageFeedback();
         detailKind = MenuAdminDetailKind.Item;
         selectedBrowserId = item.ItemId;
         itemForm = new MenuItemFormModel
@@ -664,7 +676,7 @@ public partial class MenuAdmin
                     itemForm.ItemId,
                     itemForm.Name,
                     itemForm.Description,
-                    itemForm.ImagePath,
+                    NormalizeStoredImagePath(itemForm.ImagePath),
                     itemForm.SortOrder,
                     itemForm.IsVisibleToGuests,
                     itemForm.IsArchived,
@@ -1135,6 +1147,42 @@ public partial class MenuAdmin
         }
     }
 
+    private async Task HandleItemImageSelectedAsync(InputFileChangeEventArgs args)
+    {
+        var file = args.File;
+        if (file is null)
+        {
+            return;
+        }
+
+        ClearItemImageFeedback();
+        isItemImageUploading = true;
+
+        try
+        {
+            await using var stream = file.OpenReadStream(MenuItemImageStorageDefaults.MaxRawUploadBytes);
+            itemForm.ImagePath = await MenuItemImageStorage.SaveImageAsync(
+                stream,
+                file.Name,
+                file.ContentType,
+                file.Size);
+            itemImageUploadStatusMessage = "Image uploaded. Save the item to keep this image on the menu record.";
+        }
+        catch (MenuItemImageUploadException exception)
+        {
+            itemImageUploadErrorMessage = exception.Message;
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Menu item image upload failed for item {ItemId}", itemForm.ItemId);
+            itemImageUploadErrorMessage = "We couldn't finish uploading that image. Try again with a different file.";
+        }
+        finally
+        {
+            isItemImageUploading = false;
+        }
+    }
+
     private void ClearSectionValidationMessage()
     {
         if (detailKind == MenuAdminDetailKind.Section
@@ -1335,6 +1383,13 @@ public partial class MenuAdmin
     }
 
     private void ClearDuplicateItemPrompt() => duplicateItemPrompt = null;
+
+    private void ClearItemImageFeedback()
+    {
+        itemImageUploadStatusMessage = null;
+        itemImageUploadErrorMessage = null;
+        isItemImageUploading = false;
+    }
 
     private IReadOnlyList<MenuAdminBrowserSectionViewModel> BuildBrowserSections(
         MenuFamily family,
@@ -1999,6 +2054,24 @@ public partial class MenuAdmin
         string.Join("|",
             model.Tab,
             string.Join(";", model.Days.Select(day => $"{day.DayOfWeek}~{day.IsAvailable}~{day.OpensAtText}~{day.ClosesAtText}~{day.ClosesNextDay}")));
+
+    private static string? NormalizeStoredImagePath(string? imagePath)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+        {
+            return null;
+        }
+
+        var trimmed = imagePath.Trim();
+        if (Uri.TryCreate(trimmed, UriKind.Absolute, out _))
+        {
+            return trimmed;
+        }
+
+        return trimmed.StartsWith("/", StringComparison.Ordinal)
+            ? trimmed
+            : $"/{trimmed.TrimStart('/')}";
+    }
 
     private static MenuItemFormModel CreateDefaultItemForm(bool isSpecial = false) => new()
     {

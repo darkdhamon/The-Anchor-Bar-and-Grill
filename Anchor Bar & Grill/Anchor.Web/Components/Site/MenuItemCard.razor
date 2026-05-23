@@ -1,10 +1,14 @@
 @using Anchor.Domain.Menu
+@using Anchor.Web.Components.Shared
 
 <article class="menu-item @(Item.ImagePath is not null ? "menu-item--with-image" : "menu-item--text-only") @(Item.Special is not null ? "menu-item--special" : string.Empty) @(IsNested ? "menu-item--nested" : string.Empty)">
     @if (Item.ImagePath is not null)
     {
         <div class="menu-item__visual">
-            <img class="menu-item__image" src="@Item.ImagePath" alt="@Item.Name" />
+            <ImagePreviewThumbnail ImagePath="@Item.ImagePath"
+                                   AltText="@Item.Name"
+                                   Title="@Item.Name"
+                                   ImageClass="menu-item__image" />
         </div>
     }
 

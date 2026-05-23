@@ -653,10 +653,54 @@
                                     </div>
                                 }
 
-                                <label>
-                                    <span>Image path or URL</span>
-                                    <CommitAwareInputText @bind-Value="itemForm.ImagePath" placeholder="/images/menu/wings.jpg" />
-                                </label>
+                                <div class="editor-form__message">
+                                    <span>Menu item image</span>
+
+                                    @if (CurrentItemImagePreviewPath is not null)
+                                    {
+                                        <ImagePreviewThumbnail ImagePath="@CurrentItemImagePreviewPath"
+                                                               AltText="@(string.IsNullOrWhiteSpace(itemForm.Name) ? "Menu item image" : itemForm.Name)"
+                                                               Title="@(string.IsNullOrWhiteSpace(itemForm.Name) ? "Menu item image" : itemForm.Name)"
+                                                               TriggerClass="menu-editor-image-preview__trigger"
+                                                               ImageClass="menu-editor-image-preview__image" />
+                                    }
+                                    else
+                                    {
+                                        <p class="admin-field-note">No image uploaded yet for this menu item.</p>
+                                    }
+
+                                    <label class="menu-editor-upload-field">
+                                        <span>Upload JPG, PNG, or WEBP</span>
+                                        <InputFile OnChange="HandleItemImageSelectedAsync"
+                                                   accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                                                   disabled="@isItemImageUploading" />
+                                    </label>
+
+                                    <p class="admin-field-note">Uploads over 50 MB are rejected. Successful uploads are saved as WEBP and compressed to 5 MB or smaller.</p>
+
+                                    @if (itemImageUploadStatusMessage is not null)
+                                    {
+                                        <div class="alert-success">
+                                            @itemImageUploadStatusMessage
+                                        </div>
+                                    }
+
+                                    @if (itemImageUploadErrorMessage is not null)
+                                    {
+                                        <div class="alert-danger">
+                                            @itemImageUploadErrorMessage
+                                        </div>
+                                    }
+
+                                    <details class="menu-editor-advanced">
+                                        <summary>Advanced image path</summary>
+                                        <label>
+                                            <span>Image path or URL</span>
+                                            <CommitAwareInputText @bind-Value="itemForm.ImagePath" placeholder="/images/gallery/menuitems/example.webp" />
+                                        </label>
+                                        <p class="admin-field-note">Use this only when the image already exists at a known public URL or site path.</p>
+                                    </details>
+                                </div>
 
                                 <label class="editor-form__message">
                                     <span>Description (optional)</span>
@@ -893,7 +937,7 @@
                             <StatusMessage Message="@DetailStatusMessage" />
 
                             <div class="action-row action-row--wrap">
-                                <button type="button" class="action-button action-button--primary" @onclick="SaveItemAsync">
+                                <button type="button" class="action-button action-button--primary" disabled="@isItemImageUploading" @onclick="SaveItemAsync">
                                     @(itemForm.ItemId is null ? (itemForm.IsSpecial ? "Create special item" : "Create item") : (itemForm.IsSpecial ? "Save special item" : "Save item"))
                                 </button>
                                 <button type="button" class="action-button action-button--secondary" @onclick="ResetCurrentDetail">

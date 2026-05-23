@@ -4,6 +4,8 @@
   const darkTheme = "dark";
   const headerMenuSelector = ".site-header__nav-stack";
   const menuSectionSelectors = [".site-navigation", ".preview-nav"];
+  const imagePreviewOpenClass = "image-preview-open";
+  let activeImagePreview = null;
 
   function getCookieTheme() {
     const match = document.cookie.match(/(?:^|; )anchor-theme=([^;]+)/);
@@ -145,7 +147,69 @@
     syncHeaderHeight();
   }
 
+  function getImagePreviewModal(targetId) {
+    if (!targetId) {
+      return null;
+    }
+
+    return document.getElementById(targetId);
+  }
+
+  function closeImagePreview(modal = activeImagePreview) {
+    if (!modal) {
+      return;
+    }
+
+    modal.hidden = true;
+
+    if (modal === activeImagePreview) {
+      activeImagePreview = null;
+    }
+
+    document.body.classList.remove(imagePreviewOpenClass);
+  }
+
+  function openImagePreview(modal) {
+    if (!modal) {
+      return;
+    }
+
+    if (activeImagePreview && activeImagePreview !== modal) {
+      closeImagePreview(activeImagePreview);
+    }
+
+    activeImagePreview = modal;
+    modal.hidden = false;
+    document.body.classList.add(imagePreviewOpenClass);
+
+    const dialog = modal.querySelector(".image-preview-modal");
+
+    if (dialog instanceof HTMLElement) {
+      dialog.focus();
+    }
+  }
+
   function handleDocumentClick(event) {
+    const imagePreviewTrigger = event.target.closest("[data-image-preview-open]");
+
+    if (imagePreviewTrigger) {
+      event.preventDefault();
+      openImagePreview(getImagePreviewModal(imagePreviewTrigger.getAttribute("data-image-preview-open")));
+      return;
+    }
+
+    if (event.target.closest("[data-image-preview-close]")) {
+      event.preventDefault();
+      closeImagePreview(event.target.closest("[data-image-preview-modal]"));
+      return;
+    }
+
+    if (event.target.matches("[data-image-preview-modal]")) {
+      event.preventDefault();
+      closeImagePreview(event.target);
+      return;
+    }
+
     const menuToggle = event.target.closest("[data-anchor-menu-toggle='true']");
 
     if (menuToggle) {
@@ -163,6 +227,12 @@
 
     if (!event.target.closest(".site-header")) {
       closeHeaderMenus();
+    }
+  }
+
+  function handleDocumentKeyDown(event) {
+    if (event.key === "Escape" && activeImagePreview) {
+      closeImagePreview(activeImagePreview);
     }
   }
 
@@ -187,6 +257,8 @@
   document.addEventListener("change", handleDocumentChange);
   document.removeEventListener("click", handleDocumentClick);
   document.addEventListener("click", handleDocumentClick);
+  document.removeEventListener("keydown", handleDocumentKeyDown);
+  document.addEventListener("keydown", handleDocumentKeyDown);
   window.removeEventListener("resize", syncHeaderHeight);
   window.addEventListener("resize", syncHeaderHeight);
 })();

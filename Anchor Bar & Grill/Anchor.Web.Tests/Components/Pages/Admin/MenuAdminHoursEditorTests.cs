@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Anchor.Domain.Identity;
 using Anchor.Domain.Menu;
 using Anchor.Web.Components.Pages.Admin;
+using Anchor.Web.Images;
 using Anchor.Web.Tests.Support;
 using Bunit;
 using Bunit.Rendering;
@@ -50,6 +51,7 @@ public sealed class MenuAdminHoursEditorTests : BunitContext
         authStateProvider = new TestAuthenticationStateProvider();
         Services.AddSingleton<AuthenticationStateProvider>(authStateProvider);
         Services.AddCascadingAuthenticationState();
+        Services.AddSingleton<IMenuItemImageStorage>(new TestMenuItemImageStorage());
 
         hoursStore = new MutableMenuHoursStore();
         Services.AddSingleton<IMenuQueryService>(new MutableMenuHoursQueryService(hoursStore));
