@@ -1,7 +1,10 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Hosting;
-using SkiaSharp;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 namespace Anchor.Web.Images;
 
@@ -48,7 +51,7 @@ public sealed partial class LocalMenuItemImageStorage(
 
         try
         {
-            using var image = LoadBitmap(rawImage);
+            using var image = await LoadImageAsync(rawImage, cancellationToken);
             var processedBytes = await ProcessImageAsync(image, cancellationToken);
 
             var targetDirectory = ResolveTargetDirectory();
@@ -116,7 +119,7 @@ public sealed partial class LocalMenuItemImageStorage(
         }
     }
 
-    private static async Task<byte[]> ProcessImageAsync(SKBitmap image, CancellationToken cancellationToken)
+    private static async Task<byte[]> ProcessImageAsync(Image<Rgba32> image, CancellationToken cancellationToken)
     {
         foreach (var edgeLimit in EdgeLimits)
         {
@@ -133,12 +136,13 @@ public sealed partial class LocalMenuItemImageStorage(
         throw new MenuItemImageUploadException("The image could not be compressed below 5 MB. Please choose a smaller source image.");
     }
 
-    private static SKBitmap LoadBitmap(Stream source)
+    private static async Task<Image<Rgba32>> LoadImageAsync(Stream source, CancellationToken cancellationToken)
     {
         try
         {
-            var bitmap = SKBitmap.Decode(source);
-            return bitmap ?? throw new MenuItemImageUploadException("The selected file could not be read as an image.");
+            var image = await Image.LoadAsync<Rgba32>(source, cancellationToken);
+            image.Mutate(context => context.AutoOrient());
+            return image;
         }
         catch (Exception exception)
         {
@@ -147,38 +151,34 @@ public sealed partial class LocalMenuItemImageStorage(
     }
 
     private static async Task<byte[]> EncodeAttemptAsync(
-        SKBitmap originalImage,
+        Image<Rgba32> originalImage,
         int edgeLimit,
         int quality,
         CancellationToken cancellationToken)
     {
         using var candidate = ResizeIfNeeded(originalImage, edgeLimit);
-        using var image = SKImage.FromBitmap(candidate);
-        using var data = image.Encode(SKEncodedImageFormat.Webp, quality);
-        await Task.CompletedTask;
-        cancellationToken.ThrowIfCancellationRequested();
-        return data.ToArray();
+        await using var output = new MemoryStream();
+        var encoder = new WebpEncoder
+        {
+            Quality = quality
+        };
+
+        await candidate.SaveAsync(output, encoder, cancellationToken);
+        return output.ToArray();
     }
 
-    private static SKBitmap ResizeIfNeeded(SKBitmap originalImage, int edgeLimit)
+    private static Image<Rgba32> ResizeIfNeeded(Image<Rgba32> originalImage, int edgeLimit)
     {
         var scale = Math.Min(1f, Math.Min((float)edgeLimit / originalImage.Width, (float)edgeLimit / originalImage.Height));
         var width = Math.Max(1, (int)Math.Round(originalImage.Width * scale));
         var height = Math.Max(1, (int)Math.Round(originalImage.Height * scale));
-        var resized = new SKBitmap(width, height, originalImage.ColorType, originalImage.AlphaType);
 
-        using var canvas = new SKCanvas(resized);
-        using var sourceImage = SKImage.FromBitmap(originalImage);
-        var sampling = new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.None);
+        if (width == originalImage.Width && height == originalImage.Height)
+        {
+            return originalImage.Clone();
+        }
 
-        canvas.Clear(SKColors.Transparent);
-        canvas.DrawImage(
-            sourceImage,
-            new SKRect(0, 0, originalImage.Width, originalImage.Height),
-            new SKRect(0, 0, width, height),
-            sampling);
-        canvas.Flush();
-        return resized;
+        return originalImage.Clone(context => context.Resize(width, height));
     }
 
     private static string BuildSafeBaseName(string originalFileName)

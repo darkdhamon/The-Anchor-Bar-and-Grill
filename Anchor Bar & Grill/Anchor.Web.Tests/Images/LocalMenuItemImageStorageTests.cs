@@ -2,7 +2,8 @@ using Anchor.Web.Images;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
-using SkiaSharp;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace Anchor.Web.Tests.Images;
 
@@ -30,6 +31,24 @@ public sealed class LocalMenuItemImageStorageTests
 
         Assert.True(File.Exists(savedFile));
         Assert.InRange(new FileInfo(savedFile).Length, 1, MenuItemImageStorageDefaults.MaxProcessedUploadBytes);
+    }
+
+    [Fact]
+    public async Task SaveImageAsync_accepts_jpeg_uploads_and_normalizes_them_to_webp()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        var webRoot = Path.Combine(tempDirectory.Path, "wwwroot");
+        var service = new LocalMenuItemImageStorage(
+            new TestWebHostEnvironment(webRoot),
+            NullLogger<LocalMenuItemImageStorage>.Instance);
+
+        var jpegBytes = CreateJpegBytes();
+        await using var source = new MemoryStream(jpegBytes);
+
+        var savedPath = await service.SaveImageAsync(source, "phone-photo.jpg", "image/jpeg", jpegBytes.Length);
+
+        Assert.StartsWith("/images/gallery/menuitems/", savedPath, StringComparison.Ordinal);
+        Assert.EndsWith(".webp", savedPath, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -82,23 +101,32 @@ public sealed class LocalMenuItemImageStorageTests
 
     private static byte[] CreatePngBytes()
     {
-        using var bitmap = new SKBitmap(1600, 1200);
-        using (var canvas = new SKCanvas(bitmap))
-        {
-            canvas.Clear(SKColors.White);
-        }
+        using var image = CreateSampleImage();
+        using var data = new MemoryStream();
+        image.SaveAsPng(data);
+        return data.ToArray();
+    }
 
-        for (var y = 0; y < bitmap.Height; y++)
+    private static byte[] CreateJpegBytes()
+    {
+        using var image = CreateSampleImage();
+        using var data = new MemoryStream();
+        image.SaveAsJpeg(data);
+        return data.ToArray();
+    }
+
+    private static Image<Rgba32> CreateSampleImage()
+    {
+        var image = new Image<Rgba32>(1600, 1200);
+        for (var y = 0; y < image.Height; y++)
         {
-            for (var x = 0; x < bitmap.Width; x++)
+            for (var x = 0; x < image.Width; x++)
             {
-                bitmap.SetPixel(x, y, new SKColor((byte)(x % 255), (byte)(y % 255), (byte)((x + y) % 255)));
+                image[x, y] = new Rgba32((byte)(x % 255), (byte)(y % 255), (byte)((x + y) % 255));
             }
         }
 
-        using var image = SKImage.FromBitmap(bitmap);
-        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
-        return data.ToArray();
+        return image;
     }
 
     private sealed class TestWebHostEnvironment(string webRootPath) : IWebHostEnvironment
