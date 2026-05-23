@@ -1028,6 +1028,7 @@ html.anchor-theme-dark .site-shell {
     border-radius: 1rem;
     background: transparent;
     cursor: zoom-in;
+    overflow: hidden;
 }
 
 .image-preview__trigger:focus-visible {
@@ -1503,7 +1504,13 @@ body.image-preview-open {
 }
 
 .menu-editor-image-preview__image {
+    display: block;
+    width: 100%;
+    max-width: 100%;
     aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 1rem;
+    box-shadow: 0 10px 24px rgba(31, 36, 58, 0.18);
 }
 
 .menu-editor-advanced {
