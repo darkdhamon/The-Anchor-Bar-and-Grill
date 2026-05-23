@@ -1702,19 +1702,6 @@ html.anchor-theme-dark .site-shell {
     box-shadow: inset 0 0 0 1px rgba(89, 175, 226, 0.16);
 }
 
-.menu-editor-intro__copy {
-    display: grid;
-    gap: 0.9rem;
-}
-
-.menu-editor-intro__list {
-    margin: 0;
-    padding-left: 1.15rem;
-    color: var(--text-secondary);
-    display: grid;
-    gap: 0.5rem;
-}
-
 .menu-editor-hours-layout {
     grid-template-columns: minmax(320px, 0.92fr) minmax(0, 1.08fr);
     align-items: start;

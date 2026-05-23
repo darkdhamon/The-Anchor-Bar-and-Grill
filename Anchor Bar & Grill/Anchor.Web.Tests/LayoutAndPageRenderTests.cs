@@ -406,11 +406,11 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 
         Assert.NotNull(cut.Find(".menu-admin-page"));
         Assert.Contains("Menu editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Food workspace", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Food browser", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Meal filter", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Add section", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Archive is the safe removal path", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("How to use this page", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Archive is the safe way to hide something from guests while keeping it ready for reuse", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Monday Night Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Delete section", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Breakfast", cut.Markup, StringComparison.OrdinalIgnoreCase);

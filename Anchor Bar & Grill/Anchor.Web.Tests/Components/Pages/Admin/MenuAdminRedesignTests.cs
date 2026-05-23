@@ -53,8 +53,8 @@ public sealed class MenuAdminRedesignTests : BunitContext
         var selectedTab = cut.FindAll(".menu-editor-tabs__button.is-selected").Single();
 
         Assert.Equal("Food", selectedTab.TextContent.Trim());
-        Assert.Contains("Food workspace", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Food browser", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("How to use this page", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Hours", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Drinks", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }

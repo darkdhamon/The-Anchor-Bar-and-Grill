@@ -56,40 +56,6 @@
                     Hours
                 </button>
             </div>
-
-            <div class="menu-editor-intro__copy">
-                <h2>@(selectedEditorTab == MenuEditorTab.Hours ? "Hours workspace" : $"{CurrentWorkspaceLabel} workspace")</h2>
-                @if (selectedEditorTab == MenuEditorTab.Hours)
-                {
-                    <p>
-                        Review grouped guest-facing hour summaries for Breakfast, Lunch, Dinner, and Drinks, then open the
-                        tab you want to edit with the reusable time combobox fields.
-                    </p>
-                }
-                else if (selectedEditorTab == MenuEditorTab.Food)
-                {
-                    <p>
-                        Browse food sections and edit every food record through one shared item form. Specials are now first-class
-                        menu items, so the browser shows one list while the item form reveals extra schedule controls only when
-                        <strong>Is special</strong> is enabled.
-                    </p>
-                }
-                else
-                {
-                    <p>
-                        Manage drink sections and beverage items through the same item workflow. Archived content stays in reach
-                        through the browser filter so staff can restore or reuse it later.
-                    </p>
-                }
-                <ul class="menu-editor-intro__list">
-                    <li>Sections can include optional public callout text, choose their default menu visibility, and guests only see sections that currently have visible items.</li>
-                    <li>Food items can belong to more than one section at the same time. Use the section checklist to place an item anywhere it should appear, then use <strong>Use section menu defaults</strong> or the item visibility checkboxes to decide which services may show that item.</li>
-                    <li>Section names and menu item names must stay unique. If a typed item name already exists, the detail panel offers to switch into that record instead of saving a duplicate.</li>
-                    <li>Archive is the safe removal path. Delete still exists, but it always requires a second confirmation.</li>
-                    <li>The browser uses Active, Both, and Archived modes plus All, Standard, and Specials filters to focus the current catalog slice.</li>
-                    <li>Move buttons and drag-and-drop reorder sections and the mixed content stream inside parent sections. Item ordering is stored per section assignment, so the same item can sit at different positions in different sections.</li>
-                </ul>
-            </div>
         </section>
 
         @if (selectedEditorTab == MenuEditorTab.Hours)
@@ -901,7 +867,7 @@
 
                         <section class="menu-editor-guide__section">
                             <p class="menu-editor-guide__eyebrow">3. Edit from the center panel</p>
-                            <p>Select a section or item to load it into the detail pane, make your changes, then use the explicit save button at the bottom of that form.</p>
+                            <p>Select a section or item to load it into the detail pane, make your changes, then use the explicit save button at the bottom of that form. Turn on <strong>Is special</strong> only when that item needs the extra special schedule controls.</p>
                         </section>
 
                         <section class="menu-editor-guide__section">
@@ -910,7 +876,12 @@
                         </section>
 
                         <section class="menu-editor-guide__section">
-                            <p class="menu-editor-guide__eyebrow">5. Use archive before delete</p>
+                            <p class="menu-editor-guide__eyebrow">5. Visibility and duplicates</p>
+                            <p>Sections can control their default menu visibility, and items can either follow those defaults or narrow them. If a typed item name already exists, the editor offers to switch into that record instead of saving a duplicate.</p>
+                        </section>
+
+                        <section class="menu-editor-guide__section">
+                            <p class="menu-editor-guide__eyebrow">6. Use archive before delete</p>
                             <p>Archive is the safe way to hide something from guests while keeping it ready for reuse. Delete is permanent and always requires confirmation.</p>
                         </section>
                     </div>
