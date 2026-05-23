@@ -1566,6 +1566,16 @@ html.anchor-theme-dark .site-shell {
     line-height: 1.45;
 }
 
+.admin-field-note code,
+.menu-editor-guide__section p code {
+    color: var(--accent-readable);
+    font-weight: 700;
+    background: rgba(143, 220, 255, 0.1);
+    border: 1px solid rgba(143, 220, 255, 0.24);
+    border-radius: 0.45rem;
+    padding: 0.08rem 0.35rem;
+}
+
 .menu-admin-subcard {
     margin: 1rem 0;
     padding: 1rem;
