@@ -6,6 +6,13 @@
     position: relative;
 }
 
+.time-combobox__frame:has(.time-combobox__input.input-validation-error),
+.time-combobox__frame:has(.time-combobox__input.invalid),
+.time-combobox__frame:has(.time-combobox__input[aria-invalid="true"]) {
+    border-radius: 1rem;
+    box-shadow: 0 0 0 0.24rem var(--validation-ring);
+}
+
 .time-combobox__input {
     padding-right: 3rem;
 }

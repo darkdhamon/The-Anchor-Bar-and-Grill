@@ -1,5 +1,9 @@
+using System.ComponentModel.DataAnnotations;
+using System.Linq.Expressions;
 using Anchor.Web.Components.Shared;
 using Bunit;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Web;
 
 namespace Anchor.Web.Tests.Components.Shared;
@@ -122,6 +126,44 @@ public sealed class InputTimeComboBoxTests : BunitContext
         });
     }
 
+    [Fact]
+    public void Input_inherits_invalid_class_from_edit_context()
+    {
+        var model = new RequiredTimeInputModel();
+        var editContext = new EditContext(model);
+        var fieldIdentifier = FieldIdentifier.Create(() => model.Value);
+
+        var cut = Render(builder =>
+        {
+            builder.OpenComponent<EditForm>(0);
+            builder.AddAttribute(1, nameof(EditForm.EditContext), editContext);
+            builder.AddAttribute(2, nameof(EditForm.ChildContent), (RenderFragment<EditContext>)(_ => childBuilder =>
+            {
+                childBuilder.OpenComponent<DataAnnotationsValidator>(0);
+                childBuilder.CloseComponent();
+                childBuilder.OpenComponent<InputTimeComboBox>(1);
+                childBuilder.AddAttribute(2, nameof(InputTimeComboBox.Value), model.Value);
+                childBuilder.AddAttribute(3, nameof(InputTimeComboBox.ValueChanged), EventCallback.Factory.Create<string?>(this, value => model.Value = value));
+                childBuilder.AddAttribute(4, nameof(InputTimeComboBox.ValueExpression), (Expression<Func<string?>>)(() => model.Value));
+                childBuilder.CloseComponent();
+            }));
+            builder.CloseComponent();
+        });
+
+        cut.InvokeAsync(() =>
+        {
+            editContext.NotifyFieldChanged(fieldIdentifier);
+            editContext.Validate();
+        });
+
+        cut.WaitForAssertion(() =>
+        {
+            var input = cut.Find("input");
+            Assert.Contains("invalid", input.ClassName, StringComparison.Ordinal);
+            Assert.Equal("true", input.GetAttribute("aria-invalid"));
+        });
+    }
+
     private IRenderedComponent<InputTimeComboBox> RenderTimeComboBox(TimeInputModel model)
     {
         return Render<InputTimeComboBox>(parameters => parameters
@@ -132,6 +174,12 @@ public sealed class InputTimeComboBoxTests : BunitContext
 
     private sealed class TimeInputModel
     {
+        public string? Value { get; set; }
+    }
+
+    private sealed class RequiredTimeInputModel
+    {
+        [Required]
         public string? Value { get; set; }
     }
 }

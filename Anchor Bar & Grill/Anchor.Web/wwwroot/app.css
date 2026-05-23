@@ -78,6 +78,10 @@ html.anchor-theme-light .site-shell {
     --text-secondary: rgba(34, 31, 37, 0.74);
     --outline: rgba(34, 31, 37, 0.08);
     --accent-readable: var(--anchor-blue-700);
+    --validation-border: rgba(210, 88, 152, 0.9);
+    --validation-ring: rgba(210, 88, 152, 0.2);
+    --validation-surface: rgba(210, 88, 152, 0.08);
+    --validation-label: #9d2e68;
 }
 
 .theme-dark,
@@ -94,6 +98,10 @@ html.anchor-theme-dark .site-shell {
     --text-secondary: rgba(247, 247, 244, 0.7);
     --outline: rgba(247, 247, 244, 0.08);
     --accent-readable: #8fdcff;
+    --validation-border: rgba(255, 148, 210, 0.96);
+    --validation-ring: rgba(210, 88, 152, 0.28);
+    --validation-surface: rgba(210, 88, 152, 0.14);
+    --validation-label: #ffb8df;
 }
 
 .theme-light,
@@ -1447,6 +1455,40 @@ html.anchor-theme-dark .site-shell {
     outline: none;
     border-color: rgba(89, 175, 226, 0.55);
     box-shadow: 0 0 0 0.2rem rgba(89, 175, 226, 0.16);
+}
+
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), textarea, select).input-validation-error,
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), textarea, select).invalid,
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), textarea, select)[aria-invalid="true"] {
+    border-color: var(--validation-border) !important;
+    box-shadow: 0 0 0 0.24rem var(--validation-ring) !important;
+    background:
+        linear-gradient(180deg, var(--validation-surface), transparent 58%),
+        var(--surface-strong);
+}
+
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), textarea, select).input-validation-error:focus,
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), textarea, select).input-validation-error:focus-visible,
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), textarea, select).invalid:focus,
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), textarea, select).invalid:focus-visible,
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), textarea, select)[aria-invalid="true"]:focus,
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), textarea, select)[aria-invalid="true"]:focus-visible {
+    border-color: var(--validation-border) !important;
+    box-shadow:
+        0 0 0 0.24rem var(--validation-ring),
+        0 0 0 1px color-mix(in srgb, var(--validation-border) 72%, transparent) !important;
+}
+
+:where(input[type="checkbox"], input[type="radio"]).input-validation-error,
+:where(input[type="checkbox"], input[type="radio"]).invalid,
+:where(input[type="checkbox"], input[type="radio"])[aria-invalid="true"] {
+    outline: 2px solid var(--validation-border);
+    outline-offset: 0.2rem;
+}
+
+:where(label, .editor-form__message, .editor-form__toggle):has(.validation-message:not(:empty), .text-danger:not(:empty), .field-validation-error:not(:empty)) > span:first-child,
+:where(label, .editor-form__message, .editor-form__toggle):has(.validation-message:not(:empty), .text-danger:not(:empty), .field-validation-error:not(:empty)) > small:first-child {
+    color: var(--validation-label);
 }
 
 :is(.editor-form, .editor-form__grid) :where(input[type="date"], input[type="time"], select) {
