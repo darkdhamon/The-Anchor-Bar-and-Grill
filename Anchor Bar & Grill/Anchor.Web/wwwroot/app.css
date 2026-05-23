@@ -1773,13 +1773,14 @@ html.anchor-theme-dark .site-shell {
 }
 
 .menu-editor-hours-summaries {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: stretch;
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
 }
 
 .menu-editor-hours-summary {
     display: grid;
-    gap: 1rem;
+    grid-template-columns: minmax(170px, 210px) minmax(0, 1fr) auto;
+    gap: 1.1rem;
     width: 100%;
     padding: 1.1rem;
     border-radius: 1.15rem;
@@ -1788,6 +1789,7 @@ html.anchor-theme-dark .site-shell {
     color: var(--text-primary);
     text-align: left;
     cursor: pointer;
+    align-items: start;
     transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -1805,7 +1807,7 @@ html.anchor-theme-dark .site-shell {
     box-shadow: inset 0 0 0 1px rgba(89, 175, 226, 0.18), 0 1rem 2rem rgba(4, 8, 18, 0.16);
 }
 
-.menu-editor-hours-summary__header,
+.menu-editor-hours-summary__main,
 .menu-editor-hours-summary__row,
 .menu-editor-browser__toolbar,
 .menu-editor-tree__row,
@@ -1816,9 +1818,14 @@ html.anchor-theme-dark .site-shell {
     justify-content: space-between;
 }
 
+.menu-editor-hours-summary__main {
+    display: contents;
+}
+
 .menu-editor-hours-summary__service {
     display: grid;
     gap: 0.25rem;
+    align-content: start;
 }
 
 .menu-editor-hours-summary__eyebrow,
@@ -1864,6 +1871,7 @@ html.anchor-theme-dark .site-shell {
 .menu-editor-hours-summary__rows {
     display: grid;
     gap: 0.65rem;
+    align-content: start;
 }
 
 .menu-editor-hours-summary__row-copy {
@@ -1871,10 +1879,8 @@ html.anchor-theme-dark .site-shell {
 }
 
 .menu-editor-hours-summary__row {
-    padding: 0.8rem 0.9rem;
-    border-radius: 1rem;
-    background: rgba(247, 247, 244, 0.05);
-    border: 1px solid rgba(247, 247, 244, 0.08);
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(247, 247, 244, 0.08);
 }
 
 .menu-editor-hours-summary__row strong {
@@ -1882,7 +1888,14 @@ html.anchor-theme-dark .site-shell {
     text-align: right;
 }
 
+.menu-editor-hours-summary__row:last-child {
+    border-bottom: 0;
+}
+
 .menu-editor-hours-summary__row.is-today {
+    padding: 0.8rem 0.9rem;
+    border-bottom: 0;
+    border-radius: 1rem;
     background: linear-gradient(180deg, rgba(88, 170, 218, 0.14), rgba(66, 126, 183, 0.08));
     box-shadow: inset 0 0 0 1px rgba(89, 175, 226, 0.22);
 }
@@ -2559,6 +2572,14 @@ button.menu-editor-filter-chip {
 
     .menu-editor-hours-summary-panel__badges {
         justify-content: flex-start;
+    }
+
+    .menu-editor-hours-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .menu-editor-hours-summary__state-badge {
+        justify-self: start;
     }
 }
 
