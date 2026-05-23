@@ -327,6 +327,18 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     }
 
     [Fact]
+    public void MenuPage_Indents_Child_Section_Items()
+    {
+        Services.AddSingleton<IMenuQueryService>(new NestedChildSectionMenuQueryService());
+
+        var cut = Render<Menu>();
+
+        Assert.Contains("Omelets", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(cut.FindAll(".menu-subsection__items .menu-item--nested"));
+        Assert.Contains("menu-subsection__items", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void EventsPage_RendersUpcomingCalendarContent()
     {
         var cut = Render<Events>();
@@ -1122,6 +1134,66 @@ public sealed class LayoutAndPageRenderTests : BunitContext
             ];
 
             return Task.FromResult(new PublicMenuView(MenuTab.Lunch, tabs, hours, sections));
+        }
+
+        public Task<IReadOnlyList<PublicHomeSpecialView>> GetHomeSpecialsAsync(DateOnly today, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<PublicHomeSpecialView>>([]);
+
+        public Task<MenuManagementView> GetMenuManagementViewAsync(DateOnly today, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+    }
+
+    private sealed class NestedChildSectionMenuQueryService : IMenuQueryService
+    {
+        public Task<MenuTab> GetSuggestedPublicTabAsync(DateOnly today, TimeOnly currentTime, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuTab.Breakfast);
+
+        public Task<PublicMenuView> GetPublicMenuAsync(MenuTab requestedTab, DateOnly today, CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<MenuServiceWindowView> hours =
+            [
+                new(DayOfWeek.Saturday, "Saturday", true, "9:00 AM - 12:00 PM", today.DayOfWeek == DayOfWeek.Saturday, new TimeOnly(9, 0), new TimeOnly(12, 0), false),
+                new(DayOfWeek.Sunday, "Sunday", true, "9:00 AM - 12:00 PM", today.DayOfWeek == DayOfWeek.Sunday, new TimeOnly(9, 0), new TimeOnly(12, 0), false)
+            ];
+
+            IReadOnlyList<MenuTabLinkView> tabs =
+            [
+                new(MenuTab.Breakfast, "Breakfast", "breakfast", true, true),
+                new(MenuTab.Lunch, "Lunch", "lunch", false, true),
+                new(MenuTab.Dinner, "Dinner", "dinner", false, true),
+                new(MenuTab.Drinks, "Drinks", "drinks", false, false)
+            ];
+
+            var omeletItem = new PublicMenuItemView(
+                Guid.Parse("5EF4D676-2D94-430D-87BD-1D86073AF823"),
+                "Ham & Cheese",
+                "Ham and American cheese.",
+                null,
+                [new MenuItemPriceVariantView("Regular", 13m, 1)],
+                [],
+                null,
+                null);
+
+            IReadOnlyList<PublicMenuSectionView> sections =
+            [
+                new(
+                    Guid.Parse("E8A8A54F-D40D-4A4F-80D0-093311B9C2F2"),
+                    "Breakfast",
+                    "Includes choice of Bloody Mary or Screwdriver",
+                    "accent-gold",
+                    [
+                        new PublicMenuSectionEntryView(
+                            10,
+                            null,
+                            new PublicMenuChildSectionView(
+                                Guid.Parse("8792097D-2FC1-4F5B-9915-1AF5BE4E4E56"),
+                                "Omelets",
+                                "Choice of breakfast potato or hashbrowns.",
+                                [omeletItem]))
+                    ])
+            ];
+
+            return Task.FromResult(new PublicMenuView(MenuTab.Breakfast, tabs, hours, sections));
         }
 
         public Task<IReadOnlyList<PublicHomeSpecialView>> GetHomeSpecialsAsync(DateOnly today, CancellationToken cancellationToken = default) =>

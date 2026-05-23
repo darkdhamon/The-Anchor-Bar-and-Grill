@@ -1,6 +1,6 @@
 @using Anchor.Domain.Menu
 
-<article class="menu-item @(Item.ImagePath is not null ? "menu-item--with-image" : "menu-item--text-only") @(Item.Special is not null ? "menu-item--special" : string.Empty)">
+<article class="menu-item @(Item.ImagePath is not null ? "menu-item--with-image" : "menu-item--text-only") @(Item.Special is not null ? "menu-item--special" : string.Empty) @(IsNested ? "menu-item--nested" : string.Empty)">
     @if (Item.ImagePath is not null)
     {
         <div class="menu-item__visual">
@@ -77,6 +77,9 @@
 @code {
     [Parameter, EditorRequired]
     public PublicMenuItemView Item { get; set; } = null!;
+
+    [Parameter]
+    public bool IsNested { get; set; }
 
     private static string GetBadgeClass(string label) =>
         label switch

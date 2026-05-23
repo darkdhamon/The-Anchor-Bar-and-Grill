@@ -953,6 +953,9 @@ html.anchor-theme-dark .site-shell {
 .menu-subsection__items {
     display: grid;
     gap: 0.85rem;
+    margin-inline-start: 0.35rem;
+    padding-inline-start: 1rem;
+    border-inline-start: 1px solid rgba(89, 175, 226, 0.24);
 }
 
 .menu-empty-state {
@@ -994,6 +997,10 @@ html.anchor-theme-dark .site-shell {
 .menu-item:first-child {
     padding-top: 0;
     border-top: 0;
+}
+
+.menu-item--nested {
+    padding-inline-start: 0.2rem;
 }
 
 .menu-item__visual {
