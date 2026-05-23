@@ -411,5 +411,8 @@ FodyWeavers.xsd
 .DS_Store
 Thumbs.db
 
+# Runtime user-uploaded gallery content
+Anchor Bar & Grill/Anchor.Web/wwwroot/images/gallery/
+
 # Private local-only UAT credential notes
 docs/reference/uat-credentials.private.local.md
