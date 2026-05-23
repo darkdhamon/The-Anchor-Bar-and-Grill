@@ -147,7 +147,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
     }
 
     [Fact]
-    public void Parent_section_cards_show_subsection_headers_and_workspace_guide()
+    public void Parent_section_cards_mix_subsections_and_items_in_one_ordered_stream()
     {
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
 
@@ -159,14 +159,13 @@ public sealed class MenuAdminRedesignTests : BunitContext
                 "Breakfast Plates",
                 StringComparison.Ordinal));
 
-        var subsectionGroup = breakfastSection.QuerySelectorAll(".menu-editor-tree__group")
-            .Single(group => string.Equals(
-                group.QuerySelector(".menu-editor-tree__group-label")?.TextContent.Trim(),
-                "Subsections",
-                StringComparison.Ordinal));
+        var orderedRows = breakfastSection.QuerySelectorAll(".menu-editor-tree__group .menu-editor-tree__row .menu-editor-tree__title")
+            .Select(title => title.TextContent.Trim())
+            .ToArray();
 
-        Assert.Contains("Omelets", subsectionGroup.TextContent, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Denver Omelet", subsectionGroup.TextContent, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(["Breakfast Burrito", "Omelets"], orderedRows);
+        Assert.DoesNotContain("Subsections", breakfastSection.TextContent, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Items", breakfastSection.TextContent, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("How to use this page", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("menu-editor-guide", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
@@ -486,7 +485,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
             [
                 MenuAdminViewFactory.Section(AppetizersSectionId, "Appetizers", MenuFamily.Food, [MenuTab.Lunch, MenuTab.Dinner], 1, callout: "Shareables for the table."),
                 MenuAdminViewFactory.Section(BreakfastSectionId, "Breakfast Plates", MenuFamily.Food, [MenuTab.Breakfast], 2),
-                MenuAdminViewFactory.Section(OmeletsSectionId, "Omelets", MenuFamily.Food, [MenuTab.Breakfast], 1, parentSectionId: BreakfastSectionId, parentSectionName: "Breakfast Plates"),
+                MenuAdminViewFactory.Section(OmeletsSectionId, "Omelets", MenuFamily.Food, [MenuTab.Breakfast], 11, parentSectionId: BreakfastSectionId, parentSectionName: "Breakfast Plates"),
                 MenuAdminViewFactory.Section(EmptyFoodSectionId, "Unassigned Platters", MenuFamily.Food, [MenuTab.Lunch], 3),
                 MenuAdminViewFactory.Section(CocktailsSectionId, "Cocktails", MenuFamily.Drink, [MenuTab.Drinks], 1)
             ];

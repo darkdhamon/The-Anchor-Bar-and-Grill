@@ -87,7 +87,7 @@
                     <li>Section names and menu item names must stay unique. If a typed item name already exists, the detail panel offers to switch into that record instead of saving a duplicate.</li>
                     <li>Archive is the safe removal path. Delete still exists, but it always requires a second confirmation.</li>
                     <li>The browser uses Active, Both, and Archived modes plus All, Standard, and Specials filters to focus the current catalog slice.</li>
-                    <li>Move buttons and drag-and-drop both reorder sections and item groups. Item ordering is stored per section assignment, so the same item can sit at different positions in different sections. Special items only reorder with other special items so the public menu keeps specials first.</li>
+                    <li>Move buttons and drag-and-drop reorder sections and the mixed content stream inside parent sections. Item ordering is stored per section assignment, so the same item can sit at different positions in different sections.</li>
                 </ul>
             </div>
         </section>
@@ -307,54 +307,101 @@
                                         </div>
                                     </div>
 
-                                    @if (browserSection.ChildSections.Count > 0)
+                                    @if (browserSection.ChildSections.Count > 0 && browserSection.Entries.Count > 0)
                                     {
-                                        <div class="menu-editor-tree__group">
-                                            <p class="menu-editor-tree__group-label">Subsections</p>
-                                            @foreach (var childSection in browserSection.ChildSections)
+                                        <div class="menu-editor-tree__group menu-editor-tree__group--mixed">
+                                            @foreach (var entry in browserSection.Entries)
                                             {
-                                                <div class="@($"{GetTreeRowClass(MenuAdminDetailKind.Section, childSection.Section.SectionId, childSection.Section.IsArchived, childSection.Section.IsVisibleToGuests, childSection.IsContextMuted)} menu-editor-tree__row--subsection")">
-                                                    <button type="button" class="menu-editor-tree__select" @onclick="() => SelectSection(childSection.Section)">
-                                                        <span class="menu-editor-tree__title">@childSection.Section.Name</span>
-                                                        <span class="menu-editor-tree__subtitle">
-                                                            Child section
-                                                            @if (!string.IsNullOrWhiteSpace(childSection.Section.Callout))
+                                                if (entry.ChildSectionEntry is { } childSection)
+                                                {
+                                                    <div class="@($"{GetTreeRowClass(MenuAdminDetailKind.Section, childSection.Section.SectionId, childSection.Section.IsArchived, childSection.Section.IsVisibleToGuests, childSection.IsContextMuted)} menu-editor-tree__row--subsection")"
+                                                         draggable="true"
+                                                         @ondragstart="() => BeginSectionDrag(childSection.Section, browserSection.Section.SectionId)"
+                                                         @ondragover:preventDefault
+                                                         @ondrop="() => DropSectionContentEntryAsync(browserSection.Section.SectionId, entry)">
+                                                        <button type="button" class="menu-editor-tree__select" @onclick="() => SelectSection(childSection.Section)">
+                                                            <span class="menu-editor-tree__title">@childSection.Section.Name</span>
+                                                            <span class="menu-editor-tree__subtitle">
+                                                                Child section
+                                                                @if (!string.IsNullOrWhiteSpace(childSection.Section.Callout))
+                                                                {
+                                                                    <span> | @childSection.Section.Callout</span>
+                                                                }
+                                                            </span>
+                                                        </button>
+
+                                                        <div class="menu-editor-tree__chips">
+                                                            <span class="chip chip--neutral">Order @entry.SortOrder</span>
+                                                            @foreach (var label in childSection.Section.StatusLabels)
                                                             {
-                                                                <span> | @childSection.Section.Callout</span>
+                                                                <span class="status-pill @(GetStatusClass(label))">@label</span>
                                                             }
-                                                        </span>
-                                                    </button>
+                                                        </div>
 
-                                                    <div class="menu-editor-tree__chips">
-                                                        <span class="chip chip--neutral">Order @childSection.Section.SortOrder</span>
-                                                        @foreach (var label in childSection.Section.StatusLabels)
-                                                        {
-                                                            <span class="status-pill @(GetStatusClass(label))">@label</span>
-                                                        }
+                                                        <div class="menu-editor-tree__actions">
+                                                            <button type="button"
+                                                                    class="menu-editor-tree__icon-button"
+                                                                    title="Move subsection up"
+                                                                    disabled="@(!CanMoveSectionContentEntry(browserSection.Section.SectionId, entry, -1))"
+                                                                    @onclick="() => MoveSectionContentEntryAsync(browserSection.Section.SectionId, entry, -1)">
+                                                                Up
+                                                            </button>
+                                                            <button type="button"
+                                                                    class="menu-editor-tree__icon-button"
+                                                                    title="Move subsection down"
+                                                                    disabled="@(!CanMoveSectionContentEntry(browserSection.Section.SectionId, entry, 1))"
+                                                                    @onclick="() => MoveSectionContentEntryAsync(browserSection.Section.SectionId, entry, 1)">
+                                                                Down
+                                                            </button>
+                                                        </div>
                                                     </div>
+                                                }
+                                                else if (entry.ItemEntry is { } itemEntry)
+                                                {
+                                                    <div class="@GetTreeRowClass(MenuAdminDetailKind.Item, itemEntry.Item.ItemId, itemEntry.Item.IsArchived, itemEntry.Item.IsVisibleToGuests, itemEntry.IsContextMuted)"
+                                                         draggable="true"
+                                                         @ondragstart="() => BeginItemDrag(itemEntry)"
+                                                         @ondragover:preventDefault
+                                                         @ondrop="() => DropSectionContentEntryAsync(browserSection.Section.SectionId, entry)">
+                                                        <button type="button" class="menu-editor-tree__select" @onclick="() => SelectItem(itemEntry)">
+                                                            <span class="menu-editor-tree__title">@itemEntry.Item.Name</span>
+                                                            <span class="menu-editor-tree__subtitle">@GetItemBrowserSubtitle(itemEntry.Item)</span>
+                                                        </button>
 
-                                                    <div class="menu-editor-tree__actions">
-                                                        <button type="button"
-                                                                class="menu-editor-tree__icon-button"
-                                                                title="Move subsection up"
-                                                                disabled="@(!CanMoveSection(childSection.Section, -1))"
-                                                                @onclick="() => MoveSectionAsync(childSection.Section, -1)">
-                                                            Up
-                                                        </button>
-                                                        <button type="button"
-                                                                class="menu-editor-tree__icon-button"
-                                                                title="Move subsection down"
-                                                                disabled="@(!CanMoveSection(childSection.Section, 1))"
-                                                                @onclick="() => MoveSectionAsync(childSection.Section, 1)">
-                                                            Down
-                                                        </button>
+                                                        <div class="menu-editor-tree__chips">
+                                                            <span class="chip chip--neutral">@GetPriceSummary(itemEntry.Item)</span>
+                                                            @if (itemEntry.Item.Special is not null)
+                                                            {
+                                                                <span class="chip chip--info">@itemEntry.Item.Special.BadgeLabel</span>
+                                                            }
+                                                            @foreach (var label in itemEntry.Item.StatusLabels)
+                                                            {
+                                                                <span class="status-pill @(GetStatusClass(label))">@label</span>
+                                                            }
+                                                        </div>
+
+                                                        <div class="menu-editor-tree__actions">
+                                                            <button type="button"
+                                                                    class="menu-editor-tree__icon-button"
+                                                                    title="Move item up"
+                                                                    disabled="@(!CanMoveSectionContentEntry(browserSection.Section.SectionId, entry, -1))"
+                                                                    @onclick="() => MoveSectionContentEntryAsync(browserSection.Section.SectionId, entry, -1)">
+                                                                Up
+                                                            </button>
+                                                            <button type="button"
+                                                                    class="menu-editor-tree__icon-button"
+                                                                    title="Move item down"
+                                                                    disabled="@(!CanMoveSectionContentEntry(browserSection.Section.SectionId, entry, 1))"
+                                                                    @onclick="() => MoveSectionContentEntryAsync(browserSection.Section.SectionId, entry, 1)">
+                                                                Down
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                </div>
+                                                }
                                             }
                                         </div>
                                     }
-
-                                    @if (browserSection.Items.Count > 0)
+                                    else if (browserSection.Items.Count > 0)
                                     {
                                         <div class="menu-editor-tree__group">
                                             <p class="menu-editor-tree__group-label">Items</p>
@@ -849,7 +896,7 @@
 
                         <section class="menu-editor-guide__section">
                             <p class="menu-editor-guide__eyebrow">2. Order sections and subsections</p>
-                            <p>Each section card shows its direct child subsection headers so you can adjust subsection order without expanding another nested item list there.</p>
+                            <p>Parent section cards show one mixed list of direct items and child subsection headers so you can move them around each other in the same order stream.</p>
                         </section>
 
                         <section class="menu-editor-guide__section">

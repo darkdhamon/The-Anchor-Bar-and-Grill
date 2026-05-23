@@ -24,6 +24,9 @@ public sealed class MenuAdminOrderingTests : BunitContext
     private static readonly Guid LoadedNachosItemId = Guid.Parse("B50D2B2C-93F6-42FD-BE4E-B01FA7E0C6D0");
     private static readonly Guid FriedPicklesItemId = Guid.Parse("3F0A5C65-C4A7-4252-8BD4-082A5C54F78B");
     private static readonly Guid CheeseCurdsItemId = Guid.Parse("D5456306-0BC6-4511-BF89-8A95D144B3C2");
+    private static readonly Guid BreakfastParentSectionId = Guid.Parse("73BE4D4F-A7CF-4A79-B784-48997D9AB0F8");
+    private static readonly Guid OmeletsChildSectionId = Guid.Parse("E45745BE-2BF9-48B8-8736-4A19E97D5B54");
+    private static readonly Guid BreakfastToastItemId = Guid.Parse("9F6D3F61-1E16-45A1-88F5-0DF734A1BA76");
     private readonly TestAuthenticationStateProvider authStateProvider;
 
     public MenuAdminOrderingTests()
@@ -124,10 +127,33 @@ public sealed class MenuAdminOrderingTests : BunitContext
             GetItemTitles(cut, "Appetizers")));
     }
 
+    [Fact]
+    public void Move_subsection_up_reorders_mixed_parent_content_stream()
+    {
+        var store = new MixedContentMenuTreeStore();
+        ConfigureMixedContentMenuServices(store);
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+
+        var cut = RenderMenuAdmin("/admin/menu?tab=food&food=breakfast");
+        var breakfastSection = GetSectionElement(cut, "Breakfast Plates");
+
+        breakfastSection.QuerySelectorAll("button[title='Move subsection up']")[0].Click();
+
+        cut.WaitForAssertion(() => Assert.Equal(
+            ["Omelets", "White Toast"],
+            GetMixedContentTitles(cut, "Breakfast Plates")));
+    }
+
     private void ConfigureMenuServices(MutableMenuTreeStore store)
     {
         Services.AddSingleton<IMenuQueryService>(new MutableMenuTreeQueryService(store));
         Services.AddSingleton<IMenuManagementService>(new MutableMenuTreeManagementService(store));
+    }
+
+    private void ConfigureMixedContentMenuServices(MixedContentMenuTreeStore store)
+    {
+        Services.AddSingleton<IMenuQueryService>(new MixedContentMenuTreeQueryService(store));
+        Services.AddSingleton<IMenuManagementService>(new MixedContentMenuTreeManagementService(store));
     }
 
     private IRenderedComponent<ContainerFragment> RenderMenuAdmin(string uri)
@@ -159,6 +185,14 @@ public sealed class MenuAdminOrderingTests : BunitContext
             .ToArray();
 
     private static IReadOnlyList<string> GetItemTitles(IRenderedComponent<ContainerFragment> cut, string sectionTitle)
+    {
+        var section = GetSectionElement(cut, sectionTitle);
+        return section.QuerySelectorAll(".menu-editor-tree__group .menu-editor-tree__row:not(.menu-editor-tree__row--subsection) .menu-editor-tree__title")
+            .Select(title => title.TextContent.Trim())
+            .ToArray();
+    }
+
+    private static IReadOnlyList<string> GetMixedContentTitles(IRenderedComponent<ContainerFragment> cut, string sectionTitle)
     {
         var section = GetSectionElement(cut, sectionTitle);
         return section.QuerySelectorAll(".menu-editor-tree__group .menu-editor-tree__row .menu-editor-tree__title")
@@ -257,6 +291,119 @@ public sealed class MenuAdminOrderingTests : BunitContext
 
         public Task<MenuManagementView> GetMenuManagementViewAsync(DateOnly today, CancellationToken cancellationToken = default) =>
             Task.FromResult(store.BuildView());
+    }
+
+    private sealed class MixedContentMenuTreeStore
+    {
+        private readonly List<MenuSectionAdminView> sections =
+        [
+            MenuAdminViewFactory.Section(BreakfastParentSectionId, "Breakfast Plates", MenuFamily.Food, [MenuTab.Breakfast], 1),
+            MenuAdminViewFactory.Section(OmeletsChildSectionId, "Omelets", MenuFamily.Food, [MenuTab.Breakfast], 2, parentSectionId: BreakfastParentSectionId, parentSectionName: "Breakfast Plates")
+        ];
+
+        private readonly List<MenuItemAdminView> items =
+        [
+            MenuAdminViewFactory.Item(BreakfastToastItemId, MenuFamily.Food, "White Toast", "Simple side.", 1, [MenuAdminViewFactory.Assignment(BreakfastParentSectionId, "Breakfast Plates", 1)], [MenuTab.Breakfast], [new MenuItemPriceVariantView("Regular", 2m, 1)]),
+            MenuAdminViewFactory.Item(Guid.Parse("755EC9E6-38E7-4B4E-B52A-21D4B21EEC04"), MenuFamily.Food, "Denver Omelet", "Child section item.", 1, [MenuAdminViewFactory.Assignment(OmeletsChildSectionId, "Omelets", 1)], [MenuTab.Breakfast], [new MenuItemPriceVariantView("Regular", 12m, 1)])
+        ];
+
+        public MenuManagementView BuildView() =>
+            new(
+                BuildHours(),
+                sections.OrderBy(section => section.SortOrder).ThenBy(section => section.Name, StringComparer.OrdinalIgnoreCase).ToArray(),
+                items.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase).ToArray());
+
+        public void ReorderSections(IReadOnlyList<SaveMenuSortOrderRequest> requests)
+        {
+            foreach (var request in requests)
+            {
+                var index = sections.FindIndex(section => section.SectionId == request.RecordId);
+                sections[index] = sections[index] with { SortOrder = request.SortOrder };
+            }
+        }
+
+        public void ReorderItems(IReadOnlyList<SaveMenuSortOrderRequest> requests)
+        {
+            foreach (var request in requests)
+            {
+                var index = items.FindIndex(item => item.ItemId == request.RecordId);
+                var item = items[index];
+                items[index] = item with
+                {
+                    SectionAssignments = item.SectionAssignments
+                        .Select(assignment => assignment.SectionId == request.ContextId
+                            ? assignment with { SortOrder = request.SortOrder }
+                            : assignment)
+                        .ToArray()
+                };
+            }
+        }
+
+        private static IReadOnlyList<MenuTabHoursAdminView> BuildHours()
+        {
+            var days = Enum.GetValues<DayOfWeek>()
+                .Select(day => new MenuServiceWindowView(day, day.ToString(), true, "11:00 AM - 5:00 PM", false, new TimeOnly(11, 0), new TimeOnly(17, 0), false))
+                .ToArray();
+
+            return
+            [
+                new MenuTabHoursAdminView(MenuTab.Breakfast, "Breakfast", days),
+                new MenuTabHoursAdminView(MenuTab.Lunch, "Lunch", days),
+                new MenuTabHoursAdminView(MenuTab.Dinner, "Dinner", days),
+                new MenuTabHoursAdminView(MenuTab.Drinks, "Drinks", days)
+            ];
+        }
+    }
+
+    private sealed class MixedContentMenuTreeQueryService(MixedContentMenuTreeStore store) : IMenuQueryService
+    {
+        public Task<MenuTab> GetSuggestedPublicTabAsync(DateOnly today, TimeOnly currentTime, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<PublicMenuView> GetPublicMenuAsync(MenuTab requestedTab, DateOnly today, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<IReadOnlyList<PublicHomeSpecialView>> GetHomeSpecialsAsync(DateOnly today, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<PublicHomeSpecialView>>([]);
+
+        public Task<MenuManagementView> GetMenuManagementViewAsync(DateOnly today, CancellationToken cancellationToken = default) =>
+            Task.FromResult(store.BuildView());
+    }
+
+    private sealed class MixedContentMenuTreeManagementService(MixedContentMenuTreeStore store) : IMenuManagementService
+    {
+        public Task<MenuOperationResult> SaveSectionAsync(SaveMenuSectionRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(request.SectionId ?? Guid.NewGuid()));
+
+        public Task<MenuOperationResult> SaveItemAsync(SaveMenuItemRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(request.ItemId ?? Guid.NewGuid()));
+
+        public Task<MenuOperationResult> SaveServiceWindowsAsync(SaveMenuServiceWindowRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success());
+
+        public Task<MenuOperationResult> ReorderSectionsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default)
+        {
+            store.ReorderSections(requests);
+            return Task.FromResult(MenuOperationResult.Success());
+        }
+
+        public Task<MenuOperationResult> ReorderItemsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default)
+        {
+            store.ReorderItems(requests);
+            return Task.FromResult(MenuOperationResult.Success());
+        }
+
+        public Task<MenuOperationResult> ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(sectionId));
+
+        public Task<MenuOperationResult> DeleteSectionAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(sectionId));
+
+        public Task<MenuOperationResult> ArchiveItemAsync(Guid itemId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(itemId));
+
+        public Task<MenuOperationResult> DeleteItemAsync(Guid itemId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success(itemId));
     }
 
     private sealed class MutableMenuTreeManagementService(MutableMenuTreeStore store) : IMenuManagementService

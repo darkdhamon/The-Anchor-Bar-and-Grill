@@ -1359,11 +1359,24 @@ public partial class MenuAdmin
                 section,
                 IsContextMuted: !sectionMatches && archiveFilter != MenuArchiveFilter.Both && (itemEntries.Length > 0 || childSections.Length > 0),
                 ChildSections: childSections,
+                Entries: BuildBrowserSectionEntries(section.SectionId, itemEntries, childSections),
                 Items: itemEntries));
         }
 
         return browserSections;
     }
+
+    private MenuAdminBrowserSectionEntryViewModel[] BuildBrowserSectionEntries(
+        Guid parentSectionId,
+        IReadOnlyList<MenuAdminBrowserItemViewModel> itemEntries,
+        IReadOnlyList<MenuAdminBrowserChildSectionViewModel> childSections) =>
+        childSections
+            .Select(childSection => new MenuAdminBrowserSectionEntryViewModel(childSection.Section.SortOrder, null, childSection))
+            .Concat(itemEntries.Select(itemEntry => new MenuAdminBrowserSectionEntryViewModel(GetSectionAssignmentSortOrder(itemEntry.Item, parentSectionId), itemEntry, null)))
+            .OrderBy(entry => entry.SortOrder)
+            .ThenBy(entry => entry.IsItem ? 1 : 0)
+            .ThenBy(entry => GetBrowserSectionEntryTitle(entry), StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
     private MenuAdminBrowserItemViewModel[] BuildBrowserItemEntries(
         MenuSectionAdminView section,
@@ -1484,8 +1497,8 @@ public partial class MenuAdmin
             _ => true
         };
 
-    private void BeginSectionDrag(MenuSectionAdminView section) =>
-        dragState = new MenuBrowserDragState(MenuAdminDetailKind.Section, section.SectionId, null, section.Family, false);
+    private void BeginSectionDrag(MenuSectionAdminView section, Guid? contextSectionId = null) =>
+        dragState = new MenuBrowserDragState(MenuAdminDetailKind.Section, section.SectionId, contextSectionId, section.Family, false);
 
     private void BeginItemDrag(MenuAdminBrowserItemViewModel itemEntry) =>
         dragState = new MenuBrowserDragState(MenuAdminDetailKind.Item, itemEntry.Item.ItemId, itemEntry.SectionId, itemEntry.Item.Family, itemEntry.Item.Special is not null);
@@ -1510,12 +1523,54 @@ public partial class MenuAdmin
         await ReorderSectionsAsync(state.RecordId, targetSection.SectionId, targetSection.Family, targetSection.ParentSectionId);
     }
 
+    private async Task DropSectionContentEntryAsync(Guid parentSectionId, MenuAdminBrowserSectionEntryViewModel targetEntry)
+    {
+        if (dragState is not { SectionId: { } contextSectionId } state
+            || contextSectionId != parentSectionId)
+        {
+            return;
+        }
+
+        if (state.Kind == MenuAdminDetailKind.Section)
+        {
+            var sourceSection = Sections.SingleOrDefault(section => section.SectionId == state.RecordId && section.Family == state.Family);
+            if (sourceSection?.ParentSectionId != parentSectionId)
+            {
+                dragState = null;
+                return;
+            }
+        }
+        else if (state.Kind == MenuAdminDetailKind.Item)
+        {
+            var sourceItem = Items.SingleOrDefault(item => item.ItemId == state.RecordId && item.Family == state.Family);
+            if (sourceItem is null || !sourceItem.SectionAssignments.Any(assignment => assignment.SectionId == parentSectionId))
+            {
+                dragState = null;
+                return;
+            }
+        }
+        else
+        {
+            return;
+        }
+
+        dragState = null;
+        await ReorderSectionContentAsync(state.RecordId, GetBrowserSectionEntryRecordId(targetEntry), state.Family, parentSectionId);
+    }
+
     private async Task DropItemAsync(MenuAdminBrowserItemViewModel targetItem)
     {
         if (dragState is not { Kind: MenuAdminDetailKind.Item, SectionId: { } sectionId } state
             || state.RecordId == targetItem.Item.ItemId
             || sectionId != targetItem.SectionId)
         {
+            return;
+        }
+
+        if (SectionHasChildSections(targetItem.SectionId, targetItem.Item.Family))
+        {
+            dragState = null;
+            await ReorderSectionContentAsync(state.RecordId, targetItem.Item.ItemId, targetItem.Item.Family, targetItem.SectionId);
             return;
         }
 
@@ -1544,8 +1599,41 @@ public partial class MenuAdmin
         await ReorderSectionsAsync(section.SectionId, siblings[targetIndex].SectionId, section.Family, section.ParentSectionId);
     }
 
+    private async Task MoveSectionContentEntryAsync(Guid parentSectionId, MenuAdminBrowserSectionEntryViewModel entry, int direction)
+    {
+        var siblings = GetOrderedSectionContentEntries(parentSectionId, GetBrowserSectionEntryFamily(entry));
+        var currentIndex = Array.FindIndex(siblings, sibling => GetBrowserSectionEntryRecordId(sibling) == GetBrowserSectionEntryRecordId(entry));
+        var targetIndex = currentIndex + direction;
+
+        if (currentIndex < 0 || targetIndex < 0 || targetIndex >= siblings.Length)
+        {
+            return;
+        }
+
+        await ReorderSectionContentAsync(
+            GetBrowserSectionEntryRecordId(entry),
+            GetBrowserSectionEntryRecordId(siblings[targetIndex]),
+            GetBrowserSectionEntryFamily(entry),
+            parentSectionId);
+    }
+
     private async Task MoveItemAsync(MenuAdminBrowserItemViewModel itemEntry, int direction)
     {
+        if (SectionHasChildSections(itemEntry.SectionId, itemEntry.Item.Family))
+        {
+            var mixedSiblings = GetOrderedSectionContentEntries(itemEntry.SectionId, itemEntry.Item.Family);
+            var mixedCurrentIndex = Array.FindIndex(mixedSiblings, sibling => sibling.ItemEntry?.Item.ItemId == itemEntry.Item.ItemId);
+            var mixedTargetIndex = mixedCurrentIndex + direction;
+
+            if (mixedCurrentIndex < 0 || mixedTargetIndex < 0 || mixedTargetIndex >= mixedSiblings.Length)
+            {
+                return;
+            }
+
+            await ReorderSectionContentAsync(itemEntry.Item.ItemId, GetBrowserSectionEntryRecordId(mixedSiblings[mixedTargetIndex]), itemEntry.Item.Family, itemEntry.SectionId);
+            return;
+        }
+
         var siblings = GetOrderedItemGroup(itemEntry.SectionId, itemEntry.Item.Special is not null);
         var currentIndex = Array.FindIndex(siblings, sibling => sibling.ItemId == itemEntry.Item.ItemId);
         var targetIndex = currentIndex + direction;
@@ -1586,6 +1674,20 @@ public partial class MenuAdmin
         }
     }
 
+    private async Task ReorderSectionContentAsync(Guid sourceRecordId, Guid targetRecordId, MenuFamily family, Guid parentSectionId)
+    {
+        var orderedEntries = GetOrderedSectionContentEntries(parentSectionId, family).ToList();
+        if (!MoveIntoTargetSlot(orderedEntries, GetBrowserSectionEntryRecordId, sourceRecordId, targetRecordId))
+        {
+            return;
+        }
+
+        if (await PersistSectionContentOrderAsync(orderedEntries, parentSectionId, "Section content order updated."))
+        {
+            ReloadSelectedDetailOrEnsureSelection();
+        }
+    }
+
     private MenuSectionAdminView[] GetOrderedSections(MenuFamily family, Guid? parentSectionId) =>
         Sections
             .Where(section => section.Family == family && section.ParentSectionId == parentSectionId)
@@ -1599,6 +1701,22 @@ public partial class MenuAdmin
             .OrderBy(item => GetSectionAssignmentSortOrder(item, sectionId))
             .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
             .ToArray();
+
+    private MenuAdminBrowserSectionEntryViewModel[] GetOrderedSectionContentEntries(Guid parentSectionId, MenuFamily family)
+    {
+        var itemEntries = Items
+            .Where(item => item.Family == family && item.SectionAssignments.Any(assignment => assignment.SectionId == parentSectionId))
+            .Select(item => new MenuAdminBrowserItemViewModel(item, parentSectionId, false))
+            .ToArray();
+        var childSections = Sections
+            .Where(section => section.Family == family && section.ParentSectionId == parentSectionId)
+            .OrderBy(section => section.SortOrder)
+            .ThenBy(section => section.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(section => new MenuAdminBrowserChildSectionViewModel(section, false))
+            .ToArray();
+
+        return BuildBrowserSectionEntries(parentSectionId, itemEntries, childSections);
+    }
 
     private async Task<bool> PersistSectionOrderAsync(IReadOnlyList<MenuSectionAdminView> orderedSections, string successMessage)
     {
@@ -1662,6 +1780,62 @@ public partial class MenuAdmin
         return true;
     }
 
+    private async Task<bool> PersistSectionContentOrderAsync(
+        IReadOnlyList<MenuAdminBrowserSectionEntryViewModel> orderedEntries,
+        Guid parentSectionId,
+        string successMessage)
+    {
+        List<SaveMenuSortOrderRequest> sectionUpdates = [];
+        List<SaveMenuSortOrderRequest> itemUpdates = [];
+
+        for (var index = 0; index < orderedEntries.Count; index++)
+        {
+            var entry = orderedEntries[index];
+            var desiredSortOrder = index + 1;
+            if (entry.ItemEntry is not null)
+            {
+                if (GetSectionAssignmentSortOrder(entry.ItemEntry.Item, parentSectionId) != desiredSortOrder)
+                {
+                    itemUpdates.Add(new SaveMenuSortOrderRequest(entry.ItemEntry.Item.ItemId, desiredSortOrder, parentSectionId));
+                }
+            }
+            else if (entry.ChildSectionEntry is not null && entry.ChildSectionEntry.Section.SortOrder != desiredSortOrder)
+            {
+                sectionUpdates.Add(new SaveMenuSortOrderRequest(entry.ChildSectionEntry.Section.SectionId, desiredSortOrder));
+            }
+        }
+
+        if (sectionUpdates.Count == 0 && itemUpdates.Count == 0)
+        {
+            return false;
+        }
+
+        if (sectionUpdates.Count > 0)
+        {
+            var sectionResult = await MenuManagementService.ReorderSectionsAsync(sectionUpdates);
+            if (!sectionResult.Succeeded)
+            {
+                statusMessage = $"Error: {string.Join(" ", sectionResult.Errors)}";
+                return false;
+            }
+        }
+
+        if (itemUpdates.Count > 0)
+        {
+            var itemResult = await MenuManagementService.ReorderItemsAsync(itemUpdates);
+            if (!itemResult.Succeeded)
+            {
+                statusMessage = $"Error: {string.Join(" ", itemResult.Errors)}";
+                return false;
+            }
+        }
+
+        await LoadAsync();
+        ResetHoursForm(serviceWindowForm.Tab);
+        statusMessage = successMessage;
+        return true;
+    }
+
     private bool CanMoveSection(MenuSectionAdminView section, int direction)
     {
         var siblings = GetOrderedSections(section.Family, section.ParentSectionId);
@@ -1670,13 +1844,47 @@ public partial class MenuAdmin
         return currentIndex >= 0 && targetIndex >= 0 && targetIndex < siblings.Length;
     }
 
+    private bool CanMoveSectionContentEntry(Guid parentSectionId, MenuAdminBrowserSectionEntryViewModel entry, int direction)
+    {
+        var siblings = GetOrderedSectionContentEntries(parentSectionId, GetBrowserSectionEntryFamily(entry));
+        var currentIndex = Array.FindIndex(siblings, sibling => GetBrowserSectionEntryRecordId(sibling) == GetBrowserSectionEntryRecordId(entry));
+        var targetIndex = currentIndex + direction;
+        return currentIndex >= 0 && targetIndex >= 0 && targetIndex < siblings.Length;
+    }
+
     private bool CanMoveItem(MenuAdminBrowserItemViewModel itemEntry, int direction)
     {
+        if (SectionHasChildSections(itemEntry.SectionId, itemEntry.Item.Family))
+        {
+            var mixedSiblings = GetOrderedSectionContentEntries(itemEntry.SectionId, itemEntry.Item.Family);
+            var mixedCurrentIndex = Array.FindIndex(mixedSiblings, sibling => sibling.ItemEntry?.Item.ItemId == itemEntry.Item.ItemId);
+            var mixedTargetIndex = mixedCurrentIndex + direction;
+            return mixedCurrentIndex >= 0 && mixedTargetIndex >= 0 && mixedTargetIndex < mixedSiblings.Length;
+        }
+
         var siblings = GetOrderedItemGroup(itemEntry.SectionId, itemEntry.Item.Special is not null);
         var currentIndex = Array.FindIndex(siblings, sibling => sibling.ItemId == itemEntry.Item.ItemId);
         var targetIndex = currentIndex + direction;
         return currentIndex >= 0 && targetIndex >= 0 && targetIndex < siblings.Length;
     }
+
+    private bool SectionHasChildSections(Guid sectionId, MenuFamily family) =>
+        Sections.Any(section => section.ParentSectionId == sectionId && section.Family == family);
+
+    private static Guid GetBrowserSectionEntryRecordId(MenuAdminBrowserSectionEntryViewModel entry) =>
+        entry.ItemEntry?.Item.ItemId
+        ?? entry.ChildSectionEntry?.Section.SectionId
+        ?? Guid.Empty;
+
+    private static MenuFamily GetBrowserSectionEntryFamily(MenuAdminBrowserSectionEntryViewModel entry) =>
+        entry.ItemEntry?.Item.Family
+        ?? entry.ChildSectionEntry?.Section.Family
+        ?? MenuFamily.Food;
+
+    private static string GetBrowserSectionEntryTitle(MenuAdminBrowserSectionEntryViewModel entry) =>
+        entry.ItemEntry?.Item.Name
+        ?? entry.ChildSectionEntry?.Section.Name
+        ?? string.Empty;
 
     private static bool MoveIntoTargetSlot<T>(List<T> records, Func<T, Guid> getId, Guid sourceId, Guid targetId)
     {

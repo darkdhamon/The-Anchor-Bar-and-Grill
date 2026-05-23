@@ -40,10 +40,19 @@ internal sealed record MenuAdminBrowserChildSectionViewModel(
     MenuSectionAdminView Section,
     bool IsContextMuted);
 
+internal sealed record MenuAdminBrowserSectionEntryViewModel(
+    int SortOrder,
+    MenuAdminBrowserItemViewModel? ItemEntry,
+    MenuAdminBrowserChildSectionViewModel? ChildSectionEntry)
+{
+    public bool IsItem => ItemEntry is not null;
+}
+
 internal sealed record MenuAdminBrowserSectionViewModel(
     MenuSectionAdminView Section,
     bool IsContextMuted,
     IReadOnlyList<MenuAdminBrowserChildSectionViewModel> ChildSections,
+    IReadOnlyList<MenuAdminBrowserSectionEntryViewModel> Entries,
     IReadOnlyList<MenuAdminBrowserItemViewModel> Items);
 
 internal sealed record MenuAdminHoursSummaryViewModel(
