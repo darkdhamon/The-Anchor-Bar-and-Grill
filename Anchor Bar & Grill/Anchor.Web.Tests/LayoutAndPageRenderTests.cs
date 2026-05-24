@@ -1095,6 +1095,13 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         public Task<MenuOperationResult> ReorderItemsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success());
 
+        public Task<MenuOperationResult> ReorderSectionContentAsync(
+            IReadOnlyList<SaveMenuSortOrderRequest> sectionRequests,
+            IReadOnlyList<SaveMenuSortOrderRequest> itemRequests,
+            Guid parentSectionId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success());
+
         public Task<MenuOperationResult> ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success(sectionId));
 

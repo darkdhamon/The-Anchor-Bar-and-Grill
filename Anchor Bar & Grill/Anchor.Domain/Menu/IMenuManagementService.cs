@@ -12,6 +12,12 @@ public interface IMenuManagementService
 
     Task<MenuOperationResult> ReorderItemsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default);
 
+    Task<MenuOperationResult> ReorderSectionContentAsync(
+        IReadOnlyList<SaveMenuSortOrderRequest> sectionRequests,
+        IReadOnlyList<SaveMenuSortOrderRequest> itemRequests,
+        Guid parentSectionId,
+        CancellationToken cancellationToken = default);
+
     Task<MenuOperationResult> ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default);
 
     Task<MenuOperationResult> DeleteSectionAsync(Guid sectionId, CancellationToken cancellationToken = default);

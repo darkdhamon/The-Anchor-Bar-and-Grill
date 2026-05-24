@@ -16,7 +16,7 @@ public sealed partial class LocalMenuItemImageStorage(
     private static readonly int[] EdgeLimits = [2560, 1920, 1600, 1280, 1024];
     private static readonly int[] QualitySteps = [82, 72, 62, 52];
 
-    public async Task<string> SaveImageAsync(
+    public async Task<string> StageImageAsync(
         Stream source,
         string originalFileName,
         string? contentType,
@@ -56,23 +56,20 @@ public sealed partial class LocalMenuItemImageStorage(
             using var image = await LoadImageAsync(rawImage, cancellationToken);
             var processedBytes = await ProcessImageAsync(image, cancellationToken);
 
-            var targetDirectory = ResolveTargetDirectory();
+            var fileName = BuildStoredFileName(originalFileName);
+            var targetDirectory = ResolveTargetDirectory(isStaging: true);
             Directory.CreateDirectory(targetDirectory);
-
-            var safeBaseName = BuildSafeBaseName(originalFileName);
-            var uniqueSuffix = Guid.NewGuid().ToString("N")[..8];
-            var fileName = $"{safeBaseName}-{uniqueSuffix}.webp";
             var fullPath = Path.Combine(targetDirectory, fileName);
             await File.WriteAllBytesAsync(fullPath, processedBytes, cancellationToken);
 
             logger.LogInformation(
-                "Saved menu item image {FileName} to {TargetDirectory} ({ContentType}, {ProcessedBytes} bytes).",
+                "Staged menu item image {FileName} in {TargetDirectory} ({ContentType}, {ProcessedBytes} bytes).",
                 fileName,
                 targetDirectory,
                 contentType ?? "unknown",
                 processedBytes.Length);
 
-            return $"{MenuItemImageStorageDefaults.PublicFolderPath}/{fileName}";
+            return $"{MenuItemImageStorageDefaults.StagingPublicFolderPath}/{fileName}";
         }
         catch (MenuItemImageUploadException)
         {
@@ -85,7 +82,73 @@ public sealed partial class LocalMenuItemImageStorage(
         }
     }
 
-    private string ResolveTargetDirectory()
+    public async Task<string> CommitStagedImageAsync(
+        string stagedImagePath,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(stagedImagePath))
+        {
+            throw new MenuItemImageUploadException("Choose an image before saving the menu item.");
+        }
+
+        var normalizedStagedPath = NormalizeManagedImagePath(stagedImagePath);
+        if (!IsStagedImagePath(normalizedStagedPath))
+        {
+            throw new MenuItemImageUploadException("The selected upload is no longer available. Upload the image again before saving.");
+        }
+
+        var stagedFullPath = ResolveFullPath(normalizedStagedPath);
+        if (!File.Exists(stagedFullPath))
+        {
+            throw new MenuItemImageUploadException("The selected upload is no longer available. Upload the image again before saving.");
+        }
+
+        var fileName = Path.GetFileName(stagedFullPath);
+        var finalDirectory = ResolveTargetDirectory(isStaging: false);
+        Directory.CreateDirectory(finalDirectory);
+        var finalFullPath = Path.Combine(finalDirectory, fileName);
+
+        await using (var source = File.Open(stagedFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+        await using (var destination = File.Open(finalFullPath, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            await source.CopyToAsync(destination, cancellationToken);
+        }
+
+        logger.LogInformation(
+            "Committed staged menu item image {FileName} from {StagingPath} to {FinalDirectory}.",
+            fileName,
+            stagedFullPath,
+            finalDirectory);
+
+        return $"{MenuItemImageStorageDefaults.PublicFolderPath}/{fileName}";
+    }
+
+    public Task DeleteImageAsync(
+        string? imagePath,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+        {
+            return Task.CompletedTask;
+        }
+
+        var normalizedPath = NormalizeManagedImagePath(imagePath);
+        if (!IsManagedMenuItemImagePath(normalizedPath))
+        {
+            return Task.CompletedTask;
+        }
+
+        var fullPath = ResolveFullPath(normalizedPath);
+        if (File.Exists(fullPath))
+        {
+            File.Delete(fullPath);
+            logger.LogInformation("Deleted menu item image {ImagePath}.", normalizedPath);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private string ResolveTargetDirectory(bool isStaging)
     {
         var webRootPath = environment.WebRootPath;
         if (string.IsNullOrWhiteSpace(webRootPath))
@@ -93,11 +156,9 @@ public sealed partial class LocalMenuItemImageStorage(
             throw new InvalidOperationException("The web root path is not configured for menu image uploads.");
         }
 
-        return Path.Combine(
-            webRootPath,
-            "images",
-            "gallery",
-            "menuitems");
+        return isStaging
+            ? Path.Combine(webRootPath, "images", "gallery", "menuitems", "_staged")
+            : Path.Combine(webRootPath, "images", "gallery", "menuitems");
     }
 
     private static async Task ValidateImageDimensionsAsync(Stream source, CancellationToken cancellationToken)
@@ -242,6 +303,51 @@ public sealed partial class LocalMenuItemImageStorage(
         var sanitized = CollapseDashRegex().Replace(builder.ToString().Trim('-'), "-");
         return string.IsNullOrWhiteSpace(sanitized) ? "menu-item" : sanitized;
     }
+
+    private static string BuildStoredFileName(string originalFileName)
+    {
+        var safeBaseName = BuildSafeBaseName(originalFileName);
+        var uniqueSuffix = Guid.NewGuid().ToString("N")[..8];
+        return $"{safeBaseName}-{uniqueSuffix}.webp";
+    }
+
+    private string ResolveFullPath(string normalizedPublicPath)
+    {
+        var webRootPath = environment.WebRootPath;
+        if (string.IsNullOrWhiteSpace(webRootPath))
+        {
+            throw new InvalidOperationException("The web root path is not configured for menu image uploads.");
+        }
+
+        var relativePath = normalizedPublicPath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+        var fullPath = Path.GetFullPath(Path.Combine(webRootPath, relativePath));
+        var allowedRoot = Path.GetFullPath(Path.Combine(webRootPath, "images", "gallery", "menuitems"));
+        if (!fullPath.StartsWith(allowedRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Menu item image paths must stay inside the managed gallery folder.");
+        }
+
+        return fullPath;
+    }
+
+    private static string NormalizeManagedImagePath(string imagePath)
+    {
+        var trimmed = imagePath.Trim();
+        if (Uri.TryCreate(trimmed, UriKind.Absolute, out _))
+        {
+            return trimmed;
+        }
+
+        return trimmed.StartsWith("/", StringComparison.Ordinal)
+            ? trimmed
+            : $"/{trimmed.TrimStart('/')}";
+    }
+
+    private static bool IsManagedMenuItemImagePath(string imagePath) =>
+        imagePath.StartsWith(MenuItemImageStorageDefaults.PublicFolderPath, StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsStagedImagePath(string imagePath) =>
+        imagePath.StartsWith(MenuItemImageStorageDefaults.StagingPublicFolderPath, StringComparison.OrdinalIgnoreCase);
 
     [GeneratedRegex("-{2,}")]
     private static partial Regex CollapseDashRegex();

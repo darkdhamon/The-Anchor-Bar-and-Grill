@@ -383,6 +383,54 @@ public sealed class MenuManagementRepository(ApplicationDbContext dbContext) : I
         }
     }
 
+    public async Task ReorderSectionContentAsync(
+        IReadOnlyList<SaveMenuSortOrderRequest> sectionRequests,
+        IReadOnlyList<SaveMenuSortOrderRequest> itemRequests,
+        CancellationToken cancellationToken = default)
+    {
+        dbContext.ChangeTracker.Clear();
+
+        Dictionary<Guid, MenuSectionEntity> sections = [];
+        if (sectionRequests.Count > 0)
+        {
+            var sectionIds = sectionRequests
+                .Select(request => request.RecordId)
+                .Distinct()
+                .ToArray();
+            sections = await dbContext.MenuSections
+                .Where(section => sectionIds.Contains(section.MenuSectionId))
+                .ToDictionaryAsync(section => section.MenuSectionId, cancellationToken);
+        }
+
+        Dictionary<(Guid MenuItemId, Guid MenuSectionId), MenuItemSectionAssignmentEntity> assignments = [];
+        if (itemRequests.Count > 0)
+        {
+            var sectionIds = itemRequests
+                .Select(request => request.ContextId)
+                .Distinct()
+                .ToArray();
+            var itemIds = itemRequests
+                .Select(request => request.RecordId)
+                .Distinct()
+                .ToArray();
+            assignments = await dbContext.MenuItemSectionAssignments
+                .Where(assignment => sectionIds.Contains(assignment.MenuSectionId) && itemIds.Contains(assignment.MenuItemId))
+                .ToDictionaryAsync(
+                    assignment => (assignment.MenuItemId, assignment.MenuSectionId),
+                    cancellationToken);
+        }
+
+        foreach (var request in sectionRequests)
+        {
+            sections[request.RecordId].SortOrder = request.SortOrder;
+        }
+
+        foreach (var request in itemRequests.Where(request => request.ContextId is not null))
+        {
+            assignments[(request.RecordId, request.ContextId!.Value)].SortOrder = request.SortOrder;
+        }
+    }
+
     public async Task ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default)
     {
         var section = await dbContext.MenuSections.SingleAsync(item => item.MenuSectionId == sectionId, cancellationToken);

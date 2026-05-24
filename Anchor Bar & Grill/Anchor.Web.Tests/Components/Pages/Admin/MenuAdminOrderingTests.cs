@@ -411,6 +411,17 @@ public sealed class MenuAdminOrderingTests : BunitContext
             return Task.FromResult(MenuOperationResult.Success());
         }
 
+        public Task<MenuOperationResult> ReorderSectionContentAsync(
+            IReadOnlyList<SaveMenuSortOrderRequest> sectionRequests,
+            IReadOnlyList<SaveMenuSortOrderRequest> itemRequests,
+            Guid parentSectionId,
+            CancellationToken cancellationToken = default)
+        {
+            store.ReorderSections(sectionRequests);
+            store.ReorderItems(itemRequests);
+            return Task.FromResult(MenuOperationResult.Success());
+        }
+
         public Task<MenuOperationResult> ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success(sectionId));
 
@@ -444,6 +455,17 @@ public sealed class MenuAdminOrderingTests : BunitContext
         public Task<MenuOperationResult> ReorderItemsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default)
         {
             store.ReorderItems(requests);
+            return Task.FromResult(MenuOperationResult.Success());
+        }
+
+        public Task<MenuOperationResult> ReorderSectionContentAsync(
+            IReadOnlyList<SaveMenuSortOrderRequest> sectionRequests,
+            IReadOnlyList<SaveMenuSortOrderRequest> itemRequests,
+            Guid parentSectionId,
+            CancellationToken cancellationToken = default)
+        {
+            store.ReorderSections(sectionRequests);
+            store.ReorderItems(itemRequests);
             return Task.FromResult(MenuOperationResult.Success());
         }
 

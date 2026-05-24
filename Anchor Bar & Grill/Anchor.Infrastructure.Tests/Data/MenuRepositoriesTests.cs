@@ -983,6 +983,28 @@ public sealed class MenuRepositoriesTests
         Assert.Equal(42, burgers.SortOrder);
     }
 
+    [Fact]
+    public async Task ReorderSectionContentAsync_updates_subsection_and_parent_item_sort_orders_in_one_save()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+        var repository = new MenuManagementRepository(context.DbContext);
+
+        await repository.ReorderSectionContentAsync(
+            [new SaveMenuSortOrderRequest(SoupsSectionId, 9)],
+            [new SaveMenuSortOrderRequest(ClassicHamburgerItemId, 7, BurgersSectionId)]);
+        await repository.SaveChangesAsync();
+
+        var soups = await context.DbContext.MenuSections
+            .AsNoTracking()
+            .SingleAsync(section => section.MenuSectionId == SoupsSectionId);
+        var burgerAssignment = await context.DbContext.MenuItemSectionAssignments
+            .AsNoTracking()
+            .SingleAsync(assignment => assignment.MenuItemId == ClassicHamburgerItemId && assignment.MenuSectionId == BurgersSectionId);
+
+        Assert.Equal(9, soups.SortOrder);
+        Assert.Equal(7, burgerAssignment.SortOrder);
+    }
+
     private static SaveMenuItemRequest CreateItemRequest(
         Guid? itemId,
         string name,

@@ -7,4 +7,5 @@ public static class MenuItemImageStorageDefaults
     public const int MaxDecodedEdgePixels = 10_000;
     public const long MaxDecodedPixelCount = 50_000_000L;
     public const string PublicFolderPath = "/images/gallery/menuitems";
+    public const string StagingPublicFolderPath = "/images/gallery/menuitems/_staged";
 }

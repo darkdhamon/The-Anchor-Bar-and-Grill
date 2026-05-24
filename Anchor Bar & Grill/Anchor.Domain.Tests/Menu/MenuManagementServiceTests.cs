@@ -548,6 +548,35 @@ public sealed class MenuManagementServiceTests
         Assert.Contains("could not be found", result.Errors[0], StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task ReorderSectionContentAsync_persists_subsection_and_item_updates_together()
+    {
+        var childSectionId = Guid.Parse("5B7058B8-1198-4B40-9B9B-409C8374D0D9");
+        var repository = new FakeMenuManagementRepository
+        {
+            Snapshot = new MenuManagementSnapshot(
+                [
+                    CreateSectionRecord(FoodSectionId, "Breakfast Plates", MenuFamily.Food, 1, [MenuTab.Breakfast]),
+                    CreateSectionRecord(childSectionId, "Omelets", MenuFamily.Food, 2, [MenuTab.Breakfast], parentSectionId: FoodSectionId)
+                ],
+                [
+                    CreateItemRecord(ItemId, MenuFamily.Food, "Toast", 1, [CreateAssignment(FoodSectionId, "Breakfast Plates")]),
+                    CreateItemRecord(SecondItemId, MenuFamily.Food, "Denver Omelet", 1, [CreateAssignment(childSectionId, "Omelets")])
+                ],
+                [])
+        };
+        var service = CreateService(repository);
+
+        var result = await service.ReorderSectionContentAsync(
+            [new SaveMenuSortOrderRequest(childSectionId, 2)],
+            [new SaveMenuSortOrderRequest(ItemId, 1, FoodSectionId)],
+            FoodSectionId);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal([new SaveMenuSortOrderRequest(childSectionId, 2)], repository.LastMixedSectionReorderRequests);
+        Assert.Equal([new SaveMenuSortOrderRequest(ItemId, 1, FoodSectionId)], repository.LastMixedItemReorderRequests);
+    }
+
     private static readonly DayOfWeek[] OrderedDays =
     [
         DayOfWeek.Monday,
@@ -608,6 +637,10 @@ public sealed class MenuManagementServiceTests
 
         public IReadOnlyList<SaveMenuSortOrderRequest>? LastItemReorderRequests { get; private set; }
 
+        public IReadOnlyList<SaveMenuSortOrderRequest>? LastMixedSectionReorderRequests { get; private set; }
+
+        public IReadOnlyList<SaveMenuSortOrderRequest>? LastMixedItemReorderRequests { get; private set; }
+
         public Task<MenuManagementSnapshot> GetMenuManagementSnapshotAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(Snapshot);
 
@@ -660,6 +693,16 @@ public sealed class MenuManagementServiceTests
         public Task ReorderItemsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default)
         {
             LastItemReorderRequests = requests.ToArray();
+            return Task.CompletedTask;
+        }
+
+        public Task ReorderSectionContentAsync(
+            IReadOnlyList<SaveMenuSortOrderRequest> sectionRequests,
+            IReadOnlyList<SaveMenuSortOrderRequest> itemRequests,
+            CancellationToken cancellationToken = default)
+        {
+            LastMixedSectionReorderRequests = sectionRequests.ToArray();
+            LastMixedItemReorderRequests = itemRequests.ToArray();
             return Task.CompletedTask;
         }
 
@@ -742,6 +785,15 @@ public sealed class MenuManagementServiceTests
 
     private static MenuItemSectionAssignmentRecord CreateAssignment(Guid sectionId, string sectionName, int sortOrder = 1) =>
         new(sectionId, sectionName, sortOrder);
+
+    private static MenuSectionRecord CreateSectionRecord(
+        Guid sectionId,
+        string name,
+        MenuFamily family,
+        int sortOrder,
+        IReadOnlyList<MenuTab> menuTabs,
+        Guid? parentSectionId = null) =>
+        new(sectionId, name, null, family, parentSectionId, menuTabs, sortOrder, true, false);
 
     private static MenuItemRecord CreateItemRecord(
         Guid itemId,

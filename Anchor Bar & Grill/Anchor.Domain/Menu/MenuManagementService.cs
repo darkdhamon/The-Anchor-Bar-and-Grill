@@ -422,6 +422,80 @@ public sealed class MenuManagementService(
         return MenuOperationResult.Success();
     }
 
+    public async Task<MenuOperationResult> ReorderSectionContentAsync(
+        IReadOnlyList<SaveMenuSortOrderRequest> sectionRequests,
+        IReadOnlyList<SaveMenuSortOrderRequest> itemRequests,
+        Guid parentSectionId,
+        CancellationToken cancellationToken = default)
+    {
+        if (sectionRequests.Count == 0 && itemRequests.Count == 0)
+        {
+            return MenuOperationResult.Failure("Add at least one section or menu item before saving sort-order changes.");
+        }
+
+        if (sectionRequests.Count > 0)
+        {
+            var sectionValidationResult = ValidateSortOrderRequests(sectionRequests, "section");
+            if (sectionValidationResult is not null)
+            {
+                return sectionValidationResult;
+            }
+        }
+
+        if (itemRequests.Count > 0)
+        {
+            var itemValidationResult = ValidateSortOrderRequests(itemRequests, "menu item");
+            if (itemValidationResult is not null)
+            {
+                return itemValidationResult;
+            }
+        }
+
+        var combinedRequests = sectionRequests
+            .Concat(itemRequests)
+            .ToArray();
+        if (combinedRequests.Select(request => request.SortOrder).Distinct().Count() != combinedRequests.Length)
+        {
+            return MenuOperationResult.Failure("Each section and menu item sort order must be unique within the mixed section-content update.");
+        }
+
+        if (itemRequests.Any(request => request.ContextId != parentSectionId))
+        {
+            return MenuOperationResult.Failure("Mixed section-content reordering can only save items for the selected parent section.");
+        }
+
+        var snapshot = await repository.GetMenuManagementSnapshotAsync(cancellationToken);
+        var childSectionIds = snapshot.Sections
+            .Where(section => section.ParentSectionId == parentSectionId)
+            .Select(section => section.SectionId)
+            .ToHashSet();
+        if (sectionRequests.Any(request => !childSectionIds.Contains(request.RecordId)))
+        {
+            return MenuOperationResult.Failure("One or more subsections could not be found for reordering.");
+        }
+
+        var itemsInParentSection = snapshot.Items
+            .Where(item => item.SectionAssignments.Any(assignment => assignment.SectionId == parentSectionId))
+            .Select(item => item.ItemId)
+            .ToHashSet();
+        if (itemRequests.Any(request => !itemsInParentSection.Contains(request.RecordId)))
+        {
+            return MenuOperationResult.Failure("One or more menu items could not be found for reordering.");
+        }
+
+        await repository.ReorderSectionContentAsync(sectionRequests, itemRequests, cancellationToken);
+        await repository.SaveChangesAsync(cancellationToken);
+        await logSink.WriteAsync(
+            new MenuOperationLogEntry(
+                "reorder",
+                "section-content",
+                parentSectionId,
+                $"Updated mixed order for {combinedRequests.Length} section-content record(s) in parent section {parentSectionId}."),
+            cancellationToken);
+
+        return MenuOperationResult.Success();
+    }
+
     public async Task<MenuOperationResult> ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default)
     {
         var section = await repository.GetSectionReferenceAsync(sectionId, cancellationToken);

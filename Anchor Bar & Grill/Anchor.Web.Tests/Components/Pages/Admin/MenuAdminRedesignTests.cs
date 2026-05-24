@@ -20,6 +20,7 @@ namespace Anchor.Web.Tests.Components.Pages.Admin;
 public sealed class MenuAdminRedesignTests : BunitContext
 {
     private readonly TestAuthenticationStateProvider authStateProvider;
+    private const string ExistingDrinkImagePath = "/images/gallery/menuitems/old-fashioned.webp";
 
     public MenuAdminRedesignTests()
     {
@@ -492,15 +493,17 @@ public sealed class MenuAdminRedesignTests : BunitContext
         Assert.NotNull(cut.Find(".menu-editor-image-preview__trigger"));
         Assert.Contains("image-preview-modal", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.True(cut.Find(".image-preview-modal-backdrop").HasAttribute("hidden"));
-        Assert.Contains("/images/menu/wings.svg", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(ExistingDrinkImagePath, cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void Item_upload_updates_image_path_immediately_before_save()
+    public void Item_upload_stages_preview_then_commits_final_path_on_save()
     {
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
         var captureService = new CapturingMenuAdminManagementService();
-        var imageStorage = new CapturingMenuItemImageStorage("/images/gallery/menuitems/mocktail.webp");
+        var imageStorage = new CapturingMenuItemImageStorage(
+            "/images/gallery/menuitems/_staged/mocktail-staged.webp",
+            "/images/gallery/menuitems/mocktail.webp");
         Services.AddSingleton<IMenuManagementService>(captureService);
         Services.AddSingleton<IMenuItemImageStorage>(imageStorage);
 
@@ -523,7 +526,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
 
         Assert.Equal("mocktail.png", imageStorage.LastFileName);
         Assert.Contains("Image uploaded.", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("/images/gallery/menuitems/mocktail.webp", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("/images/gallery/menuitems/_staged/mocktail-staged.webp", cut.Markup, StringComparison.OrdinalIgnoreCase);
 
         cut.FindAll("button")
             .Single(button => string.Equals(button.TextContent.Trim(), "Create item", StringComparison.Ordinal))
@@ -531,6 +534,68 @@ public sealed class MenuAdminRedesignTests : BunitContext
 
         Assert.NotNull(captureService.LastSaveItemRequest);
         Assert.Equal("/images/gallery/menuitems/mocktail.webp", captureService.LastSaveItemRequest!.ImagePath);
+        Assert.Equal("/images/gallery/menuitems/_staged/mocktail-staged.webp", imageStorage.LastCommittedStagedPath);
+        Assert.Contains("/images/gallery/menuitems/_staged/mocktail-staged.webp", imageStorage.DeletedPaths);
+    }
+
+    [Fact]
+    public void Switching_away_from_an_item_discards_the_staged_upload_preview()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+        var imageStorage = new CapturingMenuItemImageStorage(
+            "/images/gallery/menuitems/_staged/mocktail-staged.webp",
+            "/images/gallery/menuitems/mocktail.webp");
+        Services.AddSingleton<IMenuItemImageStorage>(imageStorage);
+
+        var cut = RenderMenuAdmin("/admin/menu?tab=drinks");
+
+        cut.FindAll(".menu-editor-tree__select")
+            .Single(button => button.TextContent.Contains("Cocktails", StringComparison.OrdinalIgnoreCase))
+            .Click();
+
+        cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Add item", StringComparison.Ordinal))
+            .Click();
+
+        cut.FindComponent<InputFile>().UploadFiles(
+            InputFileContent.CreateFromBinary([0x01, 0x02, 0x03], "mocktail.png", contentType: "image/png"));
+
+        cut.FindAll(".menu-editor-tree__select")
+            .Single(button => button.TextContent.Contains("Cocktails", StringComparison.OrdinalIgnoreCase))
+            .Click();
+
+        Assert.Contains("/images/gallery/menuitems/_staged/mocktail-staged.webp", imageStorage.DeletedPaths);
+    }
+
+    [Fact]
+    public void Saving_a_replacement_upload_deletes_the_previous_menu_item_image()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+        var captureService = new CapturingMenuAdminManagementService();
+        var imageStorage = new CapturingMenuItemImageStorage(
+            "/images/gallery/menuitems/_staged/replacement-staged.webp",
+            "/images/gallery/menuitems/replacement.webp");
+        Services.AddSingleton<IMenuManagementService>(captureService);
+        Services.AddSingleton<IMenuItemImageStorage>(imageStorage);
+
+        var cut = RenderMenuAdmin("/admin/menu?tab=drinks");
+        ExpandBrowserSection(cut, "Cocktails");
+
+        cut.FindAll(".menu-editor-tree__select")
+            .Single(button => button.TextContent.Contains("Old Fashioned", StringComparison.OrdinalIgnoreCase))
+            .Click();
+
+        cut.FindComponent<InputFile>().UploadFiles(
+            InputFileContent.CreateFromBinary([0x01, 0x02, 0x03], "replacement.png", contentType: "image/png"));
+
+        cut.FindAll("button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Save item", StringComparison.Ordinal))
+            .Click();
+
+        Assert.NotNull(captureService.LastSaveItemRequest);
+        Assert.Equal("/images/gallery/menuitems/replacement.webp", captureService.LastSaveItemRequest!.ImagePath);
+        Assert.Contains("/images/gallery/menuitems/_staged/replacement-staged.webp", imageStorage.DeletedPaths);
+        Assert.Contains(ExistingDrinkImagePath, imageStorage.DeletedPaths);
     }
 
     [Fact]
@@ -777,7 +842,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
                     [MenuAdminViewFactory.Assignment(CocktailsSectionId, "Cocktails", 1)],
                     [MenuTab.Drinks],
                     [new MenuItemPriceVariantView(DrinkItemPriceVariantId, "Regular", 12m, 1)],
-                    imagePath: "images/menu/wings.svg")
+                    imagePath: ExistingDrinkImagePath)
             ];
 
             return Task.FromResult(new MenuManagementView(tabs, sections, items));
@@ -801,6 +866,13 @@ public sealed class MenuAdminRedesignTests : BunitContext
         public Task<MenuOperationResult> ReorderItemsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success());
 
+        public Task<MenuOperationResult> ReorderSectionContentAsync(
+            IReadOnlyList<SaveMenuSortOrderRequest> sectionRequests,
+            IReadOnlyList<SaveMenuSortOrderRequest> itemRequests,
+            Guid parentSectionId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success());
+
         public Task<MenuOperationResult> ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success(sectionId));
 
@@ -816,20 +888,28 @@ public sealed class MenuAdminRedesignTests : BunitContext
 
     private sealed class StaticMenuItemImageStorage : IMenuItemImageStorage
     {
-        public Task<string> SaveImageAsync(
+        public Task<string> StageImageAsync(
             Stream source,
             string originalFileName,
             string? contentType,
             long declaredLength,
             CancellationToken cancellationToken = default) =>
+            Task.FromResult("/images/gallery/menuitems/_staged/mock-image.webp");
+
+        public Task<string> CommitStagedImageAsync(string stagedImagePath, CancellationToken cancellationToken = default) =>
             Task.FromResult("/images/gallery/menuitems/mock-image.webp");
+
+        public Task DeleteImageAsync(string? imagePath, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
-    private sealed class CapturingMenuItemImageStorage(string savedPath) : IMenuItemImageStorage
+    private sealed class CapturingMenuItemImageStorage(string stagedPath, string savedPath) : IMenuItemImageStorage
     {
         public string? LastFileName { get; private set; }
+        public string? LastCommittedStagedPath { get; private set; }
+        public List<string> DeletedPaths { get; } = [];
 
-        public Task<string> SaveImageAsync(
+        public Task<string> StageImageAsync(
             Stream source,
             string originalFileName,
             string? contentType,
@@ -837,7 +917,23 @@ public sealed class MenuAdminRedesignTests : BunitContext
             CancellationToken cancellationToken = default)
         {
             LastFileName = originalFileName;
+            return Task.FromResult(stagedPath);
+        }
+
+        public Task<string> CommitStagedImageAsync(string stagedImagePath, CancellationToken cancellationToken = default)
+        {
+            LastCommittedStagedPath = stagedImagePath;
             return Task.FromResult(savedPath);
+        }
+
+        public Task DeleteImageAsync(string? imagePath, CancellationToken cancellationToken = default)
+        {
+            if (!string.IsNullOrWhiteSpace(imagePath))
+            {
+                DeletedPaths.Add(imagePath);
+            }
+
+            return Task.CompletedTask;
         }
     }
 
@@ -856,6 +952,13 @@ public sealed class MenuAdminRedesignTests : BunitContext
             Task.FromResult(MenuOperationResult.Success());
 
         public Task<MenuOperationResult> ReorderItemsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success());
+
+        public Task<MenuOperationResult> ReorderSectionContentAsync(
+            IReadOnlyList<SaveMenuSortOrderRequest> sectionRequests,
+            IReadOnlyList<SaveMenuSortOrderRequest> itemRequests,
+            Guid parentSectionId,
+            CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success());
 
         public Task<MenuOperationResult> ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
@@ -897,6 +1000,13 @@ public sealed class MenuAdminRedesignTests : BunitContext
         public Task<MenuOperationResult> ReorderItemsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success());
 
+        public Task<MenuOperationResult> ReorderSectionContentAsync(
+            IReadOnlyList<SaveMenuSortOrderRequest> sectionRequests,
+            IReadOnlyList<SaveMenuSortOrderRequest> itemRequests,
+            Guid parentSectionId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success());
+
         public Task<MenuOperationResult> ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success(sectionId));
 
@@ -925,6 +1035,13 @@ public sealed class MenuAdminRedesignTests : BunitContext
             Task.FromResult(MenuOperationResult.Success());
 
         public Task<MenuOperationResult> ReorderItemsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default) =>
+            Task.FromResult(MenuOperationResult.Success());
+
+        public Task<MenuOperationResult> ReorderSectionContentAsync(
+            IReadOnlyList<SaveMenuSortOrderRequest> sectionRequests,
+            IReadOnlyList<SaveMenuSortOrderRequest> itemRequests,
+            Guid parentSectionId,
+            CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success());
 
         public Task<MenuOperationResult> ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default) =>

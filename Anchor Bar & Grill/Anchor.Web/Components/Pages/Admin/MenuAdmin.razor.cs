@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Anchor.Web.Components.Pages.Admin;
 
-public partial class MenuAdmin
+public partial class MenuAdmin : IAsyncDisposable
 {
     private static readonly CultureInfo InvariantCulture = CultureInfo.InvariantCulture;
     private static readonly DayOfWeek[] OrderedDays =
@@ -320,6 +320,7 @@ public partial class MenuAdmin
 
     private void ResetItemForm()
     {
+        QueuePendingItemImageDiscard();
         ClearDuplicateItemPrompt();
         ClearItemImageFeedback();
         itemForm = CreateDefaultItemForm();
@@ -379,6 +380,7 @@ public partial class MenuAdmin
 
     private void StartNewSection(MenuFamily family)
     {
+        QueuePendingItemImageDiscard();
         ClearPendingDeletes();
         sectionForm = new MenuSectionFormModel
         {
@@ -401,6 +403,7 @@ public partial class MenuAdmin
 
     private void StartNewItem(MenuFamily family, bool isSpecial)
     {
+        QueuePendingItemImageDiscard();
         ClearPendingDeletes();
         ClearDuplicateItemPrompt();
         ClearItemImageFeedback();
@@ -498,6 +501,7 @@ public partial class MenuAdmin
 
     private void SelectSection(MenuSectionAdminView section)
     {
+        QueuePendingItemImageDiscard();
         ClearPendingDeletes();
         ClearDuplicateItemPrompt();
         detailKind = MenuAdminDetailKind.Section;
@@ -526,6 +530,7 @@ public partial class MenuAdmin
 
     private void SelectItem(MenuItemAdminView item, Guid? activeSectionId = null)
     {
+        QueuePendingItemImageDiscard();
         ClearPendingDeletes();
         ClearDuplicateItemPrompt();
         ClearItemImageFeedback();
@@ -537,6 +542,7 @@ public partial class MenuAdmin
             Name = item.Name,
             Description = item.Description,
             ImagePath = item.ImagePath,
+            PersistedImagePath = item.ImagePath,
             IsVisibleToGuests = item.IsVisibleToGuests,
             IsArchived = item.IsArchived,
             OfferStartsOnText = FormatDate(item.OfferStartsOn),
@@ -633,6 +639,10 @@ public partial class MenuAdmin
 
     private async Task SaveItemAsync()
     {
+        string? stagedImagePath = itemForm.StagedImagePath;
+        string? committedImagePath = null;
+        string? previousStoredImagePath = NormalizeStoredImagePath(itemForm.PersistedImagePath ?? itemForm.ImagePath);
+
         try
         {
             ClearDuplicateItemPrompt();
@@ -682,12 +692,19 @@ public partial class MenuAdmin
             }
 
             var currentItemId = itemForm.ItemId;
+            var imagePathToSave = NormalizeStoredImagePath(itemForm.PersistedImagePath ?? itemForm.ImagePath);
+            if (!string.IsNullOrWhiteSpace(stagedImagePath))
+            {
+                committedImagePath = await MenuItemImageStorage.CommitStagedImageAsync(stagedImagePath);
+                imagePathToSave = committedImagePath;
+            }
+
             var result = await MenuManagementService.SaveItemAsync(
                 new SaveMenuItemRequest(
                     itemForm.ItemId,
                     itemForm.Name,
                     itemForm.Description,
-                    NormalizeStoredImagePath(itemForm.ImagePath),
+                    imagePathToSave,
                     itemForm.SortOrder,
                     itemForm.IsVisibleToGuests,
                     itemForm.IsArchived,
@@ -710,7 +727,24 @@ public partial class MenuAdmin
 
             if (!await HandleOperationResultAsync(result, currentItemId is null ? "Menu item created." : "Menu item updated."))
             {
+                if (!string.IsNullOrWhiteSpace(committedImagePath))
+                {
+                    await DeleteManagedImageQuietlyAsync(committedImagePath);
+                }
+
                 return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(stagedImagePath))
+            {
+                itemForm.StagedImagePath = null;
+                await DeleteManagedImageQuietlyAsync(stagedImagePath);
+            }
+
+            if (!string.IsNullOrWhiteSpace(previousStoredImagePath)
+                && !string.Equals(previousStoredImagePath, imagePathToSave, StringComparison.OrdinalIgnoreCase))
+            {
+                await DeleteManagedImageQuietlyAsync(previousStoredImagePath);
             }
 
             foreach (var sectionId in sectionIds)
@@ -722,6 +756,11 @@ public partial class MenuAdmin
         }
         catch (Exception exception)
         {
+            if (!string.IsNullOrWhiteSpace(committedImagePath))
+            {
+                await DeleteManagedImageQuietlyAsync(committedImagePath);
+            }
+
             Logger.LogError(exception, "Menu item save failed for item {ItemId}", itemForm.ItemId);
             statusMessage = "Error: We couldn't save the menu item. Refresh the page and try again.";
         }
@@ -938,9 +977,19 @@ public partial class MenuAdmin
         if (pendingItemDeleteId == itemId)
         {
             pendingItemDeleteId = null;
+            var itemImagePath = Items.SingleOrDefault(item => item.ItemId == itemId)?.ImagePath;
+            var stagedImagePath = itemForm.ItemId == itemId ? itemForm.StagedImagePath : null;
             var result = await MenuManagementService.DeleteItemAsync(itemId);
             if (await HandleOperationResultAsync(result, "Menu item deleted."))
             {
+                if (!string.IsNullOrWhiteSpace(stagedImagePath))
+                {
+                    itemForm.StagedImagePath = null;
+                    await DeleteManagedImageQuietlyAsync(stagedImagePath);
+                }
+
+                await DeleteManagedImageQuietlyAsync(itemImagePath);
+
                 if (itemForm.ItemId == itemId)
                 {
                     detailKind = MenuAdminDetailKind.None;
@@ -1168,16 +1217,25 @@ public partial class MenuAdmin
 
         ClearItemImageFeedback();
         isItemImageUploading = true;
+        var previousStagedImagePath = itemForm.StagedImagePath;
 
         try
         {
             await using var stream = file.OpenReadStream(MenuItemImageStorageDefaults.MaxRawUploadBytes);
-            itemForm.ImagePath = await MenuItemImageStorage.SaveImageAsync(
+            var stagedImagePath = await MenuItemImageStorage.StageImageAsync(
                 stream,
                 file.Name,
                 file.ContentType,
                 file.Size);
+            itemForm.StagedImagePath = stagedImagePath;
+            itemForm.ImagePath = stagedImagePath;
             itemImageUploadStatusMessage = "Image uploaded. Save the item to keep this image on the menu record.";
+
+            if (!string.IsNullOrWhiteSpace(previousStagedImagePath)
+                && !string.Equals(previousStagedImagePath, stagedImagePath, StringComparison.OrdinalIgnoreCase))
+            {
+                await DeleteManagedImageQuietlyAsync(previousStagedImagePath);
+            }
         }
         catch (MenuItemImageUploadException exception)
         {
@@ -1400,6 +1458,35 @@ public partial class MenuAdmin
         itemImageUploadStatusMessage = null;
         itemImageUploadErrorMessage = null;
         isItemImageUploading = false;
+    }
+
+    private void QueuePendingItemImageDiscard()
+    {
+        var stagedImagePath = itemForm.StagedImagePath;
+        itemForm.StagedImagePath = null;
+        if (string.IsNullOrWhiteSpace(stagedImagePath))
+        {
+            return;
+        }
+
+        _ = DeleteManagedImageQuietlyAsync(stagedImagePath);
+    }
+
+    private async Task DeleteManagedImageQuietlyAsync(string? imagePath)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+        {
+            return;
+        }
+
+        try
+        {
+            await MenuItemImageStorage.DeleteImageAsync(imagePath);
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(exception, "Menu item image cleanup failed for {ImagePath}.", imagePath);
+        }
     }
 
     private IReadOnlyList<MenuAdminBrowserSectionViewModel> BuildBrowserSections(
@@ -1894,24 +1981,11 @@ public partial class MenuAdmin
             return false;
         }
 
-        if (sectionUpdates.Count > 0)
+        var result = await MenuManagementService.ReorderSectionContentAsync(sectionUpdates, itemUpdates, parentSectionId);
+        if (!result.Succeeded)
         {
-            var sectionResult = await MenuManagementService.ReorderSectionsAsync(sectionUpdates);
-            if (!sectionResult.Succeeded)
-            {
-                statusMessage = $"Error: {string.Join(" ", sectionResult.Errors)}";
-                return false;
-            }
-        }
-
-        if (itemUpdates.Count > 0)
-        {
-            var itemResult = await MenuManagementService.ReorderItemsAsync(itemUpdates);
-            if (!itemResult.Succeeded)
-            {
-                statusMessage = $"Error: {string.Join(" ", itemResult.Errors)}";
-                return false;
-            }
+            statusMessage = $"Error: {string.Join(" ", result.Errors)}";
+            return false;
         }
 
         await LoadAsync();
@@ -2082,6 +2156,13 @@ public partial class MenuAdmin
         return trimmed.StartsWith("/", StringComparison.Ordinal)
             ? trimmed
             : $"/{trimmed.TrimStart('/')}";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        var stagedImagePath = itemForm.StagedImagePath;
+        itemForm.StagedImagePath = null;
+        await DeleteManagedImageQuietlyAsync(stagedImagePath);
     }
 
     private static MenuItemFormModel CreateDefaultItemForm(bool isSpecial = false) => new()

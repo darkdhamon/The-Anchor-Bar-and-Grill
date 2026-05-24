@@ -26,6 +26,11 @@ public interface IMenuManagementRepository
 
     Task ReorderItemsAsync(IReadOnlyList<SaveMenuSortOrderRequest> requests, CancellationToken cancellationToken = default);
 
+    Task ReorderSectionContentAsync(
+        IReadOnlyList<SaveMenuSortOrderRequest> sectionRequests,
+        IReadOnlyList<SaveMenuSortOrderRequest> itemRequests,
+        CancellationToken cancellationToken = default);
+
     Task ArchiveSectionAsync(Guid sectionId, CancellationToken cancellationToken = default);
 
     Task DeleteSectionAsync(Guid sectionId, CancellationToken cancellationToken = default);

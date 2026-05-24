@@ -115,6 +115,10 @@ internal sealed class MenuItemFormModel
 
     public string? ImagePath { get; set; }
 
+    public string? PersistedImagePath { get; set; }
+
+    public string? StagedImagePath { get; set; }
+
     public int SortOrder { get; set; } = 1;
 
     public bool IsVisibleToGuests { get; set; } = true;
