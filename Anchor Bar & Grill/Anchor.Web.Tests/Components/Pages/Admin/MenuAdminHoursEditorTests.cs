@@ -193,6 +193,28 @@ public sealed class MenuAdminHoursEditorTests : BunitContext
         });
     }
 
+    [Fact]
+    public void Save_hours_is_disabled_for_same_day_ranges_until_closes_next_day_is_enabled()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+
+        var cut = RenderMenuAdmin();
+        var timeInputs = GetTimeInputs(cut, DayOfWeek.Tuesday);
+
+        timeInputs[0].Input("500p");
+        timeInputs[1].Input("400p");
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.True(GetSaveHoursButton(cut).HasAttribute("disabled"));
+            Assert.Contains("Complete required times", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        });
+
+        GetClosesNextDayCheckbox(cut, DayOfWeek.Tuesday).Change(true);
+
+        cut.WaitForAssertion(() => Assert.False(GetSaveHoursButton(cut).HasAttribute("disabled")));
+    }
+
     private IRenderedComponent<ContainerFragment> RenderMenuAdmin()
     {
         var cut = Render(builder =>
@@ -240,6 +262,13 @@ public sealed class MenuAdminHoursEditorTests : BunitContext
         var dayIndex = Array.IndexOf(OrderedDays, dayOfWeek);
         var row = cut.FindAll(".menu-hours-editor__row")[dayIndex];
         return row.QuerySelectorAll("input[type='text']");
+    }
+
+    private static AngleSharp.Dom.IElement GetClosesNextDayCheckbox(IRenderedComponent<ContainerFragment> cut, DayOfWeek dayOfWeek)
+    {
+        var dayIndex = Array.IndexOf(OrderedDays, dayOfWeek);
+        var row = cut.FindAll(".menu-hours-editor__row")[dayIndex];
+        return row.QuerySelectorAll("input[type='checkbox']")[1];
     }
 
     private static ClaimsPrincipal CreateUser(string userName, params string[] roles)

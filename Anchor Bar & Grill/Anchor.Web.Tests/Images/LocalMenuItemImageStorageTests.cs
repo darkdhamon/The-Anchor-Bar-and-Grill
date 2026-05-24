@@ -99,6 +99,23 @@ public sealed class LocalMenuItemImageStorageTests
         Assert.Contains("50 MB", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task SaveImageAsync_rejects_images_with_dimensions_over_the_decode_guard()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        var service = new LocalMenuItemImageStorage(
+            new TestWebHostEnvironment(Path.Combine(tempDirectory.Path, "wwwroot")),
+            NullLogger<LocalMenuItemImageStorage>.Instance);
+
+        var pngBytes = CreateWidePngBytes(MenuItemImageStorageDefaults.MaxDecodedEdgePixels + 1, 1);
+        await using var source = new MemoryStream(pngBytes);
+
+        var exception = await Assert.ThrowsAsync<MenuItemImageUploadException>(() =>
+            service.SaveImageAsync(source, "too-wide.png", "image/png", pngBytes.Length));
+
+        Assert.Contains("pixels or smaller on each side", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static byte[] CreatePngBytes()
     {
         using var image = CreateSampleImage();
@@ -115,9 +132,17 @@ public sealed class LocalMenuItemImageStorageTests
         return data.ToArray();
     }
 
-    private static Image<Rgba32> CreateSampleImage()
+    private static byte[] CreateWidePngBytes(int width, int height)
     {
-        var image = new Image<Rgba32>(1600, 1200);
+        using var image = CreateSampleImage(width, height);
+        using var data = new MemoryStream();
+        image.SaveAsPng(data);
+        return data.ToArray();
+    }
+
+    private static Image<Rgba32> CreateSampleImage(int width = 1600, int height = 1200)
+    {
+        var image = new Image<Rgba32>(width, height);
         for (var y = 0; y < image.Height; y++)
         {
             for (var x = 0; x < image.Width; x++)

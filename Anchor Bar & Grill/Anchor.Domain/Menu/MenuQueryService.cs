@@ -330,14 +330,14 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
                 return cachedAssignments;
             }
 
-            var collectedAssignments = new List<VisibleAssignment>();
-            var sectionStack = new Stack<Guid>();
+            var collectedAssignments = new List<SubtreeVisibleAssignment>();
+            var sectionStack = new Stack<(Guid SectionId, int Depth)>();
             var visitedSectionIds = new HashSet<Guid>();
-            sectionStack.Push(sectionId);
+            sectionStack.Push((sectionId, 0));
 
             while (sectionStack.Count > 0)
             {
-                var currentSectionId = sectionStack.Pop();
+                var (currentSectionId, currentDepth) = sectionStack.Pop();
                 if (!visitedSectionIds.Add(currentSectionId))
                 {
                     continue;
@@ -345,7 +345,7 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
 
                 if (assignmentsBySection.TryGetValue(currentSectionId, out var directAssignments))
                 {
-                    collectedAssignments.AddRange(directAssignments);
+                    collectedAssignments.AddRange(directAssignments.Select(assignment => new SubtreeVisibleAssignment(assignment, currentDepth)));
                 }
 
                 if (!childSectionsByParent.TryGetValue(currentSectionId, out var descendants))
@@ -357,12 +357,20 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
                 {
                     if (renderableSectionIds.GetValueOrDefault(descendant.SectionId))
                     {
-                        sectionStack.Push(descendant.SectionId);
+                        sectionStack.Push((descendant.SectionId, currentDepth + 1));
                     }
                 }
             }
 
-            cachedAssignments = collectedAssignments.ToArray();
+            cachedAssignments = collectedAssignments
+                .GroupBy(entry => entry.Assignment.Item.ItemId)
+                .Select(group => group
+                    .OrderByDescending(entry => entry.Depth)
+                    .ThenBy(entry => entry.Assignment.Assignment.SortOrder)
+                    .ThenBy(entry => entry.Assignment.Item.Name, StringComparer.OrdinalIgnoreCase)
+                    .Select(entry => entry.Assignment)
+                    .First())
+                .ToArray();
             subtreeAssignmentsBySection[sectionId] = cachedAssignments;
             return cachedAssignments;
         }
@@ -439,4 +447,5 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
             .ToArray();
 
     private sealed record VisibleAssignment(MenuItemRecord Item, MenuItemSectionAssignmentRecord Assignment);
+    private sealed record SubtreeVisibleAssignment(VisibleAssignment Assignment, int Depth);
 }

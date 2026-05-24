@@ -472,6 +472,51 @@ public sealed class MenuQueryServiceTests
     }
 
     [Fact]
+    public async Task GetPublicMenuAsync_prefers_the_deepest_assignment_when_a_child_card_subtree_contains_the_same_item_twice()
+    {
+        var today = new DateOnly(2026, 5, 22);
+        var rootSectionId = Guid.Parse("4AA0B013-A811-4144-A445-A717279CFF95");
+        var childSectionId = Guid.Parse("7804D459-8E3E-4DDC-A9D2-50E65B870216");
+        var grandchildSectionId = Guid.Parse("8A862D12-6EA0-432C-A5D1-D95F441469B7");
+
+        var repository = new FakeMenuQueryRepository
+        {
+            Snapshot = new PublicMenuSnapshot(
+                MenuTab.Breakfast,
+                [
+                    CreateSection(rootSectionId, "Breakfast Specials", [MenuTab.Breakfast]),
+                    CreateSection(childSectionId, "Omelets", [MenuTab.Breakfast], parentSectionId: rootSectionId),
+                    CreateSection(grandchildSectionId, "Chef Features", [MenuTab.Breakfast], parentSectionId: childSectionId)
+                ],
+                [
+                    CreateItem(
+                        "Ham & Cheese",
+                        "Classic omelet.",
+                        1,
+                        [
+                            new MenuItemSectionAssignmentRecord(childSectionId, "Omelets", 3),
+                            new MenuItemSectionAssignmentRecord(grandchildSectionId, "Chef Features", 1)
+                        ],
+                        [MenuTab.Breakfast],
+                        null,
+                        null,
+                        false,
+                        [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 13m, 1)])
+                ],
+                [CreateWindow(MenuTab.Breakfast, DayOfWeek.Friday, true, new TimeOnly(9, 0), new TimeOnly(12, 0), false)]),
+            TabsWithContent = [MenuTab.Breakfast]
+        };
+
+        var result = await new MenuQueryService(repository).GetPublicMenuAsync(MenuTab.Breakfast, today);
+
+        var rootSection = Assert.Single(result.Sections);
+        var childEntry = Assert.Single(rootSection.Entries, entry => entry.ChildSection is not null);
+
+        Assert.Equal("Omelets", childEntry.ChildSection!.Name);
+        Assert.Equal(["Ham & Cheese"], childEntry.ChildSection.Items.Select(item => item.Name).ToArray());
+    }
+
+    [Fact]
     public async Task GetHomeSpecialsAsync_projects_special_items_for_homepage()
     {
         var today = new DateOnly(2026, 5, 18);

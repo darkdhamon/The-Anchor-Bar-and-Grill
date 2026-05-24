@@ -2167,9 +2167,18 @@ public partial class MenuAdmin
                 continue;
             }
 
-            if (!TryParseRequiredTime(day.OpensAtText, $"{GetDayLabel(day.DayOfWeek)} opening time", out _, out error)
-                || !TryParseRequiredTime(day.ClosesAtText, $"{GetDayLabel(day.DayOfWeek)} closing time", out _, out error))
+            if (!TryParseRequiredTime(day.OpensAtText, $"{GetDayLabel(day.DayOfWeek)} opening time", out var opensAt, out error)
+                || !TryParseRequiredTime(day.ClosesAtText, $"{GetDayLabel(day.DayOfWeek)} closing time", out var closesAt, out error))
             {
+                return false;
+            }
+
+            if (!day.ClosesNextDay
+                && opensAt.HasValue
+                && closesAt.HasValue
+                && closesAt.Value <= opensAt.Value)
+            {
+                error = "Closing time must be later than opening time unless Closes next day is enabled.";
                 return false;
             }
         }

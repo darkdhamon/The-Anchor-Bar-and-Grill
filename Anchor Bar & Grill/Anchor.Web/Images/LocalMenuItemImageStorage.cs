@@ -51,6 +51,8 @@ public sealed partial class LocalMenuItemImageStorage(
 
         try
         {
+            await ValidateImageDimensionsAsync(rawImage, cancellationToken);
+            rawImage.Position = 0;
             using var image = await LoadImageAsync(rawImage, cancellationToken);
             var processedBytes = await ProcessImageAsync(image, cancellationToken);
 
@@ -96,6 +98,38 @@ public sealed partial class LocalMenuItemImageStorage(
             "images",
             "gallery",
             "menuitems");
+    }
+
+    private static async Task ValidateImageDimensionsAsync(Stream source, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var imageInfo = await Image.IdentifyAsync(source, cancellationToken);
+            if (imageInfo is null)
+            {
+                throw new MenuItemImageUploadException("The selected file could not be read as an image.");
+            }
+
+            if (imageInfo.Width > MenuItemImageStorageDefaults.MaxDecodedEdgePixels
+                || imageInfo.Height > MenuItemImageStorageDefaults.MaxDecodedEdgePixels)
+            {
+                throw new MenuItemImageUploadException($"Images must be {MenuItemImageStorageDefaults.MaxDecodedEdgePixels:N0} pixels or smaller on each side.");
+            }
+
+            var pixelCount = (long)imageInfo.Width * imageInfo.Height;
+            if (pixelCount > MenuItemImageStorageDefaults.MaxDecodedPixelCount)
+            {
+                throw new MenuItemImageUploadException($"Images must be {MenuItemImageStorageDefaults.MaxDecodedPixelCount:N0} pixels or smaller in total.");
+            }
+        }
+        catch (MenuItemImageUploadException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            throw new MenuItemImageUploadException("The selected file could not be read as an image.", exception);
+        }
     }
 
     private static async Task CopyWithLimitAsync(
