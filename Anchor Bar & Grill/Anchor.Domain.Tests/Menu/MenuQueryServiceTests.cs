@@ -342,6 +342,55 @@ public sealed class MenuQueryServiceTests
     }
 
     [Fact]
+    public async Task GetPublicMenuAsync_places_child_sections_before_direct_items_when_mixed_sort_order_ties()
+    {
+        var today = new DateOnly(2026, 5, 22);
+        var parentSectionId = Guid.Parse("1B7E5120-2A7D-45D3-A331-20FE6481B177");
+        var childSectionId = Guid.Parse("95A7DC95-6908-4EF6-A824-A5C0E8B0F84D");
+
+        var repository = new FakeMenuQueryRepository
+        {
+            Snapshot = new PublicMenuSnapshot(
+                MenuTab.Breakfast,
+                [
+                    CreateSection(parentSectionId, "Breakfast Plates", [MenuTab.Breakfast]),
+                    CreateSection(childSectionId, "Omelets", [MenuTab.Breakfast], parentSectionId: parentSectionId)
+                ],
+                [
+                    CreateItem(
+                        "White Toast",
+                        "Simple side.",
+                        1,
+                        [new MenuItemSectionAssignmentRecord(parentSectionId, "Breakfast Plates", 1)],
+                        [MenuTab.Breakfast],
+                        null,
+                        null,
+                        false,
+                        [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 2m, 1)]),
+                    CreateItem(
+                        "Denver Omelet",
+                        "Child section item.",
+                        1,
+                        [new MenuItemSectionAssignmentRecord(childSectionId, "Omelets", 1)],
+                        [MenuTab.Breakfast],
+                        null,
+                        null,
+                        false,
+                        [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 12m, 1)])
+                ],
+                [CreateWindow(MenuTab.Breakfast, DayOfWeek.Friday, true, new TimeOnly(9, 0), new TimeOnly(12, 0), false)]),
+            TabsWithContent = [MenuTab.Breakfast]
+        };
+
+        var result = await new MenuQueryService(repository).GetPublicMenuAsync(MenuTab.Breakfast, today);
+
+        var rootSection = Assert.Single(result.Sections);
+        Assert.Equal(
+            ["Omelets", "White Toast"],
+            rootSection.Entries.Select(entry => entry.Item?.Name ?? entry.ChildSection!.Name).ToArray());
+    }
+
+    [Fact]
     public async Task GetPublicMenuAsync_promotes_visible_child_section_when_parent_is_not_visible_for_that_tab()
     {
         var today = new DateOnly(2026, 5, 22);
@@ -473,19 +522,19 @@ public sealed class MenuQueryServiceTests
             HomeSpecialItems =
             [
                 CreateItem(
-                    "Monday Night Burgers",
-                    "Weeknight burger draw.",
+                    "Tuesday Steak Special",
+                    "Starts after the weekend.",
                     1,
-                    "Burgers",
+                    "Dinner Specials",
                     [MenuTab.Dinner],
-                    null,
+                    new DateOnly(2026, 5, 25),
                     null,
                     false,
                     [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 11m, 1)],
                     new MenuItemSpecialRecord(
                         Guid.NewGuid(),
                         MenuItemSpecialScheduleKind.WeeklyRecurring,
-                        DayOfWeek.Monday,
+                        [DayOfWeek.Sunday, DayOfWeek.Tuesday],
                         new DateOnly(2026, 1, 1),
                         null,
                         new TimeOnly(17, 0),
@@ -518,7 +567,7 @@ public sealed class MenuQueryServiceTests
         var result = await new MenuQueryService(repository).GetHomeSpecialsAsync(today);
 
         Assert.Equal(
-            ["Sunday Pork Chop Dinner", "Monday Night Burgers"],
+            ["Sunday Pork Chop Dinner", "Tuesday Steak Special"],
             result.Select(item => item.Title).ToArray());
     }
 

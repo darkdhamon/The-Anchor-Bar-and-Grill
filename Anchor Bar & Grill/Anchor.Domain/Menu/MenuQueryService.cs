@@ -96,7 +96,7 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
         .Where(item => item.Special is not null)
         .OrderBy(item => item.Special!.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring ? 0 : 1)
         .ThenBy(item => item.Special!.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring
-            ? GetNextWeeklyOccurrenceDate(item.Special!, today)
+            ? GetNextWeeklyOccurrenceDate(item, today)
             : item.Special!.StartDate ?? DateOnly.MaxValue)
         .ThenBy(item => item.SortOrder)
         .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
@@ -117,12 +117,19 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
         })
         .ToArray();
 
-    private static DateOnly GetNextWeeklyOccurrenceDate(MenuItemSpecialRecord special, DateOnly today)
+    private static DateOnly GetNextWeeklyOccurrenceDate(MenuItemRecord item, DateOnly today)
     {
+        if (item.Special is null || item.Special.ScheduleKind != MenuItemSpecialScheduleKind.WeeklyRecurring)
+        {
+            return today.AddDays(7);
+        }
+
         for (var offset = 0; offset <= 6; offset++)
         {
             var candidate = today.AddDays(offset);
-            if (special.DaysOfWeek.Contains(candidate.DayOfWeek))
+            if (item.Special.DaysOfWeek.Contains(candidate.DayOfWeek)
+                && IsItemLifetimeActiveOnDate(item, candidate)
+                && MenuAvailabilityRules.IsItemWithinRecurringSeason(item, candidate))
             {
                 return candidate;
             }
@@ -130,6 +137,10 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
 
         return today.AddDays(7);
     }
+
+    private static bool IsItemLifetimeActiveOnDate(MenuItemRecord item, DateOnly date) =>
+        (item.OfferStartsOn is null || item.OfferStartsOn <= date)
+        && (item.OfferEndsOn is null || item.OfferEndsOn >= date);
 
     public async Task<MenuManagementView> GetMenuManagementViewAsync(DateOnly today, CancellationToken cancellationToken = default)
     {
@@ -388,7 +399,7 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
         return directItems
             .Concat(childEntries)
             .OrderBy(entry => entry.SortOrder)
-            .ThenBy(entry => entry.IsChildSection ? 1 : 0)
+            .ThenBy(entry => entry.IsChildSection ? 0 : 1)
             .ToArray();
     }
 
