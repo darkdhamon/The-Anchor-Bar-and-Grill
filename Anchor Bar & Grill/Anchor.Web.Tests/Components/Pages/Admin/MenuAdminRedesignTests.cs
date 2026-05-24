@@ -40,6 +40,7 @@ public sealed class MenuAdminRedesignTests : BunitContext
         authStateProvider = new TestAuthenticationStateProvider();
         Services.AddSingleton<AuthenticationStateProvider>(authStateProvider);
         Services.AddCascadingAuthenticationState();
+        Services.AddSingleton<TimeProvider>(new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 12, 0, 0, TimeSpan.FromHours(-5))));
 
         Services.AddSingleton<IMenuQueryService>(new StaticMenuAdminQueryService());
         Services.AddSingleton<IMenuManagementService>(new StaticMenuAdminManagementService());
@@ -184,6 +185,22 @@ public sealed class MenuAdminRedesignTests : BunitContext
 
         Assert.Contains("Breakfast Plates", optionLabels);
         Assert.DoesNotContain("Omelets", optionLabels);
+    }
+
+    [Fact]
+    public void Browser_tree_renders_child_sections_only_inside_their_parent_card()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+
+        var cut = RenderMenuAdmin("/admin/menu?tab=food&food=breakfast");
+        var browserTree = cut.Find(".menu-editor-tree");
+
+        var topLevelTitles = browserTree.QuerySelectorAll(":scope > article.menu-editor-tree__section > .menu-editor-tree__row .menu-editor-tree__title")
+            .Select(title => title.TextContent.Trim())
+            .ToArray();
+
+        Assert.Contains("Breakfast Plates", topLevelTitles);
+        Assert.DoesNotContain("Omelets", topLevelTitles);
     }
 
     [Fact]

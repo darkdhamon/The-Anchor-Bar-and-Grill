@@ -112,7 +112,14 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
             .ToListAsync(cancellationToken);
 
         return items
-            .Where(item => IsSpecialVisibleForHome(item, sectionsById, today, comingSoonCutoff))
+            .Select(item => item with
+            {
+                SectionAssignments = item.SectionAssignments
+                    .Where(assignment => sectionsById.ContainsKey(assignment.SectionId))
+                    .ToArray()
+            })
+            .Where(item => item.SectionAssignments.Count > 0)
+            .Where(item => IsSpecialVisibleForHome(item, today, comingSoonCutoff))
             .ToArray();
     }
 
@@ -292,7 +299,6 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
 
     private static bool IsSpecialVisibleForHome(
         MenuItemRecord item,
-        IReadOnlyDictionary<Guid, MenuSectionRecord> sectionsById,
         DateOnly today,
         DateOnly comingSoonCutoff)
     {
@@ -301,25 +307,42 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
             return false;
         }
 
-        var hasVisibleSection = item.SectionAssignments.Any(assignment => sectionsById.ContainsKey(assignment.SectionId));
-        if (!hasVisibleSection)
-        {
-            return false;
-        }
-
-        if (!IsItemLifetimeActiveToday(item, today) || !MenuAvailabilityRules.IsItemWithinRecurringSeason(item, today))
-        {
-            return false;
-        }
-
         return item.Special.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring
-            ? item.Special.DaysOfWeek.Contains(today.DayOfWeek)
+            ? HasWeeklyOccurrenceWithinPreviewWindow(item, today, today.AddDays(6))
             : item.Special.StartDate is { } specialStart
+                && IsItemLifetimeActiveOnDate(item, today)
+                && MenuAvailabilityRules.IsItemWithinRecurringSeason(item, today)
                 && specialStart <= comingSoonCutoff
                 && (item.Special.EndDate ?? specialStart) >= today;
     }
 
+    private static bool HasWeeklyOccurrenceWithinPreviewWindow(MenuItemRecord item, DateOnly startDate, DateOnly endDate)
+    {
+        if (item.Special is null || item.Special.ScheduleKind != MenuItemSpecialScheduleKind.WeeklyRecurring)
+        {
+            return false;
+        }
+
+        for (var date = startDate; date <= endDate; date = date.AddDays(1))
+        {
+            if (!item.Special.DaysOfWeek.Contains(date.DayOfWeek))
+            {
+                continue;
+            }
+
+            if (IsItemLifetimeActiveOnDate(item, date) && MenuAvailabilityRules.IsItemWithinRecurringSeason(item, date))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static bool IsItemLifetimeActiveToday(MenuItemRecord item, DateOnly today) =>
-        (item.OfferStartsOn is null || item.OfferStartsOn <= today)
-        && (item.OfferEndsOn is null || item.OfferEndsOn >= today);
+        IsItemLifetimeActiveOnDate(item, today);
+
+    private static bool IsItemLifetimeActiveOnDate(MenuItemRecord item, DateOnly date) =>
+        (item.OfferStartsOn is null || item.OfferStartsOn <= date)
+        && (item.OfferEndsOn is null || item.OfferEndsOn >= date);
 }

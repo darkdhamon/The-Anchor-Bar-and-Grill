@@ -279,7 +279,6 @@
                                          aria-expanded="@(IsBrowserSectionExpanded(browserSection.Section.SectionId) ? "true" : "false")"
                                          @onclick="() => ToggleBrowserSection(browserSection.Section)"
                                          @onkeydown="args => HandleBrowserSectionHeaderKeyDown(args, browserSection.Section)"
-                                         @onkeydown:preventDefault="true"
                                          draggable="true"
                                          @ondragstart="() => BeginSectionDrag(browserSection.Section)"
                                          @ondragover:preventDefault

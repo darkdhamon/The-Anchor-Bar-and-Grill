@@ -5,6 +5,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 ## Current Application Scope
 
 - Guest-facing homepage with a welcome-first layout that is separate from the menu
+- Homepage weekly specials now preview recurring specials that are active today or will occur within the next six days, while still respecting lifetime dates and recurring seasonal windows
 - Homepage preview of special weekly menu items so guests can see day-of-week favorites before opening the full menu
 - Homepage list of upcoming events in the next month so guests can plan without leaving the landing page
 - Database-backed public menu page inspired by the existing printed menu
@@ -101,7 +102,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - Menu status labels are computed at request time from offer dates rather than stored as long-lived status flags
 - Menu sections, items, special-item schedule extensions, and service windows all follow the repository pattern and are covered by unit tests plus migration-chain tests
 - The Menu Editor now uses a shared time-combobox input for service hours, so staff can type shorthand like `1300` or `1pm`, pick from the reusable time list, and still keep Lunch, Dinner, Breakfast, and Drinks hours isolated cleanly across tab switches and saves
-- The shared time-combobox now keeps cleared or partially edited hour values intact while staff are typing, and the Hours save action stays disabled until every available day has valid opening and closing times
+- The shared time-combobox now keeps cleared or partially edited hour values intact while staff are typing, and the Hours save action stays disabled until every available day has valid opening and closing times, including rejecting same-day closing times that do not come after their opening time
 - The Menu Editor now separates `Food`, `Drinks`, and `Hours` into a left-rail admin console, keeps browser sections collapsed by default until staff expand them by clicking the section header, includes archive-state browsing, greyed archived records, contextual create actions, mixed parent-section content ordering for direct items plus child-section headers, a sticky focused detail panel, and built-in right-side quick guides for both the catalog workspaces and the Hours workspace that replace the old duplicated workspace intro copy
 - The Hours workspace now opens with a stacked summary list so all four grouped service schedules can be compared in one scan path, and staff can click any service row to jump straight into editing that service
 - The Menu Editor now uses one shared item form for both standard items and special items, with an `Is special` toggle that reveals the schedule-extension fields only when they are needed

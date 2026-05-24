@@ -339,6 +339,11 @@ public sealed class MenuManagementService(
             {
                 return MenuOperationResult.Failure("Available service-hour rows must include both opening and closing times.");
             }
+
+            if (!day.ClosesNextDay && day.ClosesAt <= day.OpensAt)
+            {
+                return MenuOperationResult.Failure("Closing time must be later than opening time unless Closes next day is enabled.");
+            }
         }
 
         await repository.UpsertServiceWindowsAsync(request, cancellationToken);

@@ -24,7 +24,7 @@ public partial class MenuAdmin
         DayOfWeek.Sunday
     ];
 
-    private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+    private DateOnly today;
     private MenuManagementView? menuView;
     private MenuSectionFormModel sectionForm = new();
     private MenuItemFormModel itemForm = CreateDefaultItemForm();
@@ -60,6 +60,9 @@ public partial class MenuAdmin
 
     [Inject]
     private NavigationManager NavigationManager { get; set; } = null!;
+
+    [Inject]
+    private TimeProvider TimeProvider { get; set; } = null!;
 
     [Inject]
     private ILogger<MenuAdmin> Logger { get; set; } = null!;
@@ -180,6 +183,7 @@ public partial class MenuAdmin
     private async Task LoadAsync()
     {
         isLoading = true;
+        today = DateOnly.FromDateTime(TimeProvider.GetLocalNow().DateTime);
         menuView = await MenuQueryService.GetMenuManagementViewAsync(today);
         sessionVisibleEmptySectionIds.RemoveWhere(sectionId => Sections.All(section => section.SectionId != sectionId));
         isLoading = false;
@@ -1401,7 +1405,7 @@ public partial class MenuAdmin
         List<MenuAdminBrowserSectionViewModel> browserSections = [];
 
         foreach (var section in Sections
-                     .Where(section => section.Family == family)
+                     .Where(section => section.Family == family && section.ParentSectionId is null)
                      .OrderBy(section => section.SortOrder)
                      .ThenBy(section => section.Name, StringComparer.OrdinalIgnoreCase))
         {

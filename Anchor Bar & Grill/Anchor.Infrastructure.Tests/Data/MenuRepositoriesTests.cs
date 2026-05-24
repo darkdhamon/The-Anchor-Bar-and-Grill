@@ -260,6 +260,180 @@ public sealed class MenuRepositoriesTests
     }
 
     [Fact]
+    public async Task GetHomeSpecialItemsAsync_filters_hidden_section_assignments_from_guest_placement_data()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+
+        var visibleSectionId = Guid.NewGuid();
+        var hiddenSectionId = Guid.NewGuid();
+        var itemId = Guid.NewGuid();
+
+        context.DbContext.MenuSections.AddRange(
+            new MenuSectionEntity
+            {
+                MenuSectionId = visibleSectionId,
+                Name = "Codex Visible Dinner Specials",
+                NormalizedName = MenuNameRules.NormalizeForLookup("Codex Visible Dinner Specials"),
+                Family = MenuFamily.Food,
+                SortOrder = 200,
+                IsVisibleToGuests = true,
+                IsArchived = false
+            },
+            new MenuSectionEntity
+            {
+                MenuSectionId = hiddenSectionId,
+                Name = "Hidden Test Group",
+                NormalizedName = MenuNameRules.NormalizeForLookup("Hidden Test Group"),
+                Family = MenuFamily.Food,
+                SortOrder = 201,
+                IsVisibleToGuests = false,
+                IsArchived = false
+            });
+        context.DbContext.MenuItems.Add(new MenuItemEntity
+        {
+            MenuItemId = itemId,
+            Name = "Codex Sunday Pork Chop Dinner",
+            NormalizedName = MenuNameRules.NormalizeForLookup("Codex Sunday Pork Chop Dinner"),
+            Description = "Hearty Sunday special.",
+            SortOrder = 1,
+            IsVisibleToGuests = true,
+            IsArchived = false
+        });
+        context.DbContext.MenuItemSectionAssignments.AddRange(
+            new MenuItemSectionAssignmentEntity
+            {
+                MenuItemId = itemId,
+                MenuSectionId = visibleSectionId,
+                SortOrder = 1
+            },
+            new MenuItemSectionAssignmentEntity
+            {
+                MenuItemId = itemId,
+                MenuSectionId = hiddenSectionId,
+                SortOrder = 2
+            });
+        context.DbContext.MenuItemTabs.Add(new MenuItemTabEntity
+        {
+            MenuItemId = itemId,
+            Tab = MenuTab.Dinner
+        });
+        context.DbContext.MenuItemPriceVariants.Add(new MenuItemPriceVariantEntity
+        {
+            MenuItemPriceVariantId = Guid.NewGuid(),
+            MenuItemId = itemId,
+            Label = "Regular",
+            Amount = 17m,
+            SortOrder = 1
+        });
+        context.DbContext.MenuItemSpecials.Add(new MenuItemSpecialEntity
+        {
+            MenuItemId = itemId,
+            ScheduleKind = MenuItemSpecialScheduleKind.WeeklyRecurring,
+            StartDate = new DateOnly(2026, 1, 1),
+            Callout = "$17 dinner plate"
+        });
+        context.DbContext.MenuItemSpecialDays.Add(new MenuItemSpecialDayEntity
+        {
+            MenuItemId = itemId,
+            DayOfWeek = DayOfWeek.Sunday
+        });
+        await context.DbContext.SaveChangesAsync();
+
+        var repository = new MenuQueryRepository(context.DbContext);
+        var items = await repository.GetHomeSpecialItemsAsync(new DateOnly(2026, 5, 24), new DateOnly(2026, 6, 23));
+
+        var special = Assert.Single(items, item => item.ItemId == itemId);
+        Assert.Equal([visibleSectionId], special.SectionAssignments.Select(assignment => assignment.SectionId).ToArray());
+        Assert.DoesNotContain(special.SectionAssignments, assignment => assignment.SectionId == hiddenSectionId);
+    }
+
+    [Fact]
+    public async Task GetHomeSpecialItemsAsync_includes_only_weekly_occurrences_within_the_next_seven_days()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+
+        var visibleSectionId = Guid.NewGuid();
+        var upcomingItemId = Guid.NewGuid();
+        var futureItemId = Guid.NewGuid();
+        var expiringItemId = Guid.NewGuid();
+
+        context.DbContext.MenuSections.Add(new MenuSectionEntity
+        {
+            MenuSectionId = visibleSectionId,
+            Name = "Codex Weekly Preview Dinner Specials",
+            NormalizedName = MenuNameRules.NormalizeForLookup("Codex Weekly Preview Dinner Specials"),
+            Family = MenuFamily.Food,
+            SortOrder = 210,
+            IsVisibleToGuests = true,
+            IsArchived = false
+        });
+        context.DbContext.MenuItems.AddRange(
+            new MenuItemEntity
+            {
+                MenuItemId = upcomingItemId,
+                Name = "Thursday Feature",
+                NormalizedName = MenuNameRules.NormalizeForLookup("Thursday Feature"),
+                Description = "Starts in time for next Thursday.",
+                SortOrder = 1,
+                IsVisibleToGuests = true,
+                IsArchived = false,
+                OfferStartsOn = new DateOnly(2026, 5, 25)
+            },
+            new MenuItemEntity
+            {
+                MenuItemId = futureItemId,
+                Name = "Late Start Feature",
+                NormalizedName = MenuNameRules.NormalizeForLookup("Late Start Feature"),
+                Description = "Starts after the preview window.",
+                SortOrder = 2,
+                IsVisibleToGuests = true,
+                IsArchived = false,
+                OfferStartsOn = new DateOnly(2026, 5, 29)
+            },
+            new MenuItemEntity
+            {
+                MenuItemId = expiringItemId,
+                Name = "Expiring Feature",
+                NormalizedName = MenuNameRules.NormalizeForLookup("Expiring Feature"),
+                Description = "Ends before the next Thursday occurrence.",
+                SortOrder = 3,
+                IsVisibleToGuests = true,
+                IsArchived = false,
+                OfferEndsOn = new DateOnly(2026, 5, 27)
+            });
+        context.DbContext.MenuItemSectionAssignments.AddRange(
+            new MenuItemSectionAssignmentEntity { MenuItemId = upcomingItemId, MenuSectionId = visibleSectionId, SortOrder = 1 },
+            new MenuItemSectionAssignmentEntity { MenuItemId = futureItemId, MenuSectionId = visibleSectionId, SortOrder = 2 },
+            new MenuItemSectionAssignmentEntity { MenuItemId = expiringItemId, MenuSectionId = visibleSectionId, SortOrder = 3 });
+        context.DbContext.MenuItemTabs.AddRange(
+            new MenuItemTabEntity { MenuItemId = upcomingItemId, Tab = MenuTab.Dinner },
+            new MenuItemTabEntity { MenuItemId = futureItemId, Tab = MenuTab.Dinner },
+            new MenuItemTabEntity { MenuItemId = expiringItemId, Tab = MenuTab.Dinner });
+        context.DbContext.MenuItemPriceVariants.AddRange(
+            new MenuItemPriceVariantEntity { MenuItemPriceVariantId = Guid.NewGuid(), MenuItemId = upcomingItemId, Label = "Regular", Amount = 12m, SortOrder = 1 },
+            new MenuItemPriceVariantEntity { MenuItemPriceVariantId = Guid.NewGuid(), MenuItemId = futureItemId, Label = "Regular", Amount = 13m, SortOrder = 1 },
+            new MenuItemPriceVariantEntity { MenuItemPriceVariantId = Guid.NewGuid(), MenuItemId = expiringItemId, Label = "Regular", Amount = 14m, SortOrder = 1 });
+        context.DbContext.MenuItemSpecials.AddRange(
+            new MenuItemSpecialEntity { MenuItemId = upcomingItemId, ScheduleKind = MenuItemSpecialScheduleKind.WeeklyRecurring, StartDate = new DateOnly(2026, 1, 1), Callout = "$12 feature" },
+            new MenuItemSpecialEntity { MenuItemId = futureItemId, ScheduleKind = MenuItemSpecialScheduleKind.WeeklyRecurring, StartDate = new DateOnly(2026, 1, 1), Callout = "$13 feature" },
+            new MenuItemSpecialEntity { MenuItemId = expiringItemId, ScheduleKind = MenuItemSpecialScheduleKind.WeeklyRecurring, StartDate = new DateOnly(2026, 1, 1), Callout = "$14 feature" });
+        context.DbContext.MenuItemSpecialDays.AddRange(
+            new MenuItemSpecialDayEntity { MenuItemId = upcomingItemId, DayOfWeek = DayOfWeek.Thursday },
+            new MenuItemSpecialDayEntity { MenuItemId = futureItemId, DayOfWeek = DayOfWeek.Thursday },
+            new MenuItemSpecialDayEntity { MenuItemId = expiringItemId, DayOfWeek = DayOfWeek.Thursday });
+        await context.DbContext.SaveChangesAsync();
+
+        var repository = new MenuQueryRepository(context.DbContext);
+        var items = await repository.GetHomeSpecialItemsAsync(new DateOnly(2026, 5, 22), new DateOnly(2026, 6, 21));
+
+        var itemIds = items.Select(item => item.ItemId).ToArray();
+
+        Assert.Contains(upcomingItemId, itemIds);
+        Assert.DoesNotContain(futureItemId, itemIds);
+        Assert.DoesNotContain(expiringItemId, itemIds);
+    }
+
+    [Fact]
     public async Task GetMenuManagementSnapshotAsync_includes_hidden_archived_special_items()
     {
         await using var context = await SqliteIdentityTestContext.CreateAsync();

@@ -233,6 +233,17 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     }
 
     [Fact]
+    public void HomePage_Uses_Injected_TimeProvider_For_Today_Special_Labeling()
+    {
+        timeProvider.SetLocalNow(new DateTimeOffset(2026, 5, 24, 12, 0, 0, TimeSpan.FromHours(-5)));
+
+        var cut = Render<Home>();
+
+        Assert.Contains("Sunday Pork Chop Dinner", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Today", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void PublicFacingPages_ExcludeInteractiveRouting()
     {
         var pageTypes = new[]

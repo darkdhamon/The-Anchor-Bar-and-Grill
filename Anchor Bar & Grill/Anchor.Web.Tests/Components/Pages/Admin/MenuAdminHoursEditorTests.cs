@@ -51,6 +51,7 @@ public sealed class MenuAdminHoursEditorTests : BunitContext
         authStateProvider = new TestAuthenticationStateProvider();
         Services.AddSingleton<AuthenticationStateProvider>(authStateProvider);
         Services.AddCascadingAuthenticationState();
+        Services.AddSingleton<TimeProvider>(new FixedTimeProvider(new DateTimeOffset(2026, 5, 18, 12, 0, 0, TimeSpan.FromHours(-5))));
         Services.AddSingleton<IMenuItemImageStorage>(new TestMenuItemImageStorage());
 
         hoursStore = new MutableMenuHoursStore();

@@ -418,6 +418,26 @@ public sealed class MenuManagementServiceTests
     }
 
     [Fact]
+    public async Task SaveServiceWindowsAsync_rejects_non_overnight_rows_where_closing_time_is_not_later_than_opening_time()
+    {
+        var repository = new FakeMenuManagementRepository();
+        var service = CreateService(repository);
+
+        var result = await service.SaveServiceWindowsAsync(
+            new SaveMenuServiceWindowRequest(
+                MenuTab.Lunch,
+                OrderedDays
+                    .Select(day => day == DayOfWeek.Monday
+                        ? new SaveMenuServiceWindowDayRequest(day, true, new TimeOnly(11, 0), new TimeOnly(11, 0), false)
+                        : new SaveMenuServiceWindowDayRequest(day, false, null, null, false))
+                    .ToArray()));
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("Closing time must be later than opening time", result.Errors[0], StringComparison.OrdinalIgnoreCase);
+        Assert.Null(repository.LastServiceWindowRequest);
+    }
+
+    [Fact]
     public async Task ReorderItemsAsync_persists_requested_sort_orders()
     {
         var repository = new FakeMenuManagementRepository

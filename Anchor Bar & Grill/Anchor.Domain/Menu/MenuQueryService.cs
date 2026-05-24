@@ -94,10 +94,10 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
     public async Task<IReadOnlyList<PublicHomeSpecialView>> GetHomeSpecialsAsync(DateOnly today, CancellationToken cancellationToken = default) =>
         (await repository.GetHomeSpecialItemsAsync(today, today.AddDays(30), cancellationToken))
         .Where(item => item.Special is not null)
-        .OrderBy(item => item.Special!.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring
-            ? Array.IndexOf(MenuPresentationRules.DayOrder.ToArray(), item.Special.DaysOfWeek.FirstOrDefault())
-            : 7)
-        .ThenBy(item => item.Special!.StartDate)
+        .OrderBy(item => item.Special!.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring ? 0 : 1)
+        .ThenBy(item => item.Special!.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring
+            ? GetNextWeeklyOccurrenceDate(item.Special!, today)
+            : item.Special!.StartDate ?? DateOnly.MaxValue)
         .ThenBy(item => item.SortOrder)
         .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
         .Select(item => new PublicHomeSpecialView(
@@ -110,6 +110,20 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
             MenuPresentationRules.GetPlacementSummary(item),
             MenuPresentationRules.IsSpecialToday(item.Special!, today)))
         .ToArray();
+
+    private static DateOnly GetNextWeeklyOccurrenceDate(MenuItemSpecialRecord special, DateOnly today)
+    {
+        for (var offset = 0; offset <= 6; offset++)
+        {
+            var candidate = today.AddDays(offset);
+            if (special.DaysOfWeek.Contains(candidate.DayOfWeek))
+            {
+                return candidate;
+            }
+        }
+
+        return today.AddDays(7);
+    }
 
     public async Task<MenuManagementView> GetMenuManagementViewAsync(DateOnly today, CancellationToken cancellationToken = default)
     {

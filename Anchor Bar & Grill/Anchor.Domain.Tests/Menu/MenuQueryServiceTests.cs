@@ -464,6 +464,64 @@ public sealed class MenuQueryServiceTests
     }
 
     [Fact]
+    public async Task GetHomeSpecialsAsync_orders_weekly_specials_by_their_next_occurrence_in_the_preview_window()
+    {
+        var today = new DateOnly(2026, 5, 22);
+        var repository = new FakeMenuQueryRepository
+        {
+            HomeSpecialItems =
+            [
+                CreateItem(
+                    "Monday Night Burgers",
+                    "Weeknight burger draw.",
+                    1,
+                    "Burgers",
+                    [MenuTab.Dinner],
+                    null,
+                    null,
+                    false,
+                    [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 11m, 1)],
+                    new MenuItemSpecialRecord(
+                        Guid.NewGuid(),
+                        MenuItemSpecialScheduleKind.WeeklyRecurring,
+                        DayOfWeek.Monday,
+                        new DateOnly(2026, 1, 1),
+                        null,
+                        new TimeOnly(17, 0),
+                        null,
+                        false,
+                        "$11 basket special")),
+                CreateItem(
+                    "Sunday Pork Chop Dinner",
+                    "End-of-week dinner tradition.",
+                    2,
+                    "Dinner Specials",
+                    [MenuTab.Dinner],
+                    null,
+                    null,
+                    false,
+                    [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 17m, 1)],
+                    new MenuItemSpecialRecord(
+                        Guid.NewGuid(),
+                        MenuItemSpecialScheduleKind.WeeklyRecurring,
+                        DayOfWeek.Sunday,
+                        new DateOnly(2026, 1, 1),
+                        null,
+                        new TimeOnly(15, 0),
+                        null,
+                        false,
+                        "$17 dinner plate"))
+            ]
+        };
+
+        var result = await new MenuQueryService(repository).GetHomeSpecialsAsync(today);
+
+        Assert.Equal(
+            ["Sunday Pork Chop Dinner", "Monday Night Burgers"],
+            result.Select(item => item.Title).ToArray());
+    }
+
+    [Fact]
     public async Task GetSuggestedPublicTabAsync_prefers_the_active_food_service_over_drinks()
     {
         var repository = new FakeMenuQueryRepository

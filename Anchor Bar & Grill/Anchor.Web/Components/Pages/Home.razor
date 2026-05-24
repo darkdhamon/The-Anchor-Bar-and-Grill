@@ -2,6 +2,7 @@
 @using Anchor.Domain.Menu
 @attribute [ExcludeFromInteractiveRouting]
 @inject IMenuQueryService MenuQueryService
+@inject TimeProvider TimeProvider
 
 <PageTitle>Home</PageTitle>
 
@@ -168,12 +169,14 @@
 </section>
 
 @code {
-    private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+    private DateOnly today;
     private IReadOnlyList<PublicHomeSpecialView> homeSpecialItems = [];
-    private IReadOnlyList<UpcomingEventOccurrence> homeUpcomingEvents => MockupContent.GetUpcomingEvents(today, 30);
+    private IReadOnlyList<UpcomingEventOccurrence> homeUpcomingEvents = [];
 
     protected override async Task OnInitializedAsync()
     {
+        today = DateOnly.FromDateTime(TimeProvider.GetLocalNow().DateTime);
+        homeUpcomingEvents = MockupContent.GetUpcomingEvents(today, 30);
         homeSpecialItems = await MenuQueryService.GetHomeSpecialsAsync(today);
     }
 }
