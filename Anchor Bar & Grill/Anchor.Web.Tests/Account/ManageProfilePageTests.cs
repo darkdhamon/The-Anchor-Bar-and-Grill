@@ -1,8 +1,8 @@
 using System.Security.Claims;
 using Anchor.Domain.Identity;
 using Anchor.Domain.Identity.Users;
+using Anchor.Infrastructure.Data;
 using Anchor.Web.Components.Account.Pages.Manage;
-using Anchor.Web.Data;
 using Anchor.Web.Tests.Support;
 using Bunit;
 using Microsoft.AspNetCore.Authentication;

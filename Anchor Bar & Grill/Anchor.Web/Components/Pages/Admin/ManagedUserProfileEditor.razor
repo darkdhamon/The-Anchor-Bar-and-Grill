@@ -12,17 +12,17 @@
     <div class="editor-form__grid">
         <label>
             First name
-            <input @bind="input.FirstName" @bind:event="oninput" id="@($"Profile.FirstName.{User.UserId}")" autocomplete="off" placeholder="First name" />
+            <CommitAwareInputText @bind-Value="input.FirstName" id="@($"Profile.FirstName.{User.UserId}")" autocomplete="off" placeholder="First name" />
             <ValidationMessage For="@(() => input.FirstName)" class="validation-message" />
         </label>
         <label>
             Last name
-            <input @bind="input.LastName" @bind:event="oninput" id="@($"Profile.LastName.{User.UserId}")" autocomplete="off" placeholder="Last name" />
+            <CommitAwareInputText @bind-Value="input.LastName" id="@($"Profile.LastName.{User.UserId}")" autocomplete="off" placeholder="Last name" />
             <ValidationMessage For="@(() => input.LastName)" class="validation-message" />
         </label>
         <label>
             Phone number
-            <input type="tel" @bind="input.PhoneNumber" @bind:event="oninput" id="@($"Profile.PhoneNumber.{User.UserId}")" autocomplete="tel" placeholder="Phone number" />
+            <CommitAwareInputText Type="tel" @bind-Value="input.PhoneNumber" id="@($"Profile.PhoneNumber.{User.UserId}")" autocomplete="tel" placeholder="Phone number" />
             <ValidationMessage For="@(() => input.PhoneNumber)" class="validation-message" />
         </label>
     </div>

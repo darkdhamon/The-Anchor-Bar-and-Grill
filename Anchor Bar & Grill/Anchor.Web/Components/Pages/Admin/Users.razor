@@ -55,12 +55,12 @@
                     <div class="editor-form__grid">
                         <label>
                             Email
-                            <InputText @bind-Value="createUserInput.Email" id="CreateUser.Email" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                            <CommitAwareInputText @bind-Value="createUserInput.Email" id="CreateUser.Email" autocomplete="username" aria-required="true" placeholder="name@example.com" />
                             <ValidationMessage For="() => createUserInput.Email" class="validation-message" />
                         </label>
                         <label>
                             Temporary password
-                            <InputText type="password" @bind-Value="createUserInput.TemporaryPassword" id="CreateUser.TemporaryPassword" autocomplete="new-password" aria-required="true" placeholder="Create a temporary password" />
+                            <CommitAwareInputText Type="password" @bind-Value="createUserInput.TemporaryPassword" id="CreateUser.TemporaryPassword" autocomplete="new-password" aria-required="true" placeholder="Create a temporary password" />
                             <ValidationMessage For="() => createUserInput.TemporaryPassword" class="validation-message" />
                         </label>
                         <label class="editor-form__toggle">

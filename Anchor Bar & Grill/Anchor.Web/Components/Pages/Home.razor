@@ -1,5 +1,8 @@
 @page "/"
+@using Anchor.Domain.Menu
 @attribute [ExcludeFromInteractiveRouting]
+@inject IMenuQueryService MenuQueryService
+@inject TimeProvider TimeProvider
 
 <PageTitle>Home</PageTitle>
 
@@ -71,30 +74,33 @@
 <section class="section-shell">
     <div class="section-heading">
         <p class="section-heading__eyebrow">Weekly Specials</p>
-        <h2>Put recurring day-of-week favorites in front of guests right away.</h2>
+        <h2>Put special menu items in front of guests right away.</h2>
     </div>
 
-    <div class="recurring-specials-grid">
-        @foreach (var special in MockupContent.RecurringSpecials)
-        {
-            <article class="feature-card recurring-special @(special.IsToday(today) ? "recurring-special--today" : string.Empty)">
+        <div class="recurring-specials-grid">
+            @foreach (var special in homeSpecialItems)
+            {
+            <article class="feature-card recurring-special @(special.IsAvailableNow ? "recurring-special--today" : string.Empty)">
                 <div class="recurring-special__header">
                     <div>
-                        <p class="feature-card__eyebrow">@special.DayLabel</p>
+                        <p class="feature-card__eyebrow">@special.BadgeLabel</p>
                         <h3>@special.Title</h3>
                     </div>
 
-                    @if (special.IsToday(today))
+                    @if (!string.IsNullOrWhiteSpace(special.AvailabilityLabel))
                     {
-                        <span class="status-pill status-pill--today">Today</span>
+                        <span class="@GetHomeSpecialStatusClass(special)">@special.AvailabilityLabel</span>
                     }
                 </div>
 
-                <p class="event-card__meta">@special.TimeLabel</p>
+                @if (!string.IsNullOrWhiteSpace(special.TimeSummary))
+                {
+                    <p class="event-card__meta">@special.TimeSummary</p>
+                }
                 <p>@special.Description</p>
 
                 <div class="recurring-special__footer">
-                    <span class="recurring-special__price">@special.PriceNote</span>
+                    <span class="recurring-special__price">@special.Callout</span>
                     <span class="recurring-special__placement">@special.PlacementSummary</span>
                 </div>
             </article>
@@ -163,6 +169,23 @@
 </section>
 
 @code {
-    private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
-    private IReadOnlyList<UpcomingEventOccurrence> homeUpcomingEvents => MockupContent.GetUpcomingEvents(today, 30);
+    private DateOnly today;
+    private IReadOnlyList<PublicHomeSpecialView> homeSpecialItems = [];
+    private IReadOnlyList<UpcomingEventOccurrence> homeUpcomingEvents = [];
+
+    private static string GetHomeSpecialStatusClass(PublicHomeSpecialView special) =>
+        special.AvailabilityLabel switch
+        {
+            "Today" => "status-pill status-pill--today",
+            "Now available" => "status-pill status-pill--schedule",
+            "Limited-time special" => "status-pill status-pill--limited",
+            _ => "status-pill status-pill--schedule"
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        today = DateOnly.FromDateTime(TimeProvider.GetLocalNow().DateTime);
+        homeUpcomingEvents = MockupContent.GetUpcomingEvents(today, 30);
+        homeSpecialItems = await MenuQueryService.GetHomeSpecialsAsync(today);
+    }
 }

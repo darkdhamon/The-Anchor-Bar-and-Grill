@@ -35,6 +35,24 @@ public sealed class ManagedUserTemporaryPasswordEditorTests : BunitContext
         Assert.True(cut.Find("button[type='submit']").HasAttribute("disabled"));
     }
 
+    [Fact]
+    public void Submit_accepts_committed_password_text()
+    {
+        ResetManagedUserPasswordRequest? capturedRequest = null;
+
+        var cut = Render<ManagedUserTemporaryPasswordEditor>(parameters => parameters
+            .Add(component => component.User, BuildUser("user-1"))
+            .Add(component => component.IsBusy, false)
+            .Add(component => component.OnSave, request => capturedRequest = request));
+
+        cut.Find("input[type='password']").Change("TempPass9!");
+        cut.Find("form").Submit();
+
+        Assert.NotNull(capturedRequest);
+        Assert.Equal("user-1", capturedRequest.UserId);
+        Assert.Equal("TempPass9!", capturedRequest.TemporaryPassword);
+    }
+
     private static ManagedUserSummary BuildUser(string userId) =>
         new(
             UserId: userId,

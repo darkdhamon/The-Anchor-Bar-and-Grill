@@ -1,5 +1,5 @@
 using Anchor.Web.Components.Account.Pages.Manage;
-using Anchor.Web.Data;
+using Anchor.Infrastructure.Data;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -105,3 +105,4 @@ namespace Microsoft.AspNetCore.Routing
         }
     }
 }
+

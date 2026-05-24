@@ -1,8 +1,8 @@
+using Anchor.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Anchor.Web.Data;
 
 namespace Anchor.Web.Tests.Support;
 

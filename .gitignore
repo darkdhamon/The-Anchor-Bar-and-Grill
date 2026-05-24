@@ -61,6 +61,8 @@ BenchmarkDotNet.Artifacts/
 project.lock.json
 project.fragment.lock.json
 artifacts/
+**/.artifacts/
+.codex-run/
 
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
@@ -402,6 +404,14 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+.idea/
+.fleet/
 
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Runtime user-uploaded gallery content
+Anchor Bar & Grill/Anchor.Web/wwwroot/images/gallery/
 # Private local-only UAT credential notes
 docs/reference/uat-credentials.private.local.md

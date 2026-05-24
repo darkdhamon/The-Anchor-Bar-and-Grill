@@ -3,7 +3,7 @@
 @using System.ComponentModel.DataAnnotations
 @using Anchor.Domain.Identity
 @using Anchor.Domain.Identity.Users
-@using Anchor.Web.Data
+@using Anchor.Infrastructure.Data
 @using Microsoft.AspNetCore.Identity
 
 @inject IIdentityAdministrationService IdentityAdministrationService
@@ -42,17 +42,17 @@
                     </label>
                     <label>
                         First name
-                        <InputText @bind-Value="Input.FirstName" id="Input.FirstName" autocomplete="given-name" placeholder="First name" />
+                        <CommitAwareInputText @bind-Value="Input.FirstName" id="Input.FirstName" autocomplete="given-name" placeholder="First name" />
                         <ValidationMessage For="() => Input.FirstName" class="validation-message" />
                     </label>
                     <label>
                         Last name
-                        <InputText @bind-Value="Input.LastName" id="Input.LastName" autocomplete="family-name" placeholder="Last name" />
+                        <CommitAwareInputText @bind-Value="Input.LastName" id="Input.LastName" autocomplete="family-name" placeholder="Last name" />
                         <ValidationMessage For="() => Input.LastName" class="validation-message" />
                     </label>
                     <label>
                         Phone number
-                        <InputText @bind-Value="Input.PhoneNumber" id="Input.PhoneNumber" autocomplete="tel" placeholder="Phone number" />
+                        <CommitAwareInputText @bind-Value="Input.PhoneNumber" id="Input.PhoneNumber" autocomplete="tel" placeholder="Phone number" />
                         <ValidationMessage For="() => Input.PhoneNumber" class="validation-message" />
                     </label>
                 </div>
@@ -217,3 +217,4 @@
             ? description
             : "Access provided by this role is managed by an Admin.";
 }
+
