@@ -91,13 +91,10 @@ public sealed partial class LocalMenuItemImageStorage(
             throw new MenuItemImageUploadException("Choose an image before saving the menu item.");
         }
 
-        var normalizedStagedPath = NormalizeManagedImagePath(stagedImagePath);
-        if (!IsStagedImagePath(normalizedStagedPath))
+        if (!TryResolveManagedImagePath(stagedImagePath, requireStagingDirectory: true, out var normalizedStagedPath, out var stagedFullPath))
         {
             throw new MenuItemImageUploadException("The selected upload is no longer available. Upload the image again before saving.");
         }
-
-        var stagedFullPath = ResolveFullPath(normalizedStagedPath);
         if (!File.Exists(stagedFullPath))
         {
             throw new MenuItemImageUploadException("The selected upload is no longer available. Upload the image again before saving.");
@@ -132,13 +129,10 @@ public sealed partial class LocalMenuItemImageStorage(
             return Task.CompletedTask;
         }
 
-        var normalizedPath = NormalizeManagedImagePath(imagePath);
-        if (!IsManagedMenuItemImagePath(normalizedPath))
+        if (!TryResolveManagedImagePath(imagePath, requireStagingDirectory: false, out var normalizedPath, out var fullPath))
         {
             return Task.CompletedTask;
         }
-
-        var fullPath = ResolveFullPath(normalizedPath);
         if (File.Exists(fullPath))
         {
             File.Delete(fullPath);
@@ -311,7 +305,32 @@ public sealed partial class LocalMenuItemImageStorage(
         return $"{safeBaseName}-{uniqueSuffix}.webp";
     }
 
-    private string ResolveFullPath(string normalizedPublicPath)
+    private bool TryResolveManagedImagePath(
+        string imagePath,
+        bool requireStagingDirectory,
+        out string normalizedPublicPath,
+        out string fullPath)
+    {
+        normalizedPublicPath = NormalizeManagedImagePath(imagePath);
+        fullPath = string.Empty;
+        if (Uri.TryCreate(normalizedPublicPath, UriKind.Absolute, out _))
+        {
+            return false;
+        }
+
+        try
+        {
+            var allowedRoot = ResolveTargetDirectory(isStaging: requireStagingDirectory);
+            fullPath = ResolvePathWithinAllowedRoot(normalizedPublicPath, allowedRoot);
+            return true;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
+    }
+
+    private string ResolvePathWithinAllowedRoot(string normalizedPublicPath, string allowedRoot)
     {
         var webRootPath = environment.WebRootPath;
         if (string.IsNullOrWhiteSpace(webRootPath))
@@ -321,13 +340,27 @@ public sealed partial class LocalMenuItemImageStorage(
 
         var relativePath = normalizedPublicPath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
         var fullPath = Path.GetFullPath(Path.Combine(webRootPath, relativePath));
-        var allowedRoot = Path.GetFullPath(Path.Combine(webRootPath, "images", "gallery", "menuitems"));
-        if (!fullPath.StartsWith(allowedRoot, StringComparison.OrdinalIgnoreCase))
+        if (!IsStrictDescendantOf(allowedRoot, fullPath))
         {
             throw new InvalidOperationException("Menu item image paths must stay inside the managed gallery folder.");
         }
 
         return fullPath;
+    }
+
+    private static bool IsStrictDescendantOf(string rootPath, string candidatePath)
+    {
+        var canonicalRoot = Path.GetFullPath(rootPath);
+        var canonicalCandidate = Path.GetFullPath(candidatePath);
+        var relativePath = Path.GetRelativePath(canonicalRoot, canonicalCandidate);
+        if (string.IsNullOrWhiteSpace(relativePath) || string.Equals(relativePath, ".", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return !relativePath.StartsWith("..", StringComparison.Ordinal)
+            && !relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+            && !Path.IsPathRooted(relativePath);
     }
 
     private static string NormalizeManagedImagePath(string imagePath)
@@ -342,12 +375,6 @@ public sealed partial class LocalMenuItemImageStorage(
             ? trimmed
             : $"/{trimmed.TrimStart('/')}";
     }
-
-    private static bool IsManagedMenuItemImagePath(string imagePath) =>
-        imagePath.StartsWith(MenuItemImageStorageDefaults.PublicFolderPath, StringComparison.OrdinalIgnoreCase);
-
-    private static bool IsStagedImagePath(string imagePath) =>
-        imagePath.StartsWith(MenuItemImageStorageDefaults.StagingPublicFolderPath, StringComparison.OrdinalIgnoreCase);
 
     [GeneratedRegex("-{2,}")]
     private static partial Regex CollapseDashRegex();

@@ -83,6 +83,45 @@ public sealed class LocalMenuItemImageStorageTests
     }
 
     [Fact]
+    public async Task DeleteImageAsync_ignores_prefix_matching_sibling_directories_outside_the_managed_root()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        var webRoot = Path.Combine(tempDirectory.Path, "wwwroot");
+        var service = new LocalMenuItemImageStorage(
+            new TestWebHostEnvironment(webRoot),
+            NullLogger<LocalMenuItemImageStorage>.Instance);
+
+        var siblingDirectory = Path.Combine(webRoot, "images", "gallery", "menuitems-backup");
+        Directory.CreateDirectory(siblingDirectory);
+        var siblingFile = Path.Combine(siblingDirectory, "orphan.webp");
+        await File.WriteAllBytesAsync(siblingFile, [0x01, 0x02, 0x03]);
+
+        await service.DeleteImageAsync("/images/gallery/menuitems-backup/orphan.webp");
+
+        Assert.True(File.Exists(siblingFile));
+    }
+
+    [Fact]
+    public async Task CommitStagedImageAsync_rejects_paths_that_escape_the_staging_directory()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        var webRoot = Path.Combine(tempDirectory.Path, "wwwroot");
+        var service = new LocalMenuItemImageStorage(
+            new TestWebHostEnvironment(webRoot),
+            NullLogger<LocalMenuItemImageStorage>.Instance);
+
+        var liveDirectory = Path.Combine(webRoot, "images", "gallery", "menuitems");
+        Directory.CreateDirectory(liveDirectory);
+        var liveFile = Path.Combine(liveDirectory, "existing.webp");
+        await File.WriteAllBytesAsync(liveFile, [0x01, 0x02, 0x03]);
+
+        var exception = await Assert.ThrowsAsync<MenuItemImageUploadException>(() =>
+            service.CommitStagedImageAsync("/images/gallery/menuitems/_staged/../existing.webp"));
+
+        Assert.Contains("no longer available", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task StageImageAsync_accepts_jpeg_uploads_and_normalizes_them_to_webp()
     {
         using var tempDirectory = new TemporaryDirectory();
