@@ -285,16 +285,11 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
                 && MenuAvailabilityRules.IsItemWithinRecurringSeason(item, today);
         }
 
-        if (!IsItemLifetimeActiveToday(item, today) || !MenuAvailabilityRules.IsItemWithinRecurringSeason(item, today))
-        {
-            return false;
-        }
-
         return item.Special.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring
-            ? item.Special.DaysOfWeek.Contains(today.DayOfWeek)
-            : item.Special.StartDate is { } specialStart
-                && specialStart <= comingSoonCutoff
-                && (item.Special.EndDate ?? specialStart) >= today;
+            ? IsItemLifetimeActiveToday(item, today)
+                && MenuAvailabilityRules.IsItemWithinRecurringSeason(item, today)
+                && item.Special.DaysOfWeek.Contains(today.DayOfWeek)
+            : HasDatedOccurrenceWithinWindow(item, today, comingSoonCutoff);
     }
 
     private static bool IsSpecialVisibleForHome(
@@ -309,11 +304,7 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
 
         return item.Special.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring
             ? HasWeeklyOccurrenceWithinPreviewWindow(item, today, today.AddDays(6))
-            : item.Special.StartDate is { } specialStart
-                && IsItemLifetimeActiveOnDate(item, today)
-                && MenuAvailabilityRules.IsItemWithinRecurringSeason(item, today)
-                && specialStart <= comingSoonCutoff
-                && (item.Special.EndDate ?? specialStart) >= today;
+            : HasDatedOccurrenceWithinWindow(item, today, comingSoonCutoff);
     }
 
     private static bool HasWeeklyOccurrenceWithinPreviewWindow(MenuItemRecord item, DateOnly startDate, DateOnly endDate)
@@ -330,6 +321,35 @@ public sealed class MenuQueryRepository(ApplicationDbContext dbContext) : IMenuQ
                 continue;
             }
 
+            if (IsItemLifetimeActiveOnDate(item, date) && MenuAvailabilityRules.IsItemWithinRecurringSeason(item, date))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool HasDatedOccurrenceWithinWindow(MenuItemRecord item, DateOnly startDate, DateOnly endDate)
+    {
+        if (item.Special is null
+            || item.Special.ScheduleKind != MenuItemSpecialScheduleKind.Dated
+            || item.Special.StartDate is not { } specialStart)
+        {
+            return false;
+        }
+
+        var specialEnd = item.Special.EndDate ?? specialStart;
+        var windowStart = specialStart > startDate ? specialStart : startDate;
+        var windowEnd = specialEnd < endDate ? specialEnd : endDate;
+
+        if (windowStart > windowEnd)
+        {
+            return false;
+        }
+
+        for (var date = windowStart; date <= windowEnd; date = date.AddDays(1))
+        {
             if (IsItemLifetimeActiveOnDate(item, date) && MenuAvailabilityRules.IsItemWithinRecurringSeason(item, date))
             {
                 return true;

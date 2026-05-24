@@ -247,6 +247,91 @@ public sealed class MenuRepositoriesTests
     }
 
     [Fact]
+    public async Task GetPublicMenuSnapshotAsync_includes_only_dated_specials_with_real_occurrences_in_the_preview_window()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+
+        var dinnerSpecialsSectionId = Guid.NewGuid();
+        var upcomingItemId = Guid.NewGuid();
+        var impossibleItemId = Guid.NewGuid();
+
+        context.DbContext.MenuSections.Add(new MenuSectionEntity
+        {
+            MenuSectionId = dinnerSpecialsSectionId,
+            Name = "Codex Dated Dinner Specials",
+            NormalizedName = MenuNameRules.NormalizeForLookup("Codex Dated Dinner Specials"),
+            Family = MenuFamily.Food,
+            SortOrder = 220,
+            IsVisibleToGuests = true,
+            IsArchived = false
+        });
+        context.DbContext.MenuSectionTabs.Add(new MenuSectionTabEntity
+        {
+            MenuSectionId = dinnerSpecialsSectionId,
+            Tab = MenuTab.Dinner
+        });
+        context.DbContext.MenuItems.AddRange(
+            new MenuItemEntity
+            {
+                MenuItemId = upcomingItemId,
+                Name = "Codex Memorial Prime Rib",
+                NormalizedName = MenuNameRules.NormalizeForLookup("Codex Memorial Prime Rib"),
+                Description = "Valid upcoming dated special.",
+                SortOrder = 1,
+                IsVisibleToGuests = true,
+                IsArchived = false,
+                OfferStartsOn = new DateOnly(2026, 5, 24)
+            },
+            new MenuItemEntity
+            {
+                MenuItemId = impossibleItemId,
+                Name = "Codex Impossible Surf & Turf",
+                NormalizedName = MenuNameRules.NormalizeForLookup("Codex Impossible Surf & Turf"),
+                Description = "Ends before the special can ever run.",
+                SortOrder = 2,
+                IsVisibleToGuests = true,
+                IsArchived = false,
+                OfferEndsOn = new DateOnly(2026, 5, 24)
+            });
+        context.DbContext.MenuItemSectionAssignments.AddRange(
+            new MenuItemSectionAssignmentEntity { MenuItemId = upcomingItemId, MenuSectionId = dinnerSpecialsSectionId, SortOrder = 1 },
+            new MenuItemSectionAssignmentEntity { MenuItemId = impossibleItemId, MenuSectionId = dinnerSpecialsSectionId, SortOrder = 2 });
+        context.DbContext.MenuItemTabs.AddRange(
+            new MenuItemTabEntity { MenuItemId = upcomingItemId, Tab = MenuTab.Dinner },
+            new MenuItemTabEntity { MenuItemId = impossibleItemId, Tab = MenuTab.Dinner });
+        context.DbContext.MenuItemPriceVariants.AddRange(
+            new MenuItemPriceVariantEntity { MenuItemPriceVariantId = Guid.NewGuid(), MenuItemId = upcomingItemId, Label = "Regular", Amount = 24m, SortOrder = 1 },
+            new MenuItemPriceVariantEntity { MenuItemPriceVariantId = Guid.NewGuid(), MenuItemId = impossibleItemId, Label = "Regular", Amount = 31m, SortOrder = 1 });
+        context.DbContext.MenuItemSpecials.AddRange(
+            new MenuItemSpecialEntity
+            {
+                MenuItemId = upcomingItemId,
+                ScheduleKind = MenuItemSpecialScheduleKind.Dated,
+                StartDate = new DateOnly(2026, 5, 24),
+                EndDate = new DateOnly(2026, 5, 26),
+                Callout = "$24 dinner plate"
+            },
+            new MenuItemSpecialEntity
+            {
+                MenuItemId = impossibleItemId,
+                ScheduleKind = MenuItemSpecialScheduleKind.Dated,
+                StartDate = new DateOnly(2026, 5, 25),
+                EndDate = new DateOnly(2026, 5, 27),
+                Callout = "$31 dinner plate"
+            });
+        await context.DbContext.SaveChangesAsync();
+
+        var repository = new MenuQueryRepository(context.DbContext);
+        var snapshot = await repository.GetPublicMenuSnapshotAsync(
+            MenuTab.Dinner,
+            new DateOnly(2026, 5, 22),
+            new DateOnly(2026, 6, 21));
+
+        Assert.Contains(snapshot.Items, item => item.ItemId == upcomingItemId);
+        Assert.DoesNotContain(snapshot.Items, item => item.ItemId == impossibleItemId);
+    }
+
+    [Fact]
     public async Task GetPublicServiceWindowsAsync_returns_all_public_service_windows()
     {
         await using var context = await SqliteIdentityTestContext.CreateAsync();
@@ -431,6 +516,83 @@ public sealed class MenuRepositoriesTests
         Assert.Contains(upcomingItemId, itemIds);
         Assert.DoesNotContain(futureItemId, itemIds);
         Assert.DoesNotContain(expiringItemId, itemIds);
+    }
+
+    [Fact]
+    public async Task GetHomeSpecialItemsAsync_includes_only_dated_specials_with_real_occurrences_in_the_preview_window()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+
+        var visibleSectionId = Guid.NewGuid();
+        var upcomingItemId = Guid.NewGuid();
+        var impossibleItemId = Guid.NewGuid();
+
+        context.DbContext.MenuSections.Add(new MenuSectionEntity
+        {
+            MenuSectionId = visibleSectionId,
+            Name = "Codex Dated Home Preview Dinner Specials",
+            NormalizedName = MenuNameRules.NormalizeForLookup("Codex Dated Home Preview Dinner Specials"),
+            Family = MenuFamily.Food,
+            SortOrder = 230,
+            IsVisibleToGuests = true,
+            IsArchived = false
+        });
+        context.DbContext.MenuItems.AddRange(
+            new MenuItemEntity
+            {
+                MenuItemId = upcomingItemId,
+                Name = "Codex Upcoming Ribeye",
+                NormalizedName = MenuNameRules.NormalizeForLookup("Codex Upcoming Ribeye"),
+                Description = "Starts with the special window.",
+                SortOrder = 1,
+                IsVisibleToGuests = true,
+                IsArchived = false,
+                OfferStartsOn = new DateOnly(2026, 5, 24)
+            },
+            new MenuItemEntity
+            {
+                MenuItemId = impossibleItemId,
+                Name = "Codex Expired Lobster Night",
+                NormalizedName = MenuNameRules.NormalizeForLookup("Codex Expired Lobster Night"),
+                Description = "Cannot reach its special dates.",
+                SortOrder = 2,
+                IsVisibleToGuests = true,
+                IsArchived = false,
+                OfferEndsOn = new DateOnly(2026, 5, 24)
+            });
+        context.DbContext.MenuItemSectionAssignments.AddRange(
+            new MenuItemSectionAssignmentEntity { MenuItemId = upcomingItemId, MenuSectionId = visibleSectionId, SortOrder = 1 },
+            new MenuItemSectionAssignmentEntity { MenuItemId = impossibleItemId, MenuSectionId = visibleSectionId, SortOrder = 2 });
+        context.DbContext.MenuItemTabs.AddRange(
+            new MenuItemTabEntity { MenuItemId = upcomingItemId, Tab = MenuTab.Dinner },
+            new MenuItemTabEntity { MenuItemId = impossibleItemId, Tab = MenuTab.Dinner });
+        context.DbContext.MenuItemPriceVariants.AddRange(
+            new MenuItemPriceVariantEntity { MenuItemPriceVariantId = Guid.NewGuid(), MenuItemId = upcomingItemId, Label = "Regular", Amount = 26m, SortOrder = 1 },
+            new MenuItemPriceVariantEntity { MenuItemPriceVariantId = Guid.NewGuid(), MenuItemId = impossibleItemId, Label = "Regular", Amount = 34m, SortOrder = 1 });
+        context.DbContext.MenuItemSpecials.AddRange(
+            new MenuItemSpecialEntity
+            {
+                MenuItemId = upcomingItemId,
+                ScheduleKind = MenuItemSpecialScheduleKind.Dated,
+                StartDate = new DateOnly(2026, 5, 24),
+                EndDate = new DateOnly(2026, 5, 26),
+                Callout = "$26 feature"
+            },
+            new MenuItemSpecialEntity
+            {
+                MenuItemId = impossibleItemId,
+                ScheduleKind = MenuItemSpecialScheduleKind.Dated,
+                StartDate = new DateOnly(2026, 5, 25),
+                EndDate = new DateOnly(2026, 5, 27),
+                Callout = "$34 feature"
+            });
+        await context.DbContext.SaveChangesAsync();
+
+        var repository = new MenuQueryRepository(context.DbContext);
+        var items = await repository.GetHomeSpecialItemsAsync(new DateOnly(2026, 5, 22), new DateOnly(2026, 6, 21));
+
+        Assert.Contains(items, item => item.ItemId == upcomingItemId);
+        Assert.DoesNotContain(items, item => item.ItemId == impossibleItemId);
     }
 
     [Fact]
