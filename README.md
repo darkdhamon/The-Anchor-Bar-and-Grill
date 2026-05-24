@@ -8,6 +8,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - Homepage weekly specials now preview recurring specials that are active today or will occur within the next six days, while still respecting lifetime dates and recurring seasonal windows, sorting recurring specials by their next actually available occurrence, and only surfacing upcoming dated specials when they have a real valid occurrence in that preview window, with `Today`, `Now available`, and `Limited-time special` wording based on what is actually active right now
 - Homepage preview of special weekly menu items so guests can see day-of-week favorites before opening the full menu
 - Homepage list of upcoming events in the next month so guests can plan without leaving the landing page
+- Database-backed event catalog foundation with explicit publication state, recurring schedule rules, and repository-backed upcoming-event queries for future public and admin event workflows
 - Database-backed public menu page inspired by the existing printed menu
 - Fixed public menu tabs for `Breakfast`, `Lunch`, `Dinner`, and `Drinks`
 - Structured per-tab menu hours, including after-midnight drink service windows
@@ -76,6 +77,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 
 - The development configuration now includes a LocalDB connection string so the mockup can run locally without additional secret setup
 - The menu catalog now lives in the application database through the repository layer, with seed data for Lunch and Dinner food sections, first-class Dinner special items, and empty-state Breakfast and Drinks tabs that already have service hours configured
+- The event foundation now lives in the application database through the repository layer, with explicit published/draft/archive state plus weekly and monthly nth-weekday recurrence rules that expand upcoming occurrences from the current request time instead of a process-start snapshot
 - A shared server-side GitHub issue service is now registered for future production exception reporting and technical website issue submissions
 - The GitHub issue service can create repository issues and place them into the configured GitHub project status when `GitHubIssues` settings and a secure `GitHubIssues__AccessToken` are supplied
 - Automated production exception issue creation is gated separately by `ProductionExceptionIssues`, runs only when the ASP.NET Core environment is `Production`, and skips `localhost`, loopback, and `.local` hosts

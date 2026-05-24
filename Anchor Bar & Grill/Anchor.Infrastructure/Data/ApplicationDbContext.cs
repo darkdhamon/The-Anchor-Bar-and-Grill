@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Anchor.Infrastructure.Data.Events;
 using Anchor.Infrastructure.Data.Menu;
 
 namespace Anchor.Infrastructure.Data;
@@ -8,6 +9,8 @@ namespace Anchor.Infrastructure.Data;
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
     : IdentityDbContext<ApplicationUser, IdentityRole, string>(options)
 {
+    public DbSet<EventEntity> Events => Set<EventEntity>();
+
     public DbSet<MenuSectionEntity> MenuSections => Set<MenuSectionEntity>();
 
     public DbSet<MenuItemEntity> MenuItems => Set<MenuItemEntity>();
