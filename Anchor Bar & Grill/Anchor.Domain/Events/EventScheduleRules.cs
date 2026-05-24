@@ -28,7 +28,12 @@ public static class EventScheduleRules
             errors.Add("End time must be later than the start time unless the event ends the next day.");
         }
 
-        if (request.RecurrenceInterval < 1)
+        if (!Enum.IsDefined(request.RecurrencePattern))
+        {
+            errors.Add("Event recurrence pattern is invalid.");
+        }
+
+        if (request.RecurrencePattern != EventRecurrencePattern.None && request.RecurrenceInterval < 1)
         {
             errors.Add("Recurring events must use an interval of at least 1.");
         }
@@ -53,6 +58,10 @@ public static class EventScheduleRules
                 {
                     errors.Add("Weekly recurring events must include a day of week.");
                 }
+                else if (!IsValidDayOfWeek(request.RecursOnDayOfWeek.Value))
+                {
+                    errors.Add("Weekly recurring events must use a valid day of week.");
+                }
 
                 if (request.RecursOnWeekOfMonth is not null)
                 {
@@ -66,10 +75,18 @@ public static class EventScheduleRules
                 {
                     errors.Add("Monthly recurring events must include a day of week.");
                 }
+                else if (!IsValidDayOfWeek(request.RecursOnDayOfWeek.Value))
+                {
+                    errors.Add("Monthly recurring events must use a valid day of week.");
+                }
 
                 if (request.RecursOnWeekOfMonth is null)
                 {
                     errors.Add("Monthly recurring events must include a week-of-month value.");
+                }
+                else if (!Enum.IsDefined(request.RecursOnWeekOfMonth.Value))
+                {
+                    errors.Add("Monthly recurring events must use a valid week-of-month value.");
                 }
 
                 break;
@@ -262,4 +279,6 @@ public static class EventScheduleRules
         EventRecurrenceWeek.Last => "Last",
         _ => "First"
     };
+
+    private static bool IsValidDayOfWeek(DayOfWeek dayOfWeek) => dayOfWeek is >= DayOfWeek.Sunday and <= DayOfWeek.Saturday;
 }

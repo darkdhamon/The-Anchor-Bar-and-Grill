@@ -96,6 +96,114 @@ public sealed class EventScheduleRulesTests
         Assert.Equal(new DateOnly(2026, 5, 25), nextOccurrence);
     }
 
+    [Fact]
+    public void Validate_allows_one_time_events_with_default_recurrence_interval_zero()
+    {
+        var request = new SaveEventRequest(
+            null,
+            "Patio Party",
+            "Season opener",
+            "Kick off patio season.",
+            "Seasonal",
+            null,
+            new DateOnly(2026, 6, 1),
+            new TimeOnly(18, 0),
+            null,
+            false,
+            1,
+            EventPublicationState.Published,
+            EventRecurrencePattern.None,
+            0,
+            null,
+            null,
+            null);
+
+        var errors = EventScheduleRules.Validate(request);
+
+        Assert.DoesNotContain(errors, error => error.Contains("interval", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Validate_rejects_undefined_recurrence_pattern()
+    {
+        var request = new SaveEventRequest(
+            null,
+            "Patio Party",
+            "Season opener",
+            "Kick off patio season.",
+            "Seasonal",
+            null,
+            new DateOnly(2026, 6, 1),
+            new TimeOnly(18, 0),
+            null,
+            false,
+            1,
+            EventPublicationState.Published,
+            (EventRecurrencePattern)99,
+            1,
+            null,
+            null,
+            null);
+
+        var errors = EventScheduleRules.Validate(request);
+
+        Assert.Contains(errors, error => error.Contains("pattern", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Validate_rejects_invalid_weekly_day_of_week_value()
+    {
+        var request = new SaveEventRequest(
+            null,
+            "Trivia",
+            "Weekly trivia",
+            "Questions and prizes.",
+            null,
+            null,
+            new DateOnly(2026, 6, 1),
+            new TimeOnly(19, 0),
+            null,
+            false,
+            1,
+            EventPublicationState.Published,
+            EventRecurrencePattern.Weekly,
+            1,
+            (DayOfWeek)99,
+            null,
+            null);
+
+        var errors = EventScheduleRules.Validate(request);
+
+        Assert.Contains(errors, error => error.Contains("valid day of week", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Validate_rejects_invalid_monthly_week_of_month_value()
+    {
+        var request = new SaveEventRequest(
+            null,
+            "Steak Night",
+            "Monthly feature",
+            "Third Friday dinner feature.",
+            null,
+            null,
+            new DateOnly(2026, 6, 19),
+            new TimeOnly(18, 30),
+            null,
+            false,
+            1,
+            EventPublicationState.Published,
+            EventRecurrencePattern.MonthlyNthWeekday,
+            1,
+            DayOfWeek.Friday,
+            (EventRecurrenceWeek)99,
+            null);
+
+        var errors = EventScheduleRules.Validate(request);
+
+        Assert.Contains(errors, error => error.Contains("valid week-of-month", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static EventRecord CreateRecord(
         EventRecurrencePattern recurrencePattern,
         DateOnly startsOn,

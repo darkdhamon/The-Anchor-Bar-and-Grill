@@ -58,6 +58,15 @@ public sealed class EventQueryServiceTests
             occurrence => Assert.Contains("third Friday", occurrence.ScheduleSummary, StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public async Task GetUpcomingEventsAsync_rejects_daysAhead_values_that_would_overflow_date_math()
+    {
+        var service = new EventQueryService(new FakeEventQueryRepository());
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => service.GetUpcomingEventsAsync(new DateTime(2026, 5, 10, 10, 0, 0), int.MaxValue));
+    }
+
     private static EventRecord CreateRecord(
         string title,
         DateOnly startsOn,
