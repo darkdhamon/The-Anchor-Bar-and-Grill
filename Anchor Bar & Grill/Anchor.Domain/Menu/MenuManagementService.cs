@@ -67,10 +67,17 @@ public sealed class MenuManagementService(
             }
 
             snapshot = await repository.GetMenuManagementSnapshotAsync(cancellationToken);
-            if (request.SectionId is { } currentSectionId
-                && IsSectionDescendant(snapshot.Sections, parentSectionId, currentSectionId))
+            if (request.SectionId is { } currentSectionId)
             {
-                return MenuOperationResult.Failure("A section cannot move under one of its own descendants.");
+                if (snapshot.Sections.Any(section => section.ParentSectionId == currentSectionId))
+                {
+                    return MenuOperationResult.Failure("Sections with child subsections cannot also become a subsection. Detach those child sections before choosing a parent.");
+                }
+
+                if (IsSectionDescendant(snapshot.Sections, parentSectionId, currentSectionId))
+                {
+                    return MenuOperationResult.Failure("A section cannot move under one of its own descendants.");
+                }
             }
         }
 

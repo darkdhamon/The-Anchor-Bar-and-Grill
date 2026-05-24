@@ -519,13 +519,17 @@
 
                                 <label>
                                     <span>Parent section (optional)</span>
-                                    <select @bind="sectionForm.ParentSectionId">
+                                    <select @bind="sectionForm.ParentSectionId" disabled="@IsParentSectionSelectionLocked">
                                         <option value="">No parent section</option>
                                         @foreach (var parentSection in ParentSectionOptions)
                                         {
                                             <option value="@parentSection.SectionId">@parentSection.Name</option>
                                         }
                                     </select>
+                                    @if (CurrentSectionHasChildSections)
+                                    {
+                                        <p class="admin-field-note">This section already has child subsections, so it cannot also become a subsection. Detach those child sections first before choosing a parent.</p>
+                                    }
                                 </label>
 
                                 <div class="editor-form__message">
@@ -988,7 +992,7 @@
 
                         <section class="menu-editor-guide__section">
                             <p class="menu-editor-guide__eyebrow">5. Visibility and duplicates</p>
-                            <p>Sections can control their default menu visibility, and items can either follow those defaults or narrow them. If a typed item name already exists, the editor offers to switch into that record instead of saving a duplicate.</p>
+                            <p>Sections can control their default menu visibility, and items can either follow those defaults or narrow them. Sections that already own child subsections cannot also become a subsection, so the parent picker locks until those child sections are detached. If a typed item name already exists, the editor offers to switch into that record instead of saving a duplicate.</p>
                         </section>
 
                         <section class="menu-editor-guide__section">

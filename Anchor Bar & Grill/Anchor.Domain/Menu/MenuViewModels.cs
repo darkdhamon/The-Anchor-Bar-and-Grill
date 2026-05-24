@@ -69,7 +69,8 @@ public sealed record PublicHomeSpecialView(
     string? TimeSummary,
     string? Callout,
     string PlacementSummary,
-    bool IsToday);
+    string? AvailabilityLabel,
+    bool IsAvailableNow);
 
 public sealed record PublicMenuItemView(
     Guid ItemId,

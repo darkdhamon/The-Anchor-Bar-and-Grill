@@ -431,6 +431,14 @@ namespace Anchor.Infrastructure.Data.Migrations
                 name: "SeasonStartMonth",
                 table: "MenuItems");
 
+            migrationBuilder.Sql(
+                """
+                UPDATE MenuItemSpecials
+                SET StartDate = '2026-01-01'
+                WHERE ScheduleKind = 1
+                  AND StartDate IS NULL;
+                """);
+
             migrationBuilder.AlterColumn<DateOnly>(
                 name: "StartDate",
                 table: "MenuItemSpecials",
@@ -459,11 +467,6 @@ namespace Anchor.Infrastructure.Data.Migrations
                     WHERE day.MenuItemId = special.MenuItemId
                     ORDER BY day.DayOfWeek
                 ) source;
-
-                UPDATE MenuItemSpecials
-                SET StartDate = '2026-01-01'
-                WHERE ScheduleKind = 1
-                  AND StartDate IS NULL;
                 """);
 
             migrationBuilder.DropTable(

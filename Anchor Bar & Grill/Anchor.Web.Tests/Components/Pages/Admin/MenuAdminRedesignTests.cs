@@ -188,6 +188,24 @@ public sealed class MenuAdminRedesignTests : BunitContext
     }
 
     [Fact]
+    public void Parent_section_picker_is_locked_when_selected_section_already_has_child_sections()
+    {
+        authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));
+
+        var cut = RenderMenuAdmin("/admin/menu?tab=food&food=breakfast");
+        ExpandBrowserSection(cut, "Breakfast Plates");
+
+        cut.FindAll(".menu-editor-tree__select")
+            .Single(button => button.TextContent.Contains("Breakfast Plates", StringComparison.OrdinalIgnoreCase))
+            .Click();
+
+        var parentSelect = cut.FindAll(".menu-editor-detail select")[1];
+
+        Assert.True(parentSelect.HasAttribute("disabled"));
+        Assert.Contains("cannot also become a subsection", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Browser_tree_renders_child_sections_only_inside_their_parent_card()
     {
         authStateProvider.SetUser(CreateUser("menu.manager@anchor.test", ApplicationRoles.MenuManager));

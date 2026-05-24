@@ -233,14 +233,14 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     }
 
     [Fact]
-    public void HomePage_Uses_Injected_TimeProvider_For_Today_Special_Labeling()
+    public void HomePage_Uses_Injected_TimeProvider_For_Current_Special_Status_Labeling()
     {
         timeProvider.SetLocalNow(new DateTimeOffset(2026, 5, 24, 12, 0, 0, TimeSpan.FromHours(-5)));
 
         var cut = Render<Home>();
 
         Assert.Contains("Sunday Pork Chop Dinner", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Today", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Now available", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -661,6 +661,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                     "After 5:00 PM",
                     "$11 basket special",
                     "Burgers - Menu item: Classic Hamburger",
+                    today.DayOfWeek == DayOfWeek.Monday ? "Now available" : null,
                     today.DayOfWeek == DayOfWeek.Monday),
                 new(
                     Guid.Parse("B0A14AF0-708E-4678-95CE-2767DE55E0A4"),
@@ -670,6 +671,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                     "After 3:00 PM",
                     "$17 dinner plate",
                     "Dinner Specials",
+                    today.DayOfWeek == DayOfWeek.Sunday ? "Now available" : null,
                     today.DayOfWeek == DayOfWeek.Sunday)
             ];
 

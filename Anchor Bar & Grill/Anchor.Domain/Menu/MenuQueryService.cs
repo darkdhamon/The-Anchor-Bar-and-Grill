@@ -100,15 +100,21 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
             : item.Special!.StartDate ?? DateOnly.MaxValue)
         .ThenBy(item => item.SortOrder)
         .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
-        .Select(item => new PublicHomeSpecialView(
-            item.ItemId,
-            MenuPresentationRules.GetSpecialBadgeLabel(item.Special!),
-            item.Name,
-            item.Description,
-            MenuPresentationRules.FormatSpecialTimeSummary(item.Special!),
-            item.Special!.Callout,
-            MenuPresentationRules.GetPlacementSummary(item),
-            MenuPresentationRules.IsSpecialToday(item.Special!, today)))
+        .Select(item =>
+        {
+            var availability = MenuPresentationRules.GetHomeSpecialAvailability(item, today);
+
+            return new PublicHomeSpecialView(
+                item.ItemId,
+                MenuPresentationRules.GetSpecialBadgeLabel(item.Special!),
+                item.Name,
+                item.Description,
+                MenuPresentationRules.FormatSpecialTimeSummary(item.Special!),
+                item.Special!.Callout,
+                MenuPresentationRules.GetPlacementSummary(item),
+                availability.Label,
+                availability.IsAvailableNow);
+        })
         .ToArray();
 
     private static DateOnly GetNextWeeklyOccurrenceDate(MenuItemSpecialRecord special, DateOnly today)

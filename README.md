@@ -5,7 +5,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 ## Current Application Scope
 
 - Guest-facing homepage with a welcome-first layout that is separate from the menu
-- Homepage weekly specials now preview recurring specials that are active today or will occur within the next six days, while still respecting lifetime dates and recurring seasonal windows
+- Homepage weekly specials now preview recurring specials that are active today or will occur within the next six days, while still respecting lifetime dates and recurring seasonal windows, with `Today`, `Now available`, and `Limited-time special` wording based on what is actually active right now
 - Homepage preview of special weekly menu items so guests can see day-of-week favorites before opening the full menu
 - Homepage list of upcoming events in the next month so guests can plan without leaving the landing page
 - Database-backed public menu page inspired by the existing printed menu
@@ -109,6 +109,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - The Menu Editor now supports direct menu-item image uploads, saving processed `.webp` files under `wwwroot/images/gallery/menuitems`, rejecting raw uploads over `50 MB`, compressing saved uploads to `5 MB` or smaller, handling common phone-camera JPG uploads through server-side normalization, rendering uploaded images as contained editor thumbnails, and keeping the manual image-path workflow behind an `Advanced image path` reveal
 - Food sections now store their own default menu visibility, food items can be assigned to multiple sections, and item-level menu visibility can optionally narrow the section defaults so one item can appear in different sections for different services
 - Sections can now be arranged into a single parent/child hierarchy level, so a top-level parent section can group direct items and one layer of child-section item groups while a visible child can still surface as its own root section on menus where the parent is not enabled
+- Sections that already have child subsections cannot themselves be reassigned as child sections until those subsections are detached, and the editor now locks the parent picker to make that rule obvious before save time
 - Menu items can now use recurring seasonal month/day windows such as October-through-April without re-entering year-specific dates, and weekly recurring specials can target multiple weekdays instead of only one
 - The Menu Editor browser now keeps one item list per section and adds `All`, `Standard`, and `Specials` content filters plus `Active`, `Both`, and `Archived` archive-state browsing so staff can review the right slice of the catalog faster
 - Sections now support optional guest-facing callout text, and empty sections stay hidden from guests while the editor keeps the selected empty section plus newly created empty sections visible for staff

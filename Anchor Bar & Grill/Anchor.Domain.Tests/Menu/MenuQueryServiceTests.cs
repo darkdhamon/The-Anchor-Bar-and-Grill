@@ -460,7 +460,8 @@ public sealed class MenuQueryServiceTests
         var special = Assert.Single(result);
         Assert.Equal("Monday Night Burgers", special.Title);
         Assert.Equal("$11 basket special", special.Callout);
-        Assert.True(special.IsToday);
+        Assert.Equal("Now available", special.AvailabilityLabel);
+        Assert.True(special.IsAvailableNow);
     }
 
     [Fact]
@@ -519,6 +520,120 @@ public sealed class MenuQueryServiceTests
         Assert.Equal(
             ["Sunday Pork Chop Dinner", "Monday Night Burgers"],
             result.Select(item => item.Title).ToArray());
+    }
+
+    [Fact]
+    public async Task GetHomeSpecialsAsync_does_not_mark_weekly_special_as_available_today_when_lifetime_has_not_started()
+    {
+        var today = new DateOnly(2026, 5, 18);
+        var repository = new FakeMenuQueryRepository
+        {
+            HomeSpecialItems =
+            [
+                CreateItem(
+                    "Monday Night Burgers",
+                    "Weeknight burger draw.",
+                    1,
+                    "Burgers",
+                    [MenuTab.Dinner],
+                    today.AddDays(1),
+                    null,
+                    false,
+                    [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 11m, 1)],
+                    new MenuItemSpecialRecord(
+                        Guid.NewGuid(),
+                        MenuItemSpecialScheduleKind.WeeklyRecurring,
+                        DayOfWeek.Monday,
+                        new DateOnly(2026, 1, 1),
+                        null,
+                        new TimeOnly(17, 0),
+                        null,
+                        false,
+                        "$11 basket special"))
+            ]
+        };
+
+        var result = await new MenuQueryService(repository).GetHomeSpecialsAsync(today);
+
+        var special = Assert.Single(result);
+        Assert.Null(special.AvailabilityLabel);
+        Assert.False(special.IsAvailableNow);
+    }
+
+    [Fact]
+    public async Task GetHomeSpecialsAsync_marks_single_day_dated_special_as_today()
+    {
+        var today = new DateOnly(2026, 5, 18);
+        var repository = new FakeMenuQueryRepository
+        {
+            HomeSpecialItems =
+            [
+                CreateItem(
+                    "Prime Rib Night",
+                    "One-night feature.",
+                    1,
+                    "Dinner Specials",
+                    [MenuTab.Dinner],
+                    null,
+                    null,
+                    false,
+                    [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 24m, 1)],
+                    new MenuItemSpecialRecord(
+                        Guid.NewGuid(),
+                        MenuItemSpecialScheduleKind.Dated,
+                        Array.Empty<DayOfWeek>(),
+                        today,
+                        today,
+                        new TimeOnly(17, 0),
+                        null,
+                        false,
+                        "$24 dinner plate"))
+            ]
+        };
+
+        var result = await new MenuQueryService(repository).GetHomeSpecialsAsync(today);
+
+        var special = Assert.Single(result);
+        Assert.Equal("Today", special.AvailabilityLabel);
+        Assert.True(special.IsAvailableNow);
+    }
+
+    [Fact]
+    public async Task GetHomeSpecialsAsync_marks_upcoming_dated_special_as_limited_time()
+    {
+        var today = new DateOnly(2026, 5, 18);
+        var repository = new FakeMenuQueryRepository
+        {
+            HomeSpecialItems =
+            [
+                CreateItem(
+                    "Holiday Surf & Turf",
+                    "Weekend feature.",
+                    1,
+                    "Dinner Specials",
+                    [MenuTab.Dinner],
+                    null,
+                    null,
+                    false,
+                    [new MenuItemPriceVariantRecord(Guid.NewGuid(), "Regular", 29m, 1)],
+                    new MenuItemSpecialRecord(
+                        Guid.NewGuid(),
+                        MenuItemSpecialScheduleKind.Dated,
+                        Array.Empty<DayOfWeek>(),
+                        today.AddDays(2),
+                        today.AddDays(4),
+                        new TimeOnly(17, 0),
+                        null,
+                        false,
+                        "$29 feature"))
+            ]
+        };
+
+        var result = await new MenuQueryService(repository).GetHomeSpecialsAsync(today);
+
+        var special = Assert.Single(result);
+        Assert.Equal("Limited-time special", special.AvailabilityLabel);
+        Assert.False(special.IsAvailableNow);
     }
 
     [Fact]

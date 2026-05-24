@@ -288,6 +288,32 @@ internal static class MenuPresentationRules
         return special.StartDate <= today && effectiveEnd >= today;
     }
 
+    public static (string? Label, bool IsAvailableNow) GetHomeSpecialAvailability(MenuItemRecord item, DateOnly today)
+    {
+        if (item.Special is null)
+        {
+            return (null, false);
+        }
+
+        var isAvailableToday = IsSpecialAvailableToday(item, today);
+        if (item.Special.ScheduleKind == MenuItemSpecialScheduleKind.WeeklyRecurring)
+        {
+            return isAvailableToday
+                ? ("Now available", true)
+                : (null, false);
+        }
+
+        if (isAvailableToday)
+        {
+            var effectiveEnd = item.Special.EndDate ?? item.Special.StartDate;
+            return effectiveEnd == item.Special.StartDate
+                ? ("Today", true)
+                : ("Now available", true);
+        }
+
+        return ("Limited-time special", false);
+    }
+
     public static string GetPlacementSummary(MenuItemRecord item) =>
         string.Join(", ",
             item.SectionAssignments
@@ -359,6 +385,22 @@ internal static class MenuPresentationRules
             DayOfWeek.Sunday => "Sun",
             _ => dayOfWeek.ToString()
         };
+
+    private static bool IsSpecialAvailableToday(MenuItemRecord item, DateOnly today)
+    {
+        if (item.Special is null)
+        {
+            return false;
+        }
+
+        return IsItemActiveToday(item, today)
+            && MenuAvailabilityRules.IsItemWithinRecurringSeason(item, today)
+            && IsSpecialToday(item.Special, today);
+    }
+
+    private static bool IsItemActiveToday(MenuItemRecord item, DateOnly today) =>
+        (item.OfferStartsOn is null || item.OfferStartsOn <= today)
+        && (item.OfferEndsOn is null || item.OfferEndsOn >= today);
 
     private static bool IsActiveDatedOffer(MenuItemRecord item, DateOnly today) =>
         item.OfferEndsOn is not null

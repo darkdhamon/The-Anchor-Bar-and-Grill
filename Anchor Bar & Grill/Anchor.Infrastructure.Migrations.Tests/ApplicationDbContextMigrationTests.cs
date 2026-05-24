@@ -550,6 +550,46 @@ public sealed class ApplicationDbContextMigrationTests
         }
     }
 
+    [Fact]
+    public async Task AddMenuHierarchyAndSeasonalAvailability_down_migration_backfills_weekly_special_start_dates_before_restoring_non_nullable_schema()
+    {
+        var databaseName = $"AnchorWebMenu_{Guid.NewGuid():N}";
+        var connectionString = new SqlConnectionStringBuilder
+        {
+            DataSource = @"(localdb)\MSSQLLocalDB",
+            InitialCatalog = databaseName,
+            IntegratedSecurity = true,
+            TrustServerCertificate = true,
+            ConnectTimeout = 30
+        }.ConnectionString;
+
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseSqlServer(connectionString)
+            .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning))
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        await context.Database.EnsureDeletedAsync();
+
+        const string migrationBeforeHierarchySupport = "20260522233151_AddMenuSectionVisibilityAndMultiSectionAssignments";
+        var seededWeeklySpecialId = Guid.Parse("33D64E7B-D5B7-481A-97FC-7F250A68C27E");
+
+        try
+        {
+            await context.Database.MigrateAsync();
+            await context.Database.MigrateAsync(migrationBeforeHierarchySupport);
+
+            var weeklySpecialState = await GetSpecialStartDateAndDayOfWeekAsync(connectionString, seededWeeklySpecialId);
+
+            Assert.Equal(new DateOnly(2026, 1, 1), weeklySpecialState.StartDate);
+            Assert.Equal((int)DayOfWeek.Monday, weeklySpecialState.DayOfWeek);
+        }
+        finally
+        {
+            await context.Database.EnsureDeletedAsync();
+        }
+    }
+
     private static async Task<IReadOnlyList<string>> GetTableNamesAsync(string connectionString)
     {
         var tableNames = new List<string>();
@@ -615,6 +655,31 @@ public sealed class ApplicationDbContextMigrationTests
         }
 
         return states;
+    }
+
+    private static async Task<(DateOnly? StartDate, int? DayOfWeek)> GetSpecialStartDateAndDayOfWeekAsync(string connectionString, Guid menuItemId)
+    {
+        await using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT StartDate, DayOfWeek
+            FROM MenuItemSpecials
+            WHERE MenuItemId = @menuItemId;
+            """;
+        command.Parameters.AddWithValue("@menuItemId", menuItemId);
+
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+
+        var startDate = reader.IsDBNull(0)
+            ? (DateOnly?)null
+            : DateOnly.FromDateTime(reader.GetDateTime(0));
+        var dayOfWeek = reader.IsDBNull(1)
+            ? (int?)null
+            : reader.GetInt32(1);
+
+        return (startDate, dayOfWeek);
     }
 }
 

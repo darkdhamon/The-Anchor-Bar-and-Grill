@@ -142,6 +142,12 @@ public partial class MenuAdmin
     private bool SectionHasAnyVisibleMenu => sectionForm.Family == MenuFamily.Drink
         ? sectionForm.ShowDrinks
         : sectionForm.ShowBreakfast || sectionForm.ShowLunch || sectionForm.ShowDinner;
+    private bool CurrentSectionHasChildSections =>
+        sectionForm.SectionId is Guid sectionId
+        && SectionHasChildSections(sectionId, sectionForm.Family);
+    private bool IsParentSectionSelectionLocked =>
+        CurrentSectionHasChildSections
+        && sectionForm.ParentSectionId is null;
     private bool CanSaveSection => !string.IsNullOrWhiteSpace(sectionForm.Name) && SectionHasAnyVisibleMenu;
 
     private MenuAdminDuplicateItemPromptViewModel? DuplicateItemPrompt => detailKind == MenuAdminDetailKind.Item ? duplicateItemPrompt : null;

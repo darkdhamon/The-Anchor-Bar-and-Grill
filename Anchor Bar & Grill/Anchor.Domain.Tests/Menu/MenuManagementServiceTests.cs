@@ -274,6 +274,46 @@ public sealed class MenuManagementServiceTests
     }
 
     [Fact]
+    public async Task SaveSectionAsync_rejects_moving_a_section_with_children_under_another_parent()
+    {
+        var currentSectionId = Guid.NewGuid();
+        var targetParentSectionId = Guid.NewGuid();
+        var existingChildSectionId = Guid.NewGuid();
+        var repository = new FakeMenuManagementRepository
+        {
+            SectionReferences =
+            {
+                [currentSectionId] = CreateSectionReference(currentSectionId, MenuFamily.Food, [MenuTab.Breakfast]),
+                [targetParentSectionId] = CreateSectionReference(targetParentSectionId, MenuFamily.Food, [MenuTab.Breakfast])
+            },
+            Snapshot = new MenuManagementSnapshot(
+                [
+                    new MenuSectionRecord(currentSectionId, "Breakfast Plates", null, MenuFamily.Food, [MenuTab.Breakfast], 1, true, false),
+                    new MenuSectionRecord(existingChildSectionId, "Omelets", null, MenuFamily.Food, currentSectionId, [MenuTab.Breakfast], 2, true, false),
+                    new MenuSectionRecord(targetParentSectionId, "Breakfast Specials", null, MenuFamily.Food, [MenuTab.Breakfast], 3, true, false)
+                ],
+                [],
+                [])
+        };
+        var service = CreateService(repository);
+
+        var result = await service.SaveSectionAsync(
+            new SaveMenuSectionRequest(
+                currentSectionId,
+                "Breakfast Plates",
+                null,
+                MenuFamily.Food,
+                targetParentSectionId,
+                [MenuTab.Breakfast],
+                1,
+                true,
+                false));
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("cannot also become a subsection", result.Errors[0], StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task SaveItemAsync_requires_weekday_for_weekly_specials()
     {
         var repository = CreateRepositoryWithFoodSection();
