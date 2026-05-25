@@ -1,0 +1,217 @@
+@page "/admin/publicity"
+@page "/admin/publicity/home"
+@using System.ComponentModel.DataAnnotations
+@using System.Globalization
+@using Anchor.Domain.Identity
+@using Anchor.Domain.Publicity
+@using Anchor.Web.Components.Site
+@using Microsoft.AspNetCore.Authorization
+@inject IHomepagePublicityService HomepagePublicityService
+
+@attribute [Authorize(Policy = ApplicationPolicies.AdminAccess)]
+
+<PageTitle>Publicity Editor</PageTitle>
+
+<section class="admin-page">
+    <div class="page-hero page-hero--section">
+        <p class="page-hero__eyebrow">Admin Editor</p>
+        <h1>Publicity editor</h1>
+        <p class="page-hero__lead">
+            Save homepage copy as a draft while you refine it, then publish only when the live guest-facing welcome message is ready.
+        </p>
+    </div>
+
+    <div class="admin-grid">
+        <aside class="admin-help publicity-shell">
+            <h2>Publicity areas</h2>
+            <nav class="publicity-shell__nav" aria-label="Publicity sections">
+                <NavLink class="publicity-shell__link" href="/admin/publicity/home" Match="NavLinkMatch.All">Homepage intro</NavLink>
+                <NavLink class="publicity-shell__link" href="/admin/publicity/about" Match="NavLinkMatch.Prefix">About page</NavLink>
+            </nav>
+
+            <h2>How this page works</h2>
+            <ul>
+                <li><strong>Save draft</strong> keeps the latest homepage copy in the editor without changing what guests currently see.</li>
+                <li><strong>Save &amp; publish</strong> updates both the draft copy and the live homepage welcome block in one action.</li>
+                <li>Admins should review the published preview card before sharing a big homepage messaging change.</li>
+                <li>The call-to-action buttons and the rest of the homepage layout stay controlled elsewhere for now, so this editor is focused on the intro message only.</li>
+            </ul>
+        </aside>
+
+        <div class="admin-stack">
+            @if (!string.IsNullOrWhiteSpace(statusMessage))
+            {
+                <section class="admin-card">
+                    <p class="admin-field-note">@statusMessage</p>
+                </section>
+            }
+
+            <section class="admin-card">
+                <div class="admin-card__header">
+                    <h2>Homepage intro copy</h2>
+                    <span class="admin-card__badge">Draft + Publish</span>
+                </div>
+
+                <EditForm EditContext="editContext" class="editor-form account-form">
+                    <DataAnnotationsValidator />
+
+                    <div class="editor-form__grid">
+                        <label>
+                            Eyebrow
+                            <CommitAwareInputText @bind-Value="input.Eyebrow" id="HomepagePublicity.Eyebrow" autocomplete="off" placeholder="Guest Welcome" />
+                            <ValidationMessage For="@(() => input.Eyebrow)" class="validation-message" />
+                        </label>
+
+                        <label>
+                            Headline
+                            <CommitAwareInputText @bind-Value="input.Headline" id="HomepagePublicity.Headline" autocomplete="off" placeholder="Welcome aboard The Anchor." />
+                            <ValidationMessage For="@(() => input.Headline)" class="validation-message" />
+                        </label>
+
+                        <label class="editor-form__message">
+                            Summary
+                            <CommitAwareTextArea @bind-Value="input.Summary" id="HomepagePublicity.Summary" rows="5" placeholder="Explain what guests should understand immediately when they land on the homepage."></CommitAwareTextArea>
+                            <ValidationMessage For="@(() => input.Summary)" class="validation-message" />
+                        </label>
+                    </div>
+
+                    <div class="editor-actions">
+                        <button type="button" class="hero-actions__link hero-actions__link--secondary" @onclick="SaveDraftAsync">Save draft</button>
+                        <button type="button" class="hero-actions__link hero-actions__link--primary" @onclick="PublishAsync">Save &amp; publish</button>
+                    </div>
+                </EditForm>
+            </section>
+
+            <section class="admin-card">
+                <div class="admin-card__header">
+                    <h2>Current saved state</h2>
+                    <span class="admin-card__badge">Status</span>
+                </div>
+
+                <div class="feature-grid">
+                    <article class="feature-card feature-card--tight">
+                        <p class="feature-card__eyebrow">Draft</p>
+                        <h3>@GetTimestampLabel(draftUpdatedAtUtc, "No draft saved yet")</h3>
+                        <p>@GetSummaryPreview(draftPreview)</p>
+                    </article>
+
+                    <article class="feature-card feature-card--tight">
+                        <p class="feature-card__eyebrow">Published</p>
+                        <h3>@GetTimestampLabel(publishedUpdatedAtUtc, "Nothing published yet")</h3>
+                        <p>@GetSummaryPreview(publishedPreview)</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="admin-card">
+                <div class="admin-card__header">
+                    <h2>Published homepage preview</h2>
+                    <span class="admin-card__badge">Guest facing</span>
+                </div>
+
+                <article class="feature-card">
+                    <p class="feature-card__eyebrow">@publishedPreview.Eyebrow</p>
+                    <h3>@publishedPreview.Headline</h3>
+                    <p>@publishedPreview.Summary</p>
+                </article>
+            </section>
+        </div>
+    </div>
+</section>
+
+@code {
+    private EditorInput input = new();
+    private EditContext editContext = default!;
+    private string? statusMessage;
+    private HomepagePublicityContent draftPreview = HomepagePublicityDefaults.Content;
+    private HomepagePublicityContent publishedPreview = HomepagePublicityDefaults.Content;
+    private DateTimeOffset? draftUpdatedAtUtc;
+    private DateTimeOffset? publishedUpdatedAtUtc;
+
+    protected override async Task OnInitializedAsync()
+    {
+        editContext = new EditContext(input);
+        await LoadAsync();
+    }
+
+    private async Task SaveDraftAsync()
+    {
+        if (!editContext.Validate())
+        {
+            statusMessage = "Fix the validation errors before saving the homepage draft.";
+            return;
+        }
+
+        var result = await HomepagePublicityService.SaveDraftAsync(input.ToRequest());
+        if (!result.Succeeded)
+        {
+            statusMessage = string.Join(" ", result.Errors);
+            return;
+        }
+
+        statusMessage = "Homepage draft saved. Guests still see the last published homepage intro.";
+        await LoadAsync();
+    }
+
+    private async Task PublishAsync()
+    {
+        if (!editContext.Validate())
+        {
+            statusMessage = "Fix the validation errors before publishing the homepage intro.";
+            return;
+        }
+
+        var result = await HomepagePublicityService.PublishAsync(input.ToRequest());
+        if (!result.Succeeded)
+        {
+            statusMessage = string.Join(" ", result.Errors);
+            return;
+        }
+
+        statusMessage = "Homepage intro published. Guests now see the updated welcome message.";
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var state = await HomepagePublicityService.GetHomepageAdminViewAsync();
+        draftPreview = state.DraftContent ?? state.PublishedContent ?? HomepagePublicityDefaults.Content;
+        publishedPreview = state.PublishedContent ?? HomepagePublicityDefaults.Content;
+        draftUpdatedAtUtc = state.DraftUpdatedAtUtc;
+        publishedUpdatedAtUtc = state.PublishedUpdatedAtUtc;
+
+        input = EditorInput.FromContent(draftPreview);
+        editContext = new EditContext(input);
+    }
+
+    private static string GetSummaryPreview(HomepagePublicityContent content) => content.Summary;
+
+    private static string GetTimestampLabel(DateTimeOffset? value, string fallback) =>
+        value.HasValue
+            ? value.Value.ToLocalTime().ToString("MMMM d, yyyy 'at' h:mm tt", CultureInfo.InvariantCulture)
+            : fallback;
+
+    private sealed class EditorInput
+    {
+        [StringLength(80, ErrorMessage = "The homepage eyebrow must be 80 characters or fewer.")]
+        public string Eyebrow { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "A homepage headline is required.")]
+        [StringLength(120, ErrorMessage = "The homepage headline must be 120 characters or fewer.")]
+        public string Headline { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "A homepage summary is required.")]
+        [StringLength(1000, ErrorMessage = "The homepage summary must be 1000 characters or fewer.")]
+        public string Summary { get; set; } = string.Empty;
+
+        public SaveHomepagePublicityRequest ToRequest() => new(Eyebrow, Headline, Summary);
+
+        public static EditorInput FromContent(HomepagePublicityContent content) =>
+            new()
+            {
+                Eyebrow = content.Eyebrow,
+                Headline = content.Headline,
+                Summary = content.Summary
+            };
+    }
+}

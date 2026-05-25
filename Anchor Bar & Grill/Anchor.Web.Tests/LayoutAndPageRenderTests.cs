@@ -2,6 +2,7 @@ using Anchor.Domain.Identity;
 using Anchor.Web.Components.Account.Shared;
 using Anchor.Domain.Identity.Users;
 using Anchor.Domain.Menu;
+using Anchor.Domain.Publicity;
 using Anchor.Web.Components.Layout;
 using Anchor.Web.Components.Pages;
 using Anchor.Web.Components.Pages.Admin;
@@ -24,6 +25,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 {
     private readonly TestAuthenticationStateProvider authStateProvider;
     private readonly FakeMenuQueryService menuQueryService;
+    private readonly FakeHomepagePublicityService homepagePublicityService;
     private readonly FixedTimeProvider timeProvider;
 
     public LayoutAndPageRenderTests()
@@ -43,9 +45,11 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Services.AddSingleton<AuthenticationStateProvider>(authStateProvider);
         Services.AddCascadingAuthenticationState();
         menuQueryService = new FakeMenuQueryService();
+        homepagePublicityService = new FakeHomepagePublicityService();
         timeProvider = new FixedTimeProvider(new DateTimeOffset(2026, 5, 21, 12, 0, 0, TimeSpan.FromHours(-5)));
         Services.AddSingleton<TimeProvider>(timeProvider);
         Services.AddSingleton<IMenuQueryService>(menuQueryService);
+        Services.AddSingleton<IHomepagePublicityService>(homepagePublicityService);
         Services.AddSingleton<IMenuManagementService>(new FakeMenuManagementService());
         Services.AddSingleton<IMenuItemImageStorage>(new TestMenuItemImageStorage());
     }
@@ -220,9 +224,15 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     [Fact]
     public void HomePage_RendersGuestWelcomeAndBuildingPlaceholder()
     {
+        homepagePublicityService.PublishedContent = new HomepagePublicityContent(
+            "Weekend Welcome",
+            "Fresh copy from the publicity editor.",
+            "Published homepage messaging should flow through to the guest-facing welcome block.");
+
         var cut = Render<Home>();
 
-        Assert.Contains("Welcome aboard The Anchor.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Fresh copy from the publicity editor.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Published homepage messaging should flow through to the guest-facing welcome block.", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Exterior Photo Placement", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Browse the Menu", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Monday Night Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -430,14 +440,15 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     }
 
     [Fact]
-    public void AboutAdminPage_RendersContentBlockEditor()
+    public void PublicityAdminHomePage_RendersDraftAndPublishWorkflow()
     {
-        var cut = Render<AboutAdmin>();
+        var cut = Render<PublicityAdminHome>();
 
         Assert.Contains("Publicity editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Publicity content editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Content Blocks", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Current publicity sections", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Homepage intro copy", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Save draft", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Save &amp; publish", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Published homepage preview", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -1114,6 +1125,36 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         public Task<MenuOperationResult> DeleteItemAsync(Guid itemId, CancellationToken cancellationToken = default) =>
             Task.FromResult(MenuOperationResult.Success(itemId));
 
+    }
+
+    private sealed class FakeHomepagePublicityService : IHomepagePublicityService
+    {
+        public HomepagePublicityContent? DraftContent { get; set; }
+
+        public HomepagePublicityContent? PublishedContent { get; set; }
+
+        public Task<HomepagePublicityAdminView> GetHomepageAdminViewAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(new HomepagePublicityAdminView(DraftContent, null, PublishedContent, null));
+
+        public Task<HomepagePublicityContent?> GetPublishedHomepageAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(PublishedContent);
+
+        public Task<HomepagePublicityOperationResult> SaveDraftAsync(
+            SaveHomepagePublicityRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            DraftContent = new HomepagePublicityContent(request.Eyebrow, request.Headline, request.Summary);
+            return Task.FromResult(HomepagePublicityOperationResult.Success());
+        }
+
+        public Task<HomepagePublicityOperationResult> PublishAsync(
+            SaveHomepagePublicityRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            DraftContent = new HomepagePublicityContent(request.Eyebrow, request.Headline, request.Summary);
+            PublishedContent = DraftContent;
+            return Task.FromResult(HomepagePublicityOperationResult.Success());
+        }
     }
 
     private sealed class EmptyDescriptionMenuQueryService : IMenuQueryService

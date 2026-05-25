@@ -1,0 +1,47 @@
+@page "/admin/publicity/about"
+@using Anchor.Domain.Identity
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Policy = ApplicationPolicies.AdminAccess)]
+
+<PageTitle>Publicity Editor</PageTitle>
+
+<section class="admin-page">
+    <div class="page-hero page-hero--section">
+        <p class="page-hero__eyebrow">Admin Editor</p>
+        <h1>About page placeholder</h1>
+        <p class="page-hero__lead">
+            This grouped publicity area reserves the future About-page editor while the homepage intro workflow lands first.
+        </p>
+    </div>
+
+    <div class="admin-grid">
+        <aside class="admin-help publicity-shell">
+            <h2>Publicity areas</h2>
+            <nav class="publicity-shell__nav" aria-label="Publicity sections">
+                <NavLink class="publicity-shell__link" href="/admin/publicity/home" Match="NavLinkMatch.Prefix">Homepage intro</NavLink>
+                <NavLink class="publicity-shell__link" href="/admin/publicity/about" Match="NavLinkMatch.All">About page</NavLink>
+            </nav>
+
+            <h2>What comes later</h2>
+            <ul>
+                <li>The About workflow should eventually break the restaurant story into guided sections instead of one long free-form block.</li>
+                <li>Publishing controls should stay consistent with the homepage workflow so Admins do not have to relearn the pattern.</li>
+                <li>This placeholder stays visible now so staff can see where future publicity work will live.</li>
+            </ul>
+        </aside>
+
+        <div class="admin-stack">
+            <section class="admin-card">
+                <div class="admin-card__header">
+                    <h2>Coming soon</h2>
+                    <span class="admin-card__badge">Planned</span>
+                </div>
+
+                <p class="admin-field-note">
+                    The homepage intro editor is active now. The About page editor will be added here in a future publicity slice once the content structure is finalized.
+                </p>
+            </section>
+        </div>
+    </div>
+</section>

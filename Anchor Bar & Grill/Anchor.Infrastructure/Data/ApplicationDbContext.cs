@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Anchor.Infrastructure.Data.Events;
 using Anchor.Infrastructure.Data.Menu;
+using Anchor.Infrastructure.Data.Publicity;
 
 namespace Anchor.Infrastructure.Data;
 
@@ -28,6 +29,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MenuSectionTabEntity> MenuSectionTabs => Set<MenuSectionTabEntity>();
 
     public DbSet<MenuServiceWindowEntity> MenuServiceWindows => Set<MenuServiceWindowEntity>();
+
+    public DbSet<HomepagePublicityEntity> HomepagePublicity => Set<HomepagePublicityEntity>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
