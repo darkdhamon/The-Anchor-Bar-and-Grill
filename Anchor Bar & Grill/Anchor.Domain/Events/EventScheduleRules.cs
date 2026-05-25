@@ -148,6 +148,11 @@ public static class EventScheduleRules
             return [];
         }
 
+        if (!HasValidRecurringConfiguration(record))
+        {
+            return [];
+        }
+
         if (record.RecurrencePattern == EventRecurrencePattern.None)
         {
             return record.StartsOn >= fromDate && record.StartsOn <= throughDate
@@ -192,6 +197,16 @@ public static class EventScheduleRules
 
     public static string GetScheduleSummary(EventRecord record, DateTime localNow)
     {
+        return GetScheduleSummary(record, GetNextOccurrence(record, localNow));
+    }
+
+    public static string GetScheduleSummaryForOccurrence(EventRecord record, DateOnly occurrenceDate)
+    {
+        return GetScheduleSummary(record, occurrenceDate);
+    }
+
+    private static string GetScheduleSummary(EventRecord record, DateOnly? nextDate)
+    {
         if (!record.IsRecurring)
         {
             return $"One-time event on {record.StartsOn:MMM d, yyyy} at {record.StartsAt.ToString("h:mm tt", CultureInfo.InvariantCulture)}";
@@ -213,7 +228,7 @@ public static class EventScheduleRules
             _ => $"Recurring at {timeLabel}"
         };
 
-        return GetNextOccurrence(record, localNow) is { } nextDate
+        return nextDate is { }
             ? $"{cadence} - next on {nextDate:MMM d, yyyy}"
             : cadence;
     }
@@ -325,6 +340,34 @@ public static class EventScheduleRules
         EventRecurrenceWeek.Last => "Last",
         _ => "First"
     };
+
+    private static bool HasValidRecurringConfiguration(EventRecord record)
+    {
+        if (!Enum.IsDefined(record.RecurrencePattern))
+        {
+            return false;
+        }
+
+        if (record.RecurrencePattern == EventRecurrencePattern.None)
+        {
+            return true;
+        }
+
+        if (record.RecurrenceInterval is < 1 or > MaxRecurrenceInterval)
+        {
+            return false;
+        }
+
+        return record.RecurrencePattern switch
+        {
+            EventRecurrencePattern.Weekly => record.RecursOnDayOfWeek is { } dayOfWeek && IsValidDayOfWeek(dayOfWeek),
+            EventRecurrencePattern.MonthlyNthWeekday => record.RecursOnDayOfWeek is { } monthlyDayOfWeek
+                && IsValidDayOfWeek(monthlyDayOfWeek)
+                && record.RecursOnWeekOfMonth is { } weekOfMonth
+                && Enum.IsDefined(weekOfMonth),
+            _ => false
+        };
+    }
 
     private static bool IsValidDayOfWeek(DayOfWeek dayOfWeek) => dayOfWeek is >= DayOfWeek.Sunday and <= DayOfWeek.Saturday;
 }

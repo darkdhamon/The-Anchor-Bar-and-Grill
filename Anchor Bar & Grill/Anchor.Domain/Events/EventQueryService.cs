@@ -19,7 +19,8 @@ public sealed class EventQueryService(IEventQueryRepository repository) : IEvent
         List<EventOccurrenceRecord> occurrences = [];
         foreach (var record in candidates)
         {
-            foreach (var occursOn in EventScheduleRules.GetOccurrences(record, fromDate, throughDate))
+            var expandedOccurrences = EventScheduleRules.GetOccurrences(record, fromDate, throughDate);
+            foreach (var occursOn in expandedOccurrences)
             {
                 var occursAt = occursOn.ToDateTime(record.StartsAt);
                 if (occursAt < localNow)
@@ -40,7 +41,7 @@ public sealed class EventQueryService(IEventQueryRepository repository) : IEvent
                     record.EndsNextDay,
                     record.SortOrder,
                     record.IsRecurring,
-                    EventScheduleRules.GetScheduleSummary(record, occursAt)));
+                    EventScheduleRules.GetScheduleSummaryForOccurrence(record, occursOn)));
             }
         }
 

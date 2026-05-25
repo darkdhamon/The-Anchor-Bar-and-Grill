@@ -91,6 +91,38 @@ public sealed class EventQueryServiceTests
         Assert.Contains("next on May 22, 2026", results[1].ScheduleSummary, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task GetUpcomingEventsAsync_skips_recurring_rows_with_invalid_persisted_schedule_values()
+    {
+        var repository = new FakeEventQueryRepository
+        {
+            Events =
+            [
+                CreateRecord(
+                    "Valid Trivia",
+                    new DateOnly(2026, 5, 18),
+                    new TimeOnly(19, 0),
+                    1,
+                    EventRecurrencePattern.Weekly,
+                    DayOfWeek.Monday),
+                CreateRecord(
+                    "Broken Import",
+                    new DateOnly(2026, 5, 15),
+                    new TimeOnly(20, 0),
+                    2,
+                    EventRecurrencePattern.MonthlyNthWeekday,
+                    (DayOfWeek)99,
+                    (EventRecurrenceWeek)99,
+                    recurrenceInterval: 0)
+            ]
+        };
+
+        var results = await new EventQueryService(repository).GetUpcomingEventsAsync(new DateTime(2026, 5, 10, 10, 0, 0), 14);
+
+        Assert.DoesNotContain(results, item => item.Title == "Broken Import");
+        Assert.Contains(results, item => item.Title == "Valid Trivia");
+    }
+
     private static EventRecord CreateRecord(
         string title,
         DateOnly startsOn,
@@ -98,7 +130,8 @@ public sealed class EventQueryServiceTests
         int sortOrder,
         EventRecurrencePattern recurrencePattern = EventRecurrencePattern.None,
         DayOfWeek? recursOnDayOfWeek = null,
-        EventRecurrenceWeek? recursOnWeekOfMonth = null) =>
+        EventRecurrenceWeek? recursOnWeekOfMonth = null,
+        int recurrenceInterval = 1) =>
         new(
             Guid.NewGuid(),
             title,
@@ -113,7 +146,7 @@ public sealed class EventQueryServiceTests
             sortOrder,
             EventPublicationState.Published,
             recurrencePattern,
-            1,
+            recurrenceInterval,
             recursOnDayOfWeek,
             recursOnWeekOfMonth,
             null);

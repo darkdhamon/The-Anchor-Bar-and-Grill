@@ -97,6 +97,42 @@ public sealed class EventScheduleRulesTests
     }
 
     [Fact]
+    public void GetOccurrences_returns_empty_for_recurring_event_with_nonpositive_interval()
+    {
+        var record = CreateRecord(
+            EventRecurrencePattern.MonthlyNthWeekday,
+            startsOn: new DateOnly(2026, 5, 15),
+            recursOnDayOfWeek: DayOfWeek.Friday,
+            recursOnWeekOfMonth: EventRecurrenceWeek.Third,
+            recurrenceInterval: 0);
+
+        var occurrences = EventScheduleRules.GetOccurrences(
+            record,
+            new DateOnly(2026, 5, 1),
+            new DateOnly(2026, 7, 31));
+
+        Assert.Empty(occurrences);
+    }
+
+    [Fact]
+    public void GetOccurrences_returns_empty_for_recurring_event_with_invalid_persisted_enum_values()
+    {
+        var record = CreateRecord(
+            EventRecurrencePattern.MonthlyNthWeekday,
+            startsOn: new DateOnly(2026, 5, 15),
+            recursOnDayOfWeek: (DayOfWeek)99,
+            recursOnWeekOfMonth: (EventRecurrenceWeek)99,
+            recurrenceInterval: 1);
+
+        var occurrences = EventScheduleRules.GetOccurrences(
+            record,
+            new DateOnly(2026, 5, 1),
+            new DateOnly(2026, 7, 31));
+
+        Assert.Empty(occurrences);
+    }
+
+    [Fact]
     public void Validate_allows_one_time_events_with_default_recurrence_interval_zero()
     {
         var request = new SaveEventRequest(
