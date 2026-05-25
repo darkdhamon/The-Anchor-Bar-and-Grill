@@ -81,7 +81,24 @@ public sealed class HomepagePublicityRepository(ApplicationDbContext dbContext) 
         };
 
         dbContext.HomepagePublicity.Add(entity);
-        return entity;
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+            return entity;
+        }
+        catch (DbUpdateException)
+        {
+            if (!await SingletonRowExistsAsync(cancellationToken))
+            {
+                throw;
+            }
+
+            dbContext.Entry(entity).State = EntityState.Detached;
+
+            return await dbContext.HomepagePublicity
+                .SingleAsync(item => item.HomepagePublicityId == SingletonId, cancellationToken);
+        }
     }
 
     private static HomepagePublicityContent? CreateDraftContent(HomepagePublicityEntity entity) =>
@@ -99,6 +116,11 @@ public sealed class HomepagePublicityRepository(ApplicationDbContext dbContext) 
                 entity.PublishedEyebrow ?? string.Empty,
                 entity.PublishedHeadline,
                 entity.PublishedSummary);
+
+    private Task<bool> SingletonRowExistsAsync(CancellationToken cancellationToken) =>
+        dbContext.HomepagePublicity
+            .AsNoTracking()
+            .AnyAsync(item => item.HomepagePublicityId == SingletonId, cancellationToken);
 
     private static string? NormalizeOptional(string value) =>
         string.IsNullOrWhiteSpace(value) ? null : value;

@@ -30,17 +30,17 @@
 .publicity-shell__link {
     display: block;
     padding: 0.8rem 1rem;
-    border: 1px solid var(--color-border-strong);
+    border: 1px solid var(--outline);
     border-radius: 0.9rem;
-    color: var(--color-text);
+    color: var(--text-primary);
     text-decoration: none;
-    background: color-mix(in srgb, var(--color-surface-elevated) 88%, transparent);
+    background: var(--surface);
     transition: border-color 160ms ease, transform 160ms ease;
 }
 
 .publicity-shell__link.active,
 .publicity-shell__link:hover {
-    border-color: var(--color-accent);
+    border-color: var(--accent-readable);
     transform: translateY(-1px);
 }
 
