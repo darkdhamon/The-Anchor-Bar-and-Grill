@@ -1,18 +1,19 @@
 @page "/"
 @using Anchor.Domain.Menu
+@using Anchor.Domain.Publicity
 @attribute [ExcludeFromInteractiveRouting]
 @inject IMenuQueryService MenuQueryService
+@inject IHomepagePublicityService HomepagePublicityService
 @inject TimeProvider TimeProvider
 
 <PageTitle>Home</PageTitle>
 
 <section class="hero-grid">
     <div class="page-hero page-hero--home">
-        <p class="page-hero__eyebrow">Guest Welcome</p>
-        <h1>Welcome aboard The Anchor.</h1>
+        <p class="page-hero__eyebrow">@homepageContent.Eyebrow</p>
+        <h1>@homepageContent.Headline</h1>
         <p class="page-hero__lead">
-            This homepage mockup is intentionally separate from the menu so first-time guests can understand what The Anchor Bar &amp; Grill
-            offers before they dive into food, events, or contact details.
+            @homepageContent.Summary
         </p>
 
         <div class="hero-actions">
@@ -172,6 +173,7 @@
     private DateOnly today;
     private IReadOnlyList<PublicHomeSpecialView> homeSpecialItems = [];
     private IReadOnlyList<UpcomingEventOccurrence> homeUpcomingEvents = [];
+    private HomepagePublicityContent homepageContent = HomepagePublicityDefaults.Content;
 
     private static string GetHomeSpecialStatusClass(PublicHomeSpecialView special) =>
         special.AvailabilityLabel switch
@@ -187,5 +189,6 @@
         today = DateOnly.FromDateTime(TimeProvider.GetLocalNow().DateTime);
         homeUpcomingEvents = MockupContent.GetUpcomingEvents(today, 30);
         homeSpecialItems = await MenuQueryService.GetHomeSpecialsAsync(today);
+        homepageContent = await HomepagePublicityService.GetPublishedHomepageAsync() ?? HomepagePublicityDefaults.Content;
     }
 }

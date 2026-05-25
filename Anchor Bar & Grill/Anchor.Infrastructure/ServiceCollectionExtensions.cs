@@ -2,8 +2,10 @@ using Anchor.Domain.Events;
 using Anchor.Domain.Identity.Bootstrap;
 using Anchor.Domain.Identity.Users;
 using Anchor.Domain.Menu;
+using Anchor.Domain.Publicity;
 using Anchor.Infrastructure.Data.Events;
 using Anchor.Infrastructure.Data.Menu;
+using Anchor.Infrastructure.Data.Publicity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -22,6 +24,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IIdentityBootstrapRepository, Data.IdentityBootstrapRepository>();
         services.AddScoped<IMenuQueryRepository, MenuQueryRepository>();
         services.AddScoped<IMenuManagementRepository, MenuManagementRepository>();
+        services.AddScoped<IHomepagePublicityRepository, HomepagePublicityRepository>();
         services.AddSingleton<IMenuOperationLogSink, NoOpMenuOperationLogSink>();
 
         return services;

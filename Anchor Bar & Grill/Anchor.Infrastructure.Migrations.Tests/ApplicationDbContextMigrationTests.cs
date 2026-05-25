@@ -1,6 +1,7 @@
 using Anchor.Infrastructure.Data;
 using Anchor.Domain.Events;
 using Anchor.Domain.Menu;
+using Anchor.Infrastructure.Data.Publicity;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -48,6 +49,7 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Contains("20260522233151_AddMenuSectionVisibilityAndMultiSectionAssignments", appliedMigrations);
             Assert.Contains("20260523013508_AddMenuHierarchyAndSeasonalAvailability", appliedMigrations);
             Assert.Contains("20260524140817_AddEventCatalog", appliedMigrations);
+            Assert.Contains("20260525163343_AddHomepagePublicity", appliedMigrations);
             Assert.Empty(pendingMigrations);
             Assert.True(await context.Database.CanConnectAsync());
 
@@ -95,6 +97,7 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Contains("MenuSectionTabs", tableNames);
             Assert.Contains("MenuServiceWindows", tableNames);
             Assert.Contains("Events", tableNames);
+            Assert.Contains("HomepagePublicity", tableNames);
             Assert.DoesNotContain("RecurringSpecials", tableNames);
 
             Assert.True(await context.MenuSections.AnyAsync(section => section.Name == "Appetizers"));
@@ -111,6 +114,7 @@ public sealed class ApplicationDbContextMigrationTests
             var menuSectionColumns = await GetColumnNamesAsync(connectionString, "MenuSections");
             var menuItemColumns = await GetColumnNamesAsync(connectionString, "MenuItems");
             var eventColumns = await GetColumnNamesAsync(connectionString, "Events");
+            var homepagePublicityColumns = await GetColumnNamesAsync(connectionString, "HomepagePublicity");
             Assert.Contains("Callout", menuSectionColumns);
             Assert.Contains("ParentSectionId", menuSectionColumns);
             Assert.Contains("NormalizedName", menuSectionColumns);
@@ -126,6 +130,10 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Contains("RecursOnDayOfWeek", eventColumns);
             Assert.Contains("RecursOnWeekOfMonth", eventColumns);
             Assert.Contains("RecursUntil", eventColumns);
+            Assert.Contains("DraftHeadline", homepagePublicityColumns);
+            Assert.Contains("DraftSummary", homepagePublicityColumns);
+            Assert.Contains("PublishedHeadline", homepagePublicityColumns);
+            Assert.Contains("PublishedSummary", homepagePublicityColumns);
             Assert.DoesNotContain("MenuSectionId", menuItemColumns);
 
             var eventId = Guid.NewGuid();
@@ -152,6 +160,24 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Equal(EventRecurrencePattern.Weekly, persistedEvent.RecurrencePattern);
             Assert.Equal(2, persistedEvent.RecurrenceInterval);
             Assert.Equal(DayOfWeek.Friday, persistedEvent.RecursOnDayOfWeek);
+
+            context.HomepagePublicity.Add(new HomepagePublicityEntity
+            {
+                HomepagePublicityId = 1,
+                DraftEyebrow = "Guest Welcome",
+                DraftHeadline = "Draft headline",
+                DraftSummary = "Draft summary",
+                PublishedEyebrow = "Weekend Welcome",
+                PublishedHeadline = "Published headline",
+                PublishedSummary = "Published summary",
+                DraftUpdatedAtUtc = new DateTimeOffset(2026, 5, 25, 16, 30, 0, TimeSpan.Zero),
+                PublishedUpdatedAtUtc = new DateTimeOffset(2026, 5, 25, 17, 0, 0, TimeSpan.Zero)
+            });
+            await context.SaveChangesAsync();
+
+            var persistedHomepagePublicity = await context.HomepagePublicity.SingleAsync(item => item.HomepagePublicityId == 1);
+            Assert.Equal("Draft headline", persistedHomepagePublicity.DraftHeadline);
+            Assert.Equal("Published headline", persistedHomepagePublicity.PublishedHeadline);
         }
         finally
         {

@@ -18,6 +18,39 @@
     --anchor-border-radius: 1.5rem;
 }
 
+.publicity-shell {
+    gap: 1.25rem;
+}
+
+.publicity-shell__nav {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.publicity-shell__link {
+    display: block;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--outline);
+    border-radius: 0.9rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    background: var(--surface);
+    transition: border-color 160ms ease, transform 160ms ease;
+}
+
+.publicity-shell__link.active,
+.publicity-shell__link:hover {
+    border-color: var(--accent-readable);
+    transform: translateY(-1px);
+}
+
+.editor-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin-top: 1.25rem;
+}
+
 html,
 body {
     margin: 0;
