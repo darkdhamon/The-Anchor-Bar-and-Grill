@@ -14,6 +14,11 @@ public static class EventScheduleRules
     public static IReadOnlyList<string> Validate(SaveEventRequest request)
     {
         List<string> errors = [];
+        var title = request.Title ?? string.Empty;
+        var summary = request.Summary ?? string.Empty;
+        var description = request.Description ?? string.Empty;
+        var promoBadge = request.PromoBadge ?? string.Empty;
+        var imagePath = request.ImagePath ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(request.Title))
         {
@@ -30,27 +35,27 @@ public static class EventScheduleRules
             errors.Add("Event description is required.");
         }
 
-        if (request.Title.Length > MaxTitleLength)
+        if (title.Length > MaxTitleLength)
         {
             errors.Add($"Event title cannot exceed {MaxTitleLength} characters.");
         }
 
-        if (request.Summary.Length > MaxSummaryLength)
+        if (summary.Length > MaxSummaryLength)
         {
             errors.Add($"Event summary cannot exceed {MaxSummaryLength} characters.");
         }
 
-        if (request.Description.Length > MaxDescriptionLength)
+        if (description.Length > MaxDescriptionLength)
         {
             errors.Add($"Event description cannot exceed {MaxDescriptionLength} characters.");
         }
 
-        if (request.PromoBadge is { Length: > MaxPromoBadgeLength })
+        if (promoBadge.Length > MaxPromoBadgeLength)
         {
             errors.Add($"Event promo badge cannot exceed {MaxPromoBadgeLength} characters.");
         }
 
-        if (request.ImagePath is { Length: > MaxImagePathLength })
+        if (imagePath.Length > MaxImagePathLength)
         {
             errors.Add($"Event image path cannot exceed {MaxImagePathLength} characters.");
         }

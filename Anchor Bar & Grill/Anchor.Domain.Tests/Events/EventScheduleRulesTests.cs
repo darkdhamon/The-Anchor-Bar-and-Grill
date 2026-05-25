@@ -289,6 +289,35 @@ public sealed class EventScheduleRulesTests
         Assert.Contains(errors, error => error.Contains("image path cannot exceed", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public void Validate_returns_required_field_errors_for_null_required_strings_without_throwing()
+    {
+        var request = new SaveEventRequest(
+            null,
+            null!,
+            null!,
+            null!,
+            null,
+            null,
+            new DateOnly(2026, 6, 1),
+            new TimeOnly(19, 0),
+            null,
+            false,
+            1,
+            EventPublicationState.Published,
+            EventRecurrencePattern.None,
+            0,
+            null,
+            null,
+            null);
+
+        var errors = EventScheduleRules.Validate(request);
+
+        Assert.Contains(errors, error => error.Contains("title is required", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(errors, error => error.Contains("summary is required", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(errors, error => error.Contains("description is required", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static EventRecord CreateRecord(
         EventRecurrencePattern recurrencePattern,
         DateOnly startsOn,
