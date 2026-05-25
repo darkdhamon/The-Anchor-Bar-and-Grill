@@ -4,6 +4,13 @@ namespace Anchor.Domain.Events;
 
 public static class EventScheduleRules
 {
+    private const int MaxTitleLength = 150;
+    private const int MaxSummaryLength = 300;
+    private const int MaxDescriptionLength = 2000;
+    private const int MaxPromoBadgeLength = 80;
+    private const int MaxImagePathLength = 300;
+    private const int MaxRecurrenceInterval = 1200;
+
     public static IReadOnlyList<string> Validate(SaveEventRequest request)
     {
         List<string> errors = [];
@@ -23,9 +30,39 @@ public static class EventScheduleRules
             errors.Add("Event description is required.");
         }
 
+        if (request.Title.Length > MaxTitleLength)
+        {
+            errors.Add($"Event title cannot exceed {MaxTitleLength} characters.");
+        }
+
+        if (request.Summary.Length > MaxSummaryLength)
+        {
+            errors.Add($"Event summary cannot exceed {MaxSummaryLength} characters.");
+        }
+
+        if (request.Description.Length > MaxDescriptionLength)
+        {
+            errors.Add($"Event description cannot exceed {MaxDescriptionLength} characters.");
+        }
+
+        if (request.PromoBadge is { Length: > MaxPromoBadgeLength })
+        {
+            errors.Add($"Event promo badge cannot exceed {MaxPromoBadgeLength} characters.");
+        }
+
+        if (request.ImagePath is { Length: > MaxImagePathLength })
+        {
+            errors.Add($"Event image path cannot exceed {MaxImagePathLength} characters.");
+        }
+
         if (request.EndsAt.HasValue && !request.EndsNextDay && request.EndsAt.Value <= request.StartsAt)
         {
             errors.Add("End time must be later than the start time unless the event ends the next day.");
+        }
+
+        if (!Enum.IsDefined(request.PublicationState))
+        {
+            errors.Add("Event publication state is invalid.");
         }
 
         if (!Enum.IsDefined(request.RecurrencePattern))
@@ -36,6 +73,10 @@ public static class EventScheduleRules
         if (request.RecurrencePattern != EventRecurrencePattern.None && request.RecurrenceInterval < 1)
         {
             errors.Add("Recurring events must use an interval of at least 1.");
+        }
+        else if (request.RecurrencePattern != EventRecurrencePattern.None && request.RecurrenceInterval > MaxRecurrenceInterval)
+        {
+            errors.Add($"Recurring events cannot use an interval greater than {MaxRecurrenceInterval}.");
         }
 
         if (request.RecursUntil is { } recursUntil && recursUntil < request.StartsOn)

@@ -40,7 +40,7 @@ public sealed class EventQueryService(IEventQueryRepository repository) : IEvent
                     record.EndsNextDay,
                     record.SortOrder,
                     record.IsRecurring,
-                    EventScheduleRules.GetScheduleSummary(record, localNow)));
+                    EventScheduleRules.GetScheduleSummary(record, occursAt)));
             }
         }
 

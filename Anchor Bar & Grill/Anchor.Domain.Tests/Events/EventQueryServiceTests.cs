@@ -67,6 +67,30 @@ public sealed class EventQueryServiceTests
             () => service.GetUpcomingEventsAsync(new DateTime(2026, 5, 10, 10, 0, 0), int.MaxValue));
     }
 
+    [Fact]
+    public async Task GetUpcomingEventsAsync_computes_schedule_summary_from_each_emitted_occurrence()
+    {
+        var repository = new FakeEventQueryRepository
+        {
+            Events =
+            [
+                CreateRecord(
+                    "Friday Live Music",
+                    new DateOnly(2026, 5, 15),
+                    new TimeOnly(20, 30),
+                    1,
+                    EventRecurrencePattern.Weekly,
+                    DayOfWeek.Friday)
+            ]
+        };
+
+        var results = await new EventQueryService(repository).GetUpcomingEventsAsync(new DateTime(2026, 5, 10, 10, 0, 0), 14);
+
+        Assert.Equal(2, results.Count);
+        Assert.Contains("next on May 15, 2026", results[0].ScheduleSummary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("next on May 22, 2026", results[1].ScheduleSummary, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static EventRecord CreateRecord(
         string title,
         DateOnly startsOn,

@@ -204,6 +204,91 @@ public sealed class EventScheduleRulesTests
         Assert.Contains(errors, error => error.Contains("valid week-of-month", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public void Validate_rejects_invalid_publication_state()
+    {
+        var request = new SaveEventRequest(
+            null,
+            "Steak Night",
+            "Monthly feature",
+            "Third Friday dinner feature.",
+            null,
+            null,
+            new DateOnly(2026, 6, 19),
+            new TimeOnly(18, 30),
+            null,
+            false,
+            1,
+            (EventPublicationState)99,
+            EventRecurrencePattern.None,
+            0,
+            null,
+            null,
+            null);
+
+        var errors = EventScheduleRules.Validate(request);
+
+        Assert.Contains(errors, error => error.Contains("publication state", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Validate_rejects_recurrence_interval_above_supported_cap()
+    {
+        var request = new SaveEventRequest(
+            null,
+            "Trivia",
+            "Weekly trivia",
+            "Questions and prizes.",
+            null,
+            null,
+            new DateOnly(2026, 6, 1),
+            new TimeOnly(19, 0),
+            null,
+            false,
+            1,
+            EventPublicationState.Published,
+            EventRecurrencePattern.Weekly,
+            1201,
+            DayOfWeek.Monday,
+            null,
+            null);
+
+        var errors = EventScheduleRules.Validate(request);
+
+        Assert.Contains(errors, error => error.Contains("interval greater", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Validate_rejects_fields_that_exceed_storage_limits()
+    {
+        var request = new SaveEventRequest(
+            null,
+            new string('T', 151),
+            new string('S', 301),
+            new string('D', 2001),
+            new string('P', 81),
+            new string('I', 301),
+            new DateOnly(2026, 6, 1),
+            new TimeOnly(19, 0),
+            null,
+            false,
+            1,
+            EventPublicationState.Published,
+            EventRecurrencePattern.None,
+            0,
+            null,
+            null,
+            null);
+
+        var errors = EventScheduleRules.Validate(request);
+
+        Assert.Contains(errors, error => error.Contains("title cannot exceed", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(errors, error => error.Contains("summary cannot exceed", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(errors, error => error.Contains("description cannot exceed", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(errors, error => error.Contains("promo badge cannot exceed", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(errors, error => error.Contains("image path cannot exceed", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static EventRecord CreateRecord(
         EventRecurrencePattern recurrencePattern,
         DateOnly startsOn,
