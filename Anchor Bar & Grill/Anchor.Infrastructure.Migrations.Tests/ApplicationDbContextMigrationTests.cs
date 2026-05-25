@@ -1,4 +1,5 @@
 using Anchor.Infrastructure.Data;
+using Anchor.Domain.Events;
 using Anchor.Domain.Menu;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -46,6 +47,7 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Contains("20260522221240_AddMenuSectionCalloutsAndUniqueMenuNames", appliedMigrations);
             Assert.Contains("20260522233151_AddMenuSectionVisibilityAndMultiSectionAssignments", appliedMigrations);
             Assert.Contains("20260523013508_AddMenuHierarchyAndSeasonalAvailability", appliedMigrations);
+            Assert.Contains("20260524140817_AddEventCatalog", appliedMigrations);
             Assert.Empty(pendingMigrations);
             Assert.True(await context.Database.CanConnectAsync());
 
@@ -92,6 +94,7 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Contains("MenuItemSpecials", tableNames);
             Assert.Contains("MenuSectionTabs", tableNames);
             Assert.Contains("MenuServiceWindows", tableNames);
+            Assert.Contains("Events", tableNames);
             Assert.DoesNotContain("RecurringSpecials", tableNames);
 
             Assert.True(await context.MenuSections.AnyAsync(section => section.Name == "Appetizers"));
@@ -107,6 +110,7 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.True(await context.MenuServiceWindows.AnyAsync(window => window.Tab == MenuTab.Drinks && window.DayOfWeek == DayOfWeek.Friday && window.ClosesNextDay));
             var menuSectionColumns = await GetColumnNamesAsync(connectionString, "MenuSections");
             var menuItemColumns = await GetColumnNamesAsync(connectionString, "MenuItems");
+            var eventColumns = await GetColumnNamesAsync(connectionString, "Events");
             Assert.Contains("Callout", menuSectionColumns);
             Assert.Contains("ParentSectionId", menuSectionColumns);
             Assert.Contains("NormalizedName", menuSectionColumns);
@@ -116,7 +120,38 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Contains("SeasonEndMonth", menuItemColumns);
             Assert.Contains("SeasonEndDay", menuItemColumns);
             Assert.Contains("UsesSectionVisibility", menuItemColumns);
+            Assert.Contains("PublicationState", eventColumns);
+            Assert.Contains("RecurrencePattern", eventColumns);
+            Assert.Contains("RecurrenceInterval", eventColumns);
+            Assert.Contains("RecursOnDayOfWeek", eventColumns);
+            Assert.Contains("RecursOnWeekOfMonth", eventColumns);
+            Assert.Contains("RecursUntil", eventColumns);
             Assert.DoesNotContain("MenuSectionId", menuItemColumns);
+
+            var eventId = Guid.NewGuid();
+            context.Events.Add(new Data.Events.EventEntity
+            {
+                EventId = eventId,
+                Title = "Friday Live Music",
+                Summary = "Rotating local lineup.",
+                Description = "A recurring Friday showcase.",
+                PromoBadge = "Live Music",
+                StartsOn = new DateOnly(2026, 5, 22),
+                StartsAt = new TimeOnly(20, 30),
+                SortOrder = 4,
+                PublicationState = EventPublicationState.Published,
+                RecurrencePattern = EventRecurrencePattern.Weekly,
+                RecurrenceInterval = 2,
+                RecursOnDayOfWeek = DayOfWeek.Friday,
+                RecursUntil = new DateOnly(2026, 7, 31)
+            });
+            await context.SaveChangesAsync();
+
+            var persistedEvent = await context.Events.SingleAsync(item => item.EventId == eventId);
+            Assert.Equal("Friday Live Music", persistedEvent.Title);
+            Assert.Equal(EventRecurrencePattern.Weekly, persistedEvent.RecurrencePattern);
+            Assert.Equal(2, persistedEvent.RecurrenceInterval);
+            Assert.Equal(DayOfWeek.Friday, persistedEvent.RecursOnDayOfWeek);
         }
         finally
         {

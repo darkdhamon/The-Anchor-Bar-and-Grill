@@ -1,5 +1,6 @@
 @page "/events"
 @attribute [ExcludeFromInteractiveRouting]
+@inject TimeProvider TimeProvider
 
 <PageTitle>Events</PageTitle>
 
@@ -65,6 +66,6 @@
 </section>
 
 @code {
-    private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+    private DateOnly today => DateOnly.FromDateTime(TimeProvider.GetLocalNow().DateTime);
     private IReadOnlyList<UpcomingEventOccurrence> upcomingEvents => MockupContent.GetUpcomingEvents(today);
 }
