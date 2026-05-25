@@ -1,6 +1,7 @@
 @page "/admin/publicity/about"
 @using Anchor.Domain.Identity
 @using Microsoft.AspNetCore.Authorization
+@inject NavigationManager NavigationManager
 
 @attribute [Authorize(Policy = ApplicationPolicies.AdminAccess)]
 
@@ -19,8 +20,8 @@
         <aside class="admin-help publicity-shell">
             <h2>Publicity areas</h2>
             <nav class="publicity-shell__nav" aria-label="Publicity sections">
-                <NavLink class="publicity-shell__link" href="/admin/publicity/home" Match="NavLinkMatch.Prefix">Homepage intro</NavLink>
-                <NavLink class="publicity-shell__link" href="/admin/publicity/about" Match="NavLinkMatch.All">About page</NavLink>
+                <a class="@GetSectionLinkClass(isHomepageSection: true)" href="/admin/publicity">Homepage intro</a>
+                <a class="@GetSectionLinkClass(isHomepageSection: false)" href="/admin/publicity/about">About page</a>
             </nav>
 
             <h2>What comes later</h2>
@@ -45,3 +46,26 @@
         </div>
     </div>
 </section>
+
+@code {
+    private string GetSectionLinkClass(bool isHomepageSection) =>
+        IsSectionActive(isHomepageSection)
+            ? "publicity-shell__link active"
+            : "publicity-shell__link";
+
+    private bool IsSectionActive(bool isHomepageSection)
+    {
+        var currentPath = GetCurrentPath();
+
+        return isHomepageSection
+            ? currentPath is "/admin/publicity" or "/admin/publicity/home"
+            : currentPath == "/admin/publicity/about";
+    }
+
+    private string GetCurrentPath()
+    {
+        var relativePath = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        var trimmedPath = relativePath.Split(new[] { '?', '#' }, 2)[0].Trim('/');
+        return string.IsNullOrEmpty(trimmedPath) ? "/" : $"/{trimmedPath}";
+    }
+}

@@ -5,6 +5,7 @@ using Anchor.Web.Components.Pages.Admin;
 using Bunit;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -51,23 +52,62 @@ public sealed class PublicityAdminTests : BunitContext
     }
 
     [Fact]
+    public void PublicityAdminHome_UsesCanonicalRouteAndMarksHomepageSectionActive()
+    {
+        Services.GetRequiredService<NavigationManager>().NavigateTo("http://localhost/admin/publicity");
+
+        var cut = Render<PublicityAdminHome>();
+        var links = cut.FindAll(".publicity-shell__link");
+
+        Assert.Equal("/admin/publicity", links[0].GetAttribute("href"));
+        Assert.Contains("active", links[0].ClassList);
+        Assert.DoesNotContain("active", links[1].ClassList);
+        Assert.Contains("No draft saved yet", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Nothing published yet", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void PublicityAdminHome_RendersSavedTimesInUtc()
+    {
+        publicityService.DraftContent = new HomepagePublicityContent("Weekend", "Draft headline", "Draft summary");
+        publicityService.PublishedContent = new HomepagePublicityContent("Published", "Published headline", "Published summary");
+        publicityService.DraftUpdatedAtUtc = new DateTimeOffset(2026, 5, 25, 10, 30, 0, TimeSpan.FromHours(-5));
+        publicityService.PublishedUpdatedAtUtc = new DateTimeOffset(2026, 5, 24, 21, 0, 0, TimeSpan.FromHours(2));
+
+        var cut = Render<PublicityAdminHome>();
+
+        Assert.Contains("May 25, 2026 at 3:30 PM UTC", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains("May 24, 2026 at 7:00 PM UTC", cut.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void PublicityAdminAbout_renders_placeholder_navigation()
     {
+        Services.GetRequiredService<NavigationManager>().NavigateTo("http://localhost/admin/publicity/about");
+
         var cut = Render<PublicityAdminAbout>();
+        var links = cut.FindAll(".publicity-shell__link");
 
         Assert.Contains("About page placeholder", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Homepage intro", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Coming soon", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("/admin/publicity", links[0].GetAttribute("href"));
+        Assert.DoesNotContain("active", links[0].ClassList);
+        Assert.Contains("active", links[1].ClassList);
     }
 
     private sealed class FakeHomepagePublicityService : IHomepagePublicityService
     {
-        public HomepagePublicityContent? DraftContent { get; private set; }
+        public HomepagePublicityContent? DraftContent { get; set; }
 
-        public HomepagePublicityContent? PublishedContent { get; private set; }
+        public HomepagePublicityContent? PublishedContent { get; set; }
+
+        public DateTimeOffset? DraftUpdatedAtUtc { get; set; }
+
+        public DateTimeOffset? PublishedUpdatedAtUtc { get; set; }
 
         public Task<HomepagePublicityAdminView> GetHomepageAdminViewAsync(CancellationToken cancellationToken = default) =>
-            Task.FromResult(new HomepagePublicityAdminView(DraftContent, null, PublishedContent, null));
+            Task.FromResult(new HomepagePublicityAdminView(DraftContent, DraftUpdatedAtUtc, PublishedContent, PublishedUpdatedAtUtc));
 
         public Task<HomepagePublicityContent?> GetPublishedHomepageAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(PublishedContent);
@@ -75,6 +115,7 @@ public sealed class PublicityAdminTests : BunitContext
         public Task<HomepagePublicityOperationResult> SaveDraftAsync(SaveHomepagePublicityRequest request, CancellationToken cancellationToken = default)
         {
             DraftContent = new HomepagePublicityContent(request.Eyebrow, request.Headline, request.Summary);
+            DraftUpdatedAtUtc = DateTimeOffset.UtcNow;
             return Task.FromResult(HomepagePublicityOperationResult.Success());
         }
 
@@ -82,6 +123,8 @@ public sealed class PublicityAdminTests : BunitContext
         {
             PublishedContent = new HomepagePublicityContent(request.Eyebrow, request.Headline, request.Summary);
             DraftContent = PublishedContent;
+            DraftUpdatedAtUtc = DateTimeOffset.UtcNow;
+            PublishedUpdatedAtUtc = DraftUpdatedAtUtc;
             return Task.FromResult(HomepagePublicityOperationResult.Success());
         }
     }

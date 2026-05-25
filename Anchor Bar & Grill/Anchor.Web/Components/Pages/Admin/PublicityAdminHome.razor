@@ -7,6 +7,7 @@
 @using Anchor.Web.Components.Site
 @using Microsoft.AspNetCore.Authorization
 @inject IHomepagePublicityService HomepagePublicityService
+@inject NavigationManager NavigationManager
 
 @attribute [Authorize(Policy = ApplicationPolicies.AdminAccess)]
 
@@ -25,8 +26,8 @@
         <aside class="admin-help publicity-shell">
             <h2>Publicity areas</h2>
             <nav class="publicity-shell__nav" aria-label="Publicity sections">
-                <NavLink class="publicity-shell__link" href="/admin/publicity/home" Match="NavLinkMatch.All">Homepage intro</NavLink>
-                <NavLink class="publicity-shell__link" href="/admin/publicity/about" Match="NavLinkMatch.Prefix">About page</NavLink>
+                <a class="@GetSectionLinkClass(isHomepageSection: true)" href="/admin/publicity">Homepage intro</a>
+                <a class="@GetSectionLinkClass(isHomepageSection: false)" href="/admin/publicity/about">About page</a>
             </nav>
 
             <h2>How this page works</h2>
@@ -188,8 +189,29 @@
 
     private static string GetTimestampLabel(DateTimeOffset? value, string fallback) =>
         value.HasValue
-            ? value.Value.ToLocalTime().ToString("MMMM d, yyyy 'at' h:mm tt", CultureInfo.InvariantCulture)
+            ? value.Value.ToUniversalTime().ToString("MMMM d, yyyy 'at' h:mm tt 'UTC'", CultureInfo.InvariantCulture)
             : fallback;
+
+    private string GetSectionLinkClass(bool isHomepageSection) =>
+        IsSectionActive(isHomepageSection)
+            ? "publicity-shell__link active"
+            : "publicity-shell__link";
+
+    private bool IsSectionActive(bool isHomepageSection)
+    {
+        var currentPath = GetCurrentPath();
+
+        return isHomepageSection
+            ? currentPath is "/admin/publicity" or "/admin/publicity/home"
+            : currentPath == "/admin/publicity/about";
+    }
+
+    private string GetCurrentPath()
+    {
+        var relativePath = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        var trimmedPath = relativePath.Split(new[] { '?', '#' }, 2)[0].Trim('/');
+        return string.IsNullOrEmpty(trimmedPath) ? "/" : $"/{trimmedPath}";
+    }
 
     private sealed class EditorInput
     {
