@@ -23,6 +23,7 @@ public partial class Home
     private IReadOnlyList<HomeSpecialCardView> homeSpecialItems = [];
     private IReadOnlyList<HomeEventCardView> homeUpcomingEvents = [];
     private HomepagePublicityContent homepageContent = HomepagePublicityDefaults.Content;
+    private IReadOnlyList<string> homepageSummaryParagraphs = HomepagePublicityText.GetParagraphs(HomepagePublicityDefaults.Content.Summary);
 
     [Inject]
     public IEventQueryService EventQueryService { get; set; } = default!;
@@ -53,6 +54,7 @@ public partial class Home
         homeSpecialItems = await LoadHomeSpecialsAsync(today);
         homeUpcomingEvents = await LoadHomeEventsAsync(localNow.DateTime, today);
         homepageContent = await HomepagePublicityService.GetPublishedHomepageAsync() ?? HomepagePublicityDefaults.Content;
+        homepageSummaryParagraphs = HomepagePublicityText.GetParagraphs(homepageContent.Summary);
     }
 
     private async Task<IReadOnlyList<HomeSpecialCardView>> LoadHomeSpecialsAsync(DateOnly today)

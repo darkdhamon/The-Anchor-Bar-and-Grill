@@ -5,9 +5,24 @@
 
 <section class="home-shell">
     <article class="page-hero page-hero--home home-main">
-        <p class="page-hero__eyebrow">@homepageContent.Eyebrow</p>
+        @if (!string.IsNullOrWhiteSpace(homepageContent.Eyebrow))
+        {
+            <p class="page-hero__eyebrow">@homepageContent.Eyebrow</p>
+        }
+
         <h1>@homepageContent.Headline</h1>
-        <p class="page-hero__lead">@homepageContent.Summary</p>
+
+        @if (homepageSummaryParagraphs.Count > 0)
+        {
+            <div class="page-hero__copy-group">
+                <p class="page-hero__lead">@homepageSummaryParagraphs[0]</p>
+
+                @for (var i = 1; i < homepageSummaryParagraphs.Count; i++)
+                {
+                    <p class="page-hero__copy">@homepageSummaryParagraphs[i]</p>
+                }
+            </div>
+        }
 
         <div class="hero-actions">
             @foreach (var action in homeActions)

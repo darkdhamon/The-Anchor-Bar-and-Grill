@@ -34,6 +34,7 @@
             <ul>
                 <li><strong>Save draft</strong> keeps the latest homepage copy in the editor without changing what guests currently see.</li>
                 <li><strong>Save &amp; publish</strong> updates both the draft copy and the live homepage welcome block in one action.</li>
+                <li>Use blank lines in the welcome message field whenever you want the guest-facing homepage intro to break into separate paragraphs.</li>
                 <li>Admins should review the published preview card before sharing a big homepage messaging change.</li>
                 <li>The call-to-action buttons and the rest of the homepage layout stay controlled elsewhere for now, so this editor is focused on the intro message only.</li>
             </ul>
@@ -70,8 +71,9 @@
                         </label>
 
                         <label class="editor-form__message">
-                            Summary
-                            <CommitAwareTextArea @bind-Value="input.Summary" id="HomepagePublicity.Summary" rows="5" placeholder="Explain what guests should understand immediately when they land on the homepage."></CommitAwareTextArea>
+                            Welcome message
+                            <CommitAwareTextArea @bind-Value="input.Summary" id="HomepagePublicity.Summary" rows="12" placeholder="Write the guest-facing welcome copy here. Use blank lines to start a new paragraph on the homepage."></CommitAwareTextArea>
+                            <p class="admin-field-note">Blank lines become separate paragraphs on the published homepage intro.</p>
                             <ValidationMessage For="@(() => input.Summary)" class="validation-message" />
                         </label>
                     </div>
@@ -110,10 +112,29 @@
                     <span class="admin-card__badge">Guest facing</span>
                 </div>
 
-                <article class="feature-card">
-                    <p class="feature-card__eyebrow">@publishedPreview.Eyebrow</p>
+                @{
+                    var publishedPreviewParagraphs = GetSummaryParagraphs(publishedPreview);
+                }
+
+                <article class="feature-card publicity-preview">
+                    @if (!string.IsNullOrWhiteSpace(publishedPreview.Eyebrow))
+                    {
+                        <p class="feature-card__eyebrow">@publishedPreview.Eyebrow</p>
+                    }
+
                     <h3>@publishedPreview.Headline</h3>
-                    <p>@publishedPreview.Summary</p>
+
+                    <div class="publicity-preview__body">
+                        @if (publishedPreviewParagraphs.Count > 0)
+                        {
+                            <p class="publicity-preview__lead">@publishedPreviewParagraphs[0]</p>
+
+                            @for (var i = 1; i < publishedPreviewParagraphs.Count; i++)
+                            {
+                                <p>@publishedPreviewParagraphs[i]</p>
+                            }
+                        }
+                    </div>
                 </article>
             </section>
         </div>
@@ -185,7 +206,11 @@
         editContext = new EditContext(input);
     }
 
-    private static string GetSummaryPreview(HomepagePublicityContent content) => content.Summary;
+    private static IReadOnlyList<string> GetSummaryParagraphs(HomepagePublicityContent content) =>
+        HomepagePublicityText.GetParagraphs(content.Summary);
+
+    private static string GetSummaryPreview(HomepagePublicityContent content) =>
+        HomepagePublicityText.CreatePreview(content.Summary);
 
     private static string GetTimestampLabel(DateTimeOffset? value, string fallback) =>
         value.HasValue
@@ -215,15 +240,15 @@
 
     private sealed class EditorInput
     {
-        [StringLength(80, ErrorMessage = "The homepage eyebrow must be 80 characters or fewer.")]
+        [StringLength(HomepagePublicityConstraints.EyebrowMaxLength, ErrorMessage = "The homepage eyebrow must be 80 characters or fewer.")]
         public string Eyebrow { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "A homepage headline is required.")]
-        [StringLength(120, ErrorMessage = "The homepage headline must be 120 characters or fewer.")]
+        [StringLength(HomepagePublicityConstraints.HeadlineMaxLength, ErrorMessage = "The homepage headline must be 120 characters or fewer.")]
         public string Headline { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "A homepage summary is required.")]
-        [StringLength(1000, ErrorMessage = "The homepage summary must be 1000 characters or fewer.")]
+        [StringLength(HomepagePublicityConstraints.SummaryMaxLength, ErrorMessage = "The homepage summary must be 4000 characters or fewer.")]
         public string Summary { get; set; } = string.Empty;
 
         public SaveHomepagePublicityRequest ToRequest() => new(Eyebrow, Headline, Summary);
