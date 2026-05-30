@@ -95,7 +95,9 @@
 - Use the shared `In Review` automation and reviewer workflow from `C:\Github\AGENTS.md`.
 - Pull requests from a feature branch into `dev` must be created as draft pull requests first.
 - Do not report code implementation as complete until the current feature branch has a draft pull request into `dev`; a pushed branch without a pull request is still incomplete work.
+- Unless the user explicitly wants the pull request to remain draft or there is an active blocker, mark the pull request ready for review as soon as implementation, required tests, and required documentation updates are complete.
 - When implementation and required tests are complete, mark the pull request ready for review and move the related issue to `In Review`.
+- Do not report the ticket workflow as complete while a pull request that already meets the ready-for-review criteria is still left in draft state.
 - In addition to the shared automated review flow, record three pull request comments for scope validation, code quality review, and performance review.
 - Each review-stage comment must document whether that stage passed or whether changes are required.
 - Review-result comments must be recorded on the pull request, not on the issue.
