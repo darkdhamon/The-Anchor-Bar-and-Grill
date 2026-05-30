@@ -1,6 +1,7 @@
 using Anchor.Domain.Identity;
 using Anchor.Web.Components.Account.Shared;
 using Anchor.Domain.Identity.Users;
+using Anchor.Domain.Events;
 using Anchor.Domain.Menu;
 using Anchor.Domain.Publicity;
 using Anchor.Web.Components.Layout;
@@ -24,6 +25,7 @@ namespace Anchor.Web.Tests;
 public sealed class LayoutAndPageRenderTests : BunitContext
 {
     private readonly TestAuthenticationStateProvider authStateProvider;
+    private readonly FakeEventQueryService eventQueryService;
     private readonly FakeMenuQueryService menuQueryService;
     private readonly FakeHomepagePublicityService homepagePublicityService;
     private readonly FixedTimeProvider timeProvider;
@@ -44,10 +46,12 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         authStateProvider = new TestAuthenticationStateProvider();
         Services.AddSingleton<AuthenticationStateProvider>(authStateProvider);
         Services.AddCascadingAuthenticationState();
+        eventQueryService = new FakeEventQueryService();
         menuQueryService = new FakeMenuQueryService();
         homepagePublicityService = new FakeHomepagePublicityService();
         timeProvider = new FixedTimeProvider(new DateTimeOffset(2026, 5, 21, 12, 0, 0, TimeSpan.FromHours(-5)));
         Services.AddSingleton<TimeProvider>(timeProvider);
+        Services.AddSingleton<IEventQueryService>(eventQueryService);
         Services.AddSingleton<IMenuQueryService>(menuQueryService);
         Services.AddSingleton<IHomepagePublicityService>(homepagePublicityService);
         Services.AddSingleton<IMenuManagementService>(new FakeMenuManagementService());
@@ -222,7 +226,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     }
 
     [Fact]
-    public void HomePage_RendersGuestWelcomeAndBuildingPlaceholder()
+    public void HomePage_RendersThreeColumnHomepageWithServiceBackedSidebars()
     {
         homepagePublicityService.PublishedContent = new HomepagePublicityContent(
             "Weekend Welcome",
@@ -231,14 +235,20 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 
         var cut = Render<Home>();
 
+        Assert.NotNull(cut.Find(".home-shell"));
+        Assert.NotNull(cut.Find(".home-main"));
+        Assert.NotNull(cut.Find(".home-rail--specials"));
+        Assert.NotNull(cut.Find(".home-rail--events"));
         Assert.Contains("Fresh copy from the publicity editor.", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Published homepage messaging should flow through to the guest-facing welcome block.", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Exterior Photo Placement", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Browse the Menu", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Plan Your Visit", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Monday Night Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Sunday Pork Chop Dinner", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Thursday Trivia", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Summer Kickoff Patio Party", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Dockside Acoustic Night", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("What The Homepage Should Do", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Exterior Photo Placement", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Visit Snapshot", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("For Staff", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("data-enhance-nav=\"false\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -251,6 +261,20 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 
         Assert.Contains("Sunday Pork Chop Dinner", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Now available", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void HomePage_FallsBack_To_Mockup_Sidebars_When_Live_Data_Is_Unavailable()
+    {
+        Services.AddSingleton<IMenuQueryService>(new EmptyDescriptionMenuQueryService());
+        Services.AddSingleton<IEventQueryService>(new FakeEventQueryService { UpcomingEvents = [] });
+
+        var cut = Render<Home>();
+
+        Assert.Contains("Tuesday Taco Basket", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Thursday Trivia", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Summer Kickoff Patio Party", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Dockside Acoustic Night", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -1087,6 +1111,47 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                 MenuTab.Drinks => "drinks",
                 _ => "lunch"
             };
+    }
+
+    private sealed class FakeEventQueryService : IEventQueryService
+    {
+        public IReadOnlyList<EventOccurrenceRecord> UpcomingEvents { get; set; } =
+        [
+            new(
+                Guid.Parse("0BE8C2B1-FE05-4518-8699-2870A9E85010"),
+                "Dockside Acoustic Night",
+                "An unplugged evening set that keeps the room lively without overpowering dinner service.",
+                "A stripped-back live set for guests who want music and conversation at the same time.",
+                "Live Music",
+                null,
+                new DateOnly(2026, 5, 23),
+                new TimeOnly(19, 30),
+                null,
+                false,
+                10,
+                false,
+                "One-time event on May 23, 2026 at 7:30 PM"),
+            new(
+                Guid.Parse("6D934C7A-F7D6-4758-9BF1-2679B7258C3A"),
+                "Sunday Community Bingo",
+                "A family-friendly Sunday event that pairs well with a relaxed lunch stop.",
+                "Recurring bingo with easy daytime timing and a casual community feel.",
+                "Community Night",
+                null,
+                new DateOnly(2026, 5, 24),
+                new TimeOnly(11, 0),
+                null,
+                false,
+                20,
+                true,
+                "Recurring every Sunday at 11:00 AM - next on May 24, 2026")
+        ];
+
+        public Task<IReadOnlyList<EventOccurrenceRecord>> GetUpcomingEventsAsync(
+            DateTime localNow,
+            int daysAhead = 30,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(UpcomingEvents);
     }
 
     private sealed class FakeMenuManagementService : IMenuManagementService

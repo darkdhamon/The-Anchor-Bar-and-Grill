@@ -491,6 +491,23 @@ html.anchor-theme-dark .site-shell {
     gap: 1.5rem;
 }
 
+.home-shell,
+.home-rail,
+.home-rail__header,
+.home-rail__list,
+.home-rail-card,
+.home-rail-card__copy {
+    display: grid;
+    gap: 1rem;
+}
+
+.home-shell {
+    grid-template-areas:
+        "main"
+        "specials"
+        "events";
+}
+
 .page-hero,
 .section-shell,
 .split-card,
@@ -525,6 +542,14 @@ html.anchor-theme-dark .site-shell {
 
 .page-hero {
     padding: 2rem;
+}
+
+.home-main {
+    grid-area: main;
+    min-height: 100%;
+    display: grid;
+    gap: 1.5rem;
+    align-content: start;
 }
 
 .page-hero--home {
@@ -598,6 +623,43 @@ html.anchor-theme-dark .site-shell {
     color: var(--text-primary);
 }
 
+.home-main__support {
+    max-width: 38rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--outline);
+    display: grid;
+    gap: 0.5rem;
+}
+
+.home-main__support-title,
+.home-rail__header h2,
+.home-rail-card__callout {
+    margin: 0;
+    font-family: "Bebas Neue", "Impact", sans-serif;
+    letter-spacing: 0.05em;
+}
+
+.home-main__support-title {
+    font-size: 1.5rem;
+    color: var(--accent-readable);
+}
+
+.home-main__support-copy,
+.home-rail__header p:last-child,
+.home-rail-card__meta,
+.home-rail-card__schedule,
+.home-rail-card__description {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.home-main__support-copy,
+.home-rail__header p:last-child,
+.home-rail-card__schedule,
+.home-rail-card__description {
+    line-height: 1.5;
+}
+
 .hero-callouts,
 .feature-grid,
 .event-card-grid,
@@ -631,6 +693,7 @@ html.anchor-theme-dark .site-shell {
 .menu-item h3,
 .event-card h3,
 .event-preview h3,
+.home-rail-card h3,
 .contact-channel h3,
 .editor-form h3,
 .admin-card__header h2,
@@ -667,7 +730,8 @@ html.anchor-theme-dark .site-shell {
 .hero-visual__badge,
 .event-card__badge,
 .event-preview__badge,
-.admin-card__badge {
+.admin-card__badge,
+.home-rail-card__badge {
     width: fit-content;
     border-radius: 999px;
     padding: 0.35rem 0.7rem;
@@ -720,6 +784,83 @@ html.anchor-theme-dark .site-shell {
 
 .feature-card--tight {
     min-height: 100%;
+}
+
+.home-rail {
+    align-content: start;
+    padding: 1.2rem;
+}
+
+.home-rail--specials {
+    grid-area: specials;
+    background:
+        linear-gradient(180deg, rgba(213, 202, 85, 0.12), transparent 48%),
+        var(--surface);
+}
+
+.home-rail--events {
+    grid-area: events;
+    background:
+        linear-gradient(180deg, rgba(48, 154, 221, 0.12), transparent 48%),
+        var(--surface);
+}
+
+.home-rail__header {
+    gap: 0.4rem;
+}
+
+.home-rail__header h2 {
+    font-size: 2rem;
+}
+
+.home-rail-card {
+    padding: 1rem;
+    border: 1px solid var(--outline);
+    border-radius: calc(var(--anchor-border-radius) - 0.2rem);
+    background: rgba(247, 247, 244, 0.05);
+}
+
+.home-rail-card__header {
+    display: flex;
+    gap: 0.85rem;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.home-rail-card__copy {
+    gap: 0.35rem;
+}
+
+.home-rail-card h3 {
+    margin: 0;
+    font-size: 1.55rem;
+}
+
+.home-rail-card__callout {
+    font-size: 1.45rem;
+    color: var(--accent-readable);
+}
+
+.home-rail__link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    min-height: 44px;
+    border-radius: 999px;
+    border: 1px solid var(--outline);
+    padding: 0.75rem 1.1rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.home-rail__link:hover,
+.home-rail__link:focus-visible {
+    background: rgba(48, 154, 221, 0.14);
+    border-color: rgba(48, 154, 221, 0.38);
+    color: var(--text-primary);
 }
 
 .split-section {
@@ -2831,6 +2972,10 @@ button.menu-editor-filter-chip {
 }
 
 @media (max-width: 960px) {
+    .home-main {
+        padding: 1.75rem;
+    }
+
     .hero-grid,
     .split-section,
     .feature-grid,
@@ -2881,6 +3026,17 @@ button.menu-editor-filter-chip {
 }
 
 @media (min-width: 961px) {
+    .home-shell {
+        grid-template-columns: minmax(250px, 295px) minmax(0, 1.45fr) minmax(250px, 320px);
+        grid-template-areas: "specials main events";
+        align-items: start;
+    }
+
+    .home-shell .home-rail {
+        position: sticky;
+        top: calc(var(--anchor-header-height, 0px) + 1rem);
+    }
+
     .menu-page .menu-sidebar {
         position: sticky;
         top: calc(var(--anchor-header-height, 0px) + 1rem);
