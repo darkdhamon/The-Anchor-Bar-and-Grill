@@ -76,15 +76,21 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         });
 
         Assert.Contains("theme-light", cut.Markup);
+        Assert.Contains("Browse", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Staff Access", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Staff Log In", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Log In", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Comfort food, community nights, and a friendly place to gather.", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(">Register<", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Event Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("site-header__nav-stack is-open", cut.Markup, StringComparison.Ordinal);
         Assert.Contains("data-anchor-theme-toggle=\"true\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("data-anchor-menu-toggle=\"true\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("aria-expanded=\"false\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("data-enhance-nav=\"false\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        var guestMenuToggle = Assert.Single(cut.FindAll("[data-anchor-menu-toggle='true']"));
+        Assert.Equal("site-header-nav", guestMenuToggle.GetAttribute("data-anchor-menu-target"));
+        Assert.Equal("drawer", guestMenuToggle.GetAttribute("data-anchor-menu-kind"));
+        Assert.Empty(cut.FindAll("#site-account-menu"));
         Assert.Contains("Preview body", cut.Markup);
     }
 
@@ -130,7 +136,9 @@ public sealed class LayoutAndPageRenderTests : BunitContext
             builder.CloseComponent();
         });
 
-        Assert.Contains("Staff Tools", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Staff tools", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Account Tools", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Account", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Help", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Event Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Menu Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -142,6 +150,11 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Manage Account", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Hi, Harbor Captain", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Log Out", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Comfort food, community nights, and a friendly place to gather.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(2, cut.FindAll("[data-anchor-menu-toggle='true']").Count);
+        Assert.Single(cut.FindAll("#site-account-menu"));
+        var accountMenuToggle = cut.Find("[data-anchor-menu-target='site-account-menu']");
+        Assert.Equal("menu", accountMenuToggle.GetAttribute("aria-haspopup"));
         Assert.DoesNotContain(">Register<", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 

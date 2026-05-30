@@ -87,9 +87,9 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - Repeated matching production exceptions are temporarily deduplicated in memory so GitHub does not get flooded during a burst
 - The shared local development and UAT account credentials are documented in [docs/reference/uat-credentials.local.md](docs/reference/uat-credentials.local.md); if those local passwords or roles change, update that file in the same change
 - The event mockup data now demonstrates weekly, every-other-week, and nth-weekday monthly recurrence patterns so the UI direction can be reviewed before backend scheduling is built
-- On mobile, the shared header now keeps public and admin mockup links inside the expandable menu and uses an icon-style site-menu control so it does not compete with the food Menu link
-- The shared header now shows public navigation to everyone, while staff tools only appear after sign-in and are filtered by the current user's roles
-- Signed-in staff now see a friendly `Hi, ...` greeting in the header next to `Log Out`, using saved profile names when available and a username fallback otherwise
+- The shared header now uses a slimmer brand row with a smaller bare logo, no tagline, a compact theme toggle, and a single-line site title on desktop and tablet
+- Desktop header navigation stays guest-first for everyone, while signed-in staff tools move into one role-filtered `Account` dropdown instead of living in a separate inline link strip
+- Mobile header navigation now opens one drawer that groups guest links first and then either `Staff Access` or authenticated account tools, with the friendly `Hi, ...` greeting moved inside those account surfaces
 - Admin editor controls now share the same themed styling and normalized field sizing across light and dark modes instead of falling back to browser-default inputs
 - The login page now uses the same branded themed form treatment as the rest of the site instead of the stock floating-label scaffold
 - The public register entry points are disabled, and admins now create staff accounts directly from User Management with a temporary password
