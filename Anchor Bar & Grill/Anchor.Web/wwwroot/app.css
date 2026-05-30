@@ -98,7 +98,8 @@ p {
     --anchor-logo-size: clamp(7.75rem, 11vw, 10.5rem);
     --anchor-header-overhang: clamp(2rem, 3vw, 3rem);
     --anchor-logo-lift: clamp(0.85rem, 1.4vw, 1.25rem);
-    --anchor-logo-frame-height: calc(var(--anchor-logo-size) - var(--anchor-header-overhang) - var(--anchor-logo-lift));
+    --anchor-logo-band-trim: clamp(0.55rem, 0.9vw, 0.8rem);
+    --anchor-logo-frame-height: calc(var(--anchor-logo-size) - var(--anchor-header-overhang) - var(--anchor-logo-lift) - var(--anchor-logo-band-trim));
     --anchor-header-clearance: calc(var(--anchor-header-height, 0px) + var(--anchor-header-overhang));
     min-height: 100vh;
     transition: background-color 0.2s ease, color 0.2s ease;
@@ -172,8 +173,8 @@ html.anchor-theme-dark .site-shell {
     grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
     grid-template-areas: "brand nav actions";
     align-items: center;
-    gap: 0.75rem 1rem;
-    padding: 0.7rem 0;
+    gap: 0.55rem 0.9rem;
+    padding: 0.45rem 0;
     overflow: visible;
 }
 
@@ -182,7 +183,7 @@ html.anchor-theme-dark .site-shell {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     align-items: start;
-    gap: 0.8rem;
+    gap: 0.7rem;
     text-decoration: none;
     min-width: 0;
     position: relative;
@@ -212,7 +213,7 @@ html.anchor-theme-dark .site-shell {
     gap: 0;
     min-width: 0;
     align-self: center;
-    padding-top: 0.25rem;
+    padding-top: 0.1rem;
 }
 
 .brand-lockup__eyebrow,
@@ -222,7 +223,7 @@ html.anchor-theme-dark .site-shell {
 .site-footer__eyebrow {
     text-transform: uppercase;
     letter-spacing: 0.14em;
-    font-size: 0.88rem;
+    font-size: 0.82rem;
     font-family: "Patrick Hand", "Segoe UI", cursive;
 }
 
@@ -235,7 +236,7 @@ html.anchor-theme-dark .site-shell {
     grid-area: actions;
     display: flex;
     align-items: center;
-    gap: 0.65rem;
+    gap: 0.5rem;
     justify-self: end;
 }
 
@@ -250,7 +251,7 @@ html.anchor-theme-dark .site-shell {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 0.85rem;
+    gap: 0.65rem;
     width: 100%;
     min-width: 0;
 }
@@ -265,9 +266,9 @@ html.anchor-theme-dark .site-shell {
 }
 
 .theme-toggle__label {
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.1em;
     color: rgba(247, 247, 244, 0.82);
 }
 
@@ -421,14 +422,14 @@ html.anchor-theme-dark .site-shell {
 .site-footer__links {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.45rem;
+    gap: 0.35rem;
 }
 
 .site-navigation__link,
 .site-footer__link {
     text-decoration: none;
     border-radius: 999px;
-    padding: 0.5rem 0.85rem;
+    padding: 0.38rem 0.72rem;
     white-space: nowrap;
     transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
@@ -457,15 +458,15 @@ html.anchor-theme-dark .site-shell {
 
 .account-entry-link,
 .account-menu-toggle {
-    min-height: 42px;
+    min-height: 38px;
     border: 1px solid rgba(247, 247, 244, 0.16);
     background: rgba(247, 247, 244, 0.08);
     color: rgba(247, 247, 244, 0.9);
     border-radius: 999px;
-    padding: 0.52rem 0.9rem;
+    padding: 0.4rem 0.78rem;
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.42rem;
     text-decoration: none;
     transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
 }
