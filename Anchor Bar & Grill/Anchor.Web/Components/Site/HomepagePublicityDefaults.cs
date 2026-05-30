@@ -8,7 +8,7 @@ public static class HomepagePublicityDefaults
         string.Empty,
         "Welcome to The Anchor Bar & Grill",
         """
-        Nestled in the heart of Madison, Minnesota and conveniently located along the nearby state trail, The Anchor Bar & Grill is a locally owned gathering place where great food, friendly faces, and unforgettable experiences come together.
+        Nestled in the heart of Madison Lake, Minnesota and conveniently located along the nearby state trail, The Anchor Bar & Grill is a locally owned gathering place where great food, friendly faces, and unforgettable experiences come together.
 
         Owners Alison and Brian Storm are passionate about creating a place where every guest feels welcome and every meal exceeds expectations. Whether you're stopping in after a day on the trail, meeting friends to watch the big game, enjoying a family dinner, or discovering one of our weekend events, you'll find the kind of hospitality that keeps people coming back.
 
