@@ -80,6 +80,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Staff Access", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Staff Log In", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Log In", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(cut.FindAll(".brand-lockup__logo-frame"));
         Assert.Equal("The Anchor Bar & Grill", cut.Find(".brand-lockup__logo").GetAttribute("alt"));
         Assert.DoesNotContain("Comfort food, community nights, and a friendly place to gather.", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(">The Anchor Bar &amp; Grill<", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -152,6 +153,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Manage Account", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Hi, Harbor Captain", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Log Out", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(cut.FindAll(".brand-lockup__logo-frame"));
         Assert.Equal("The Anchor Bar & Grill", cut.Find(".brand-lockup__logo").GetAttribute("alt"));
         Assert.DoesNotContain("Comfort food, community nights, and a friendly place to gather.", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(">The Anchor Bar &amp; Grill<", cut.Markup, StringComparison.OrdinalIgnoreCase);

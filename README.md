@@ -87,7 +87,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - Repeated matching production exceptions are temporarily deduplicated in memory so GitHub does not get flooded during a burst
 - The shared local development and UAT account credentials are documented in [docs/reference/uat-credentials.local.md](docs/reference/uat-credentials.local.md); if those local passwords or roles change, update that file in the same change
 - The event mockup data now demonstrates weekly, every-other-week, and nth-weekday monthly recurrence patterns so the UI direction can be reviewed before backend scheduling is built
-- The shared header now uses a slimmer brand row with one smaller bare logo carrying the restaurant name through its image alt text, no duplicate visible site-name text, and a compact theme toggle
+- The shared header now uses a slimmer brand row with one larger overhanging logo carrying the restaurant name through its image alt text, no duplicate visible site-name text, added top-page clearance so content starts below the logo, and a compact theme toggle
 - Desktop header navigation stays guest-first for everyone, while signed-in staff tools move into one role-filtered `Account` dropdown instead of living in a separate inline link strip
 - Mobile header navigation now opens one drawer that groups guest links first and then either `Staff Access` or authenticated account tools, with the friendly `Hi, ...` greeting moved inside those account surfaces
 - Admin editor controls now share the same themed styling and normalized field sizing across light and dark modes instead of falling back to browser-default inputs
