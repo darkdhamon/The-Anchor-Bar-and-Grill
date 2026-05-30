@@ -174,7 +174,7 @@ html.anchor-theme-dark .site-shell {
     grid-template-areas: "brand nav actions";
     align-items: center;
     gap: 0.55rem 0.9rem;
-    padding: 0.45rem 0;
+    padding: 0.3rem 0;
     overflow: visible;
 }
 
@@ -213,7 +213,7 @@ html.anchor-theme-dark .site-shell {
     gap: 0;
     min-width: 0;
     align-self: center;
-    padding-top: 0.1rem;
+    padding-top: 0;
 }
 
 .brand-lockup__eyebrow,
@@ -223,7 +223,7 @@ html.anchor-theme-dark .site-shell {
 .site-footer__eyebrow {
     text-transform: uppercase;
     letter-spacing: 0.14em;
-    font-size: 0.82rem;
+    font-size: 0.88rem;
     font-family: "Patrick Hand", "Segoe UI", cursive;
 }
 
@@ -266,7 +266,7 @@ html.anchor-theme-dark .site-shell {
 }
 
 .theme-toggle__label {
-    font-size: 0.72rem;
+    font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: rgba(247, 247, 244, 0.82);
@@ -429,7 +429,7 @@ html.anchor-theme-dark .site-shell {
 .site-footer__link {
     text-decoration: none;
     border-radius: 999px;
-    padding: 0.38rem 0.72rem;
+    padding: 0.28rem 0.72rem;
     white-space: nowrap;
     transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
@@ -458,12 +458,12 @@ html.anchor-theme-dark .site-shell {
 
 .account-entry-link,
 .account-menu-toggle {
-    min-height: 38px;
+    min-height: 36px;
     border: 1px solid rgba(247, 247, 244, 0.16);
     background: rgba(247, 247, 244, 0.08);
     color: rgba(247, 247, 244, 0.9);
     border-radius: 999px;
-    padding: 0.4rem 0.78rem;
+    padding: 0.3rem 0.78rem;
     display: inline-flex;
     align-items: center;
     gap: 0.42rem;
