@@ -23,13 +23,14 @@ public sealed class HomepagePublicityServiceTests
         var repository = new FakeHomepagePublicityRepository();
         var now = new DateTimeOffset(2026, 5, 25, 13, 0, 0, TimeSpan.Zero);
         var service = new HomepagePublicityService(repository, new FixedTimeProvider(now));
+        var longSummary = CreateLongSummary();
 
         var result = await service.SaveDraftAsync(
-            new SaveHomepagePublicityRequest(" Guest Welcome ", " Welcome aboard. ", " Friendly draft summary. "));
+            new SaveHomepagePublicityRequest(" Guest Welcome ", " Welcome aboard. ", $" {longSummary} "));
 
         Assert.True(result.Succeeded);
         Assert.True(repository.WasSaved);
-        Assert.Equal(new HomepagePublicityContent("Guest Welcome", "Welcome aboard.", "Friendly draft summary."), repository.DraftContent);
+        Assert.Equal(new HomepagePublicityContent("Guest Welcome", "Welcome aboard.", longSummary), repository.DraftContent);
         Assert.Equal(now, repository.DraftUpdatedAtUtc);
         Assert.Null(repository.PublishedContent);
     }
@@ -49,6 +50,23 @@ public sealed class HomepagePublicityServiceTests
         Assert.Equal(repository.DraftContent, repository.PublishedContent);
         Assert.Equal(now, repository.DraftUpdatedAtUtc);
         Assert.Equal(now, repository.PublishedUpdatedAtUtc);
+    }
+
+    [Fact]
+    public async Task PublishAsync_rejects_summary_that_exceeds_the_supported_length()
+    {
+        var repository = new FakeHomepagePublicityRepository();
+        var service = new HomepagePublicityService(repository, new FixedTimeProvider(new DateTimeOffset(2026, 5, 25, 14, 30, 0, TimeSpan.Zero)));
+
+        var result = await service.PublishAsync(
+            new SaveHomepagePublicityRequest(
+                "Guest Welcome",
+                "Live now",
+                new string('x', HomepagePublicityConstraints.SummaryMaxLength + 1)));
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Errors, error => error.Contains("4000", StringComparison.Ordinal));
+        Assert.False(repository.WasSaved);
     }
 
     private sealed class FakeHomepagePublicityRepository : IHomepagePublicityRepository
@@ -100,4 +118,11 @@ public sealed class HomepagePublicityServiceTests
 
         public void SetUtcNow(DateTimeOffset value) => currentUtcNow = value;
     }
+
+    private static string CreateLongSummary() =>
+        string.Join(
+            Environment.NewLine + Environment.NewLine,
+            Enumerable.Repeat(
+                "This is a longer guest-facing welcome paragraph that verifies multi-paragraph homepage publicity content can be stored, trimmed, and saved without losing its intended structure.",
+                10));
 }

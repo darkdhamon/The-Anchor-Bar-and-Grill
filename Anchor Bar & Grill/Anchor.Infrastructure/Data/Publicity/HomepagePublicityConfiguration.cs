@@ -1,3 +1,4 @@
+using Anchor.Domain.Publicity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,11 +11,11 @@ public sealed class HomepagePublicityConfiguration : IEntityTypeConfiguration<Ho
         builder.ToTable("HomepagePublicity");
         builder.HasKey(item => item.HomepagePublicityId);
         builder.Property(item => item.HomepagePublicityId).ValueGeneratedNever();
-        builder.Property(item => item.DraftEyebrow).HasMaxLength(80);
-        builder.Property(item => item.DraftHeadline).HasMaxLength(120);
-        builder.Property(item => item.DraftSummary).HasMaxLength(1000);
-        builder.Property(item => item.PublishedEyebrow).HasMaxLength(80);
-        builder.Property(item => item.PublishedHeadline).HasMaxLength(120);
-        builder.Property(item => item.PublishedSummary).HasMaxLength(1000);
+        builder.Property(item => item.DraftEyebrow).HasMaxLength(HomepagePublicityConstraints.EyebrowMaxLength);
+        builder.Property(item => item.DraftHeadline).HasMaxLength(HomepagePublicityConstraints.HeadlineMaxLength);
+        builder.Property(item => item.DraftSummary).HasMaxLength(HomepagePublicityConstraints.SummaryMaxLength);
+        builder.Property(item => item.PublishedEyebrow).HasMaxLength(HomepagePublicityConstraints.EyebrowMaxLength);
+        builder.Property(item => item.PublishedHeadline).HasMaxLength(HomepagePublicityConstraints.HeadlineMaxLength);
+        builder.Property(item => item.PublishedSummary).HasMaxLength(HomepagePublicityConstraints.SummaryMaxLength);
     }
 }

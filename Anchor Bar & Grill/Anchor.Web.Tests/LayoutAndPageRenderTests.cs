@@ -246,9 +246,9 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     public void HomePage_RendersThreeColumnHomepageWithServiceBackedSidebars()
     {
         homepagePublicityService.PublishedContent = new HomepagePublicityContent(
-            "Weekend Welcome",
+            string.Empty,
             "Fresh copy from the publicity editor.",
-            "Published homepage messaging should flow through to the guest-facing welcome block.");
+            "Published homepage messaging should flow through to the guest-facing welcome block." + Environment.NewLine + Environment.NewLine + "A second paragraph should render as supporting body copy.");
 
         var cut = Render<Home>();
 
@@ -258,6 +258,10 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.NotNull(cut.Find(".home-rail--events"));
         Assert.Contains("Fresh copy from the publicity editor.", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Published homepage messaging should flow through to the guest-facing welcome block.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("A second paragraph should render as supporting body copy.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(cut.FindAll(".home-main .page-hero__eyebrow"));
+        Assert.Equal("Published homepage messaging should flow through to the guest-facing welcome block.", cut.Find(".home-main .page-hero__lead").TextContent.Trim());
+        Assert.Single(cut.FindAll(".home-main .page-hero__copy"));
         Assert.Contains("Browse the Menu", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Plan Your Visit", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Monday Night Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);

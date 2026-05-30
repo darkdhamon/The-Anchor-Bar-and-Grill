@@ -11,9 +11,10 @@ public sealed class HomepagePublicityRepositoryTests
     {
         await using var context = await SqliteIdentityTestContext.CreateAsync();
         var repository = new HomepagePublicityRepository(context.DbContext);
+        var longSummary = CreateLongSummary();
 
         await repository.SaveDraftAsync(
-            new HomepagePublicityContent("Guest Welcome", "Draft headline", "Draft summary"),
+            new HomepagePublicityContent("Guest Welcome", "Draft headline", longSummary),
             new DateTimeOffset(2026, 5, 25, 13, 0, 0, TimeSpan.Zero));
         await repository.SaveChangesAsync();
 
@@ -21,7 +22,7 @@ public sealed class HomepagePublicityRepositoryTests
         var published = await repository.GetPublishedHomepageAsync();
 
         Assert.Equal("Draft headline", state.DraftContent?.Headline);
-        Assert.Equal("Draft summary", state.DraftContent?.Summary);
+        Assert.Equal(longSummary, state.DraftContent?.Summary);
         Assert.NotNull(state.DraftUpdatedAtUtc);
         Assert.Null(state.PublishedContent);
         Assert.Null(published);
@@ -32,9 +33,10 @@ public sealed class HomepagePublicityRepositoryTests
     {
         await using var context = await SqliteIdentityTestContext.CreateAsync();
         var repository = new HomepagePublicityRepository(context.DbContext);
+        var longSummary = CreateLongSummary();
 
         await repository.PublishAsync(
-            new HomepagePublicityContent("Weekend Welcome", "Live headline", "Live summary"),
+            new HomepagePublicityContent("Weekend Welcome", "Live headline", longSummary),
             new DateTimeOffset(2026, 5, 25, 14, 0, 0, TimeSpan.Zero));
         await repository.SaveChangesAsync();
 
@@ -43,7 +45,14 @@ public sealed class HomepagePublicityRepositoryTests
 
         Assert.Equal("Live headline", state.DraftContent?.Headline);
         Assert.Equal("Live headline", state.PublishedContent?.Headline);
-        Assert.Equal("Live summary", published?.Summary);
+        Assert.Equal(longSummary, published?.Summary);
         Assert.NotNull(state.PublishedUpdatedAtUtc);
     }
+
+    private static string CreateLongSummary() =>
+        string.Join(
+            Environment.NewLine + Environment.NewLine,
+            Enumerable.Repeat(
+                "This is a longer guest-facing welcome paragraph that verifies repository-backed homepage publicity content can persist more than a short summary.",
+                10));
 }

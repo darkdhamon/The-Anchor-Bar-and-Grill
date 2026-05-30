@@ -22,7 +22,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - About mockup page for the restaurant story and guest experience
 - Contact mockup page for location, phone, hours, dynamic social media links, and guest inquiry layout
 - Role-gated editor pages for managing menus, events, publicity content, and contact details
-- Publicity Editor now includes a repository-backed homepage intro workflow with separate draft and published copy, a grouped About-page placeholder route under `/admin/publicity`, and UTC-rendered draft/publish timestamps so staff review one consistent audit clock
+- Publicity Editor now includes a repository-backed homepage intro workflow with separate draft and published copy, longer multi-paragraph welcome-message support, a grouped About-page placeholder route under `/admin/publicity`, and UTC-rendered draft/publish timestamps so staff review one consistent audit clock
 - Contact editor mockup supports adding, editing, and deleting multiple social media profiles for the public contact page
 - Event editor mockup with date/time inputs, richer recurring-event controls, optional images, descriptions, and combo-select promo badges
 - Admin-only Help page organized by subject and role type for staff onboarding, editor ownership, bootstrap behavior, and security configuration
@@ -79,7 +79,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - The development configuration now includes a LocalDB connection string so the mockup can run locally without additional secret setup
 - The menu catalog now lives in the application database through the repository layer, with seed data for Lunch and Dinner food sections, first-class Dinner special items, and empty-state Breakfast and Drinks tabs that already have service hours configured
 - The event foundation now lives in the application database through the repository layer, with explicit published/draft/archive state plus weekly and monthly nth-weekday recurrence rules that expand upcoming occurrences from the current request time instead of a process-start snapshot
-- Homepage publicity content now lives in the application database through the repository layer, with one admin workflow for saving drafts and a separate publish action that updates the live homepage intro
+- Homepage publicity content now lives in the application database through the repository layer, with one admin workflow for saving drafts, blank-line paragraph rendering for longer welcome copy, and a separate publish action that updates the live homepage intro
 - A shared server-side GitHub issue service is now registered for future production exception reporting and technical website issue submissions
 - The GitHub issue service can create repository issues and place them into the configured GitHub project status when `GitHubIssues` settings and a secure `GitHubIssues__AccessToken` are supplied
 - Automated production exception issue creation is gated separately by `ProductionExceptionIssues`, runs only when the ASP.NET Core environment is `Production`, and skips `localhost`, loopback, and `.local` hosts

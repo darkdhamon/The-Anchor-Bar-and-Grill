@@ -50,6 +50,7 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Contains("20260523013508_AddMenuHierarchyAndSeasonalAvailability", appliedMigrations);
             Assert.Contains("20260524140817_AddEventCatalog", appliedMigrations);
             Assert.Contains("20260525163343_AddHomepagePublicity", appliedMigrations);
+            Assert.Contains("20260530215505_ExpandHomepagePublicitySummaryLength", appliedMigrations);
             Assert.Empty(pendingMigrations);
             Assert.True(await context.Database.CanConnectAsync());
 
@@ -166,10 +167,10 @@ public sealed class ApplicationDbContextMigrationTests
                 HomepagePublicityId = 1,
                 DraftEyebrow = "Guest Welcome",
                 DraftHeadline = "Draft headline",
-                DraftSummary = "Draft summary",
+                DraftSummary = CreateLongHomepageSummary(),
                 PublishedEyebrow = "Weekend Welcome",
                 PublishedHeadline = "Published headline",
-                PublishedSummary = "Published summary",
+                PublishedSummary = CreateLongHomepageSummary(),
                 DraftUpdatedAtUtc = new DateTimeOffset(2026, 5, 25, 16, 30, 0, TimeSpan.Zero),
                 PublishedUpdatedAtUtc = new DateTimeOffset(2026, 5, 25, 17, 0, 0, TimeSpan.Zero)
             });
@@ -178,6 +179,8 @@ public sealed class ApplicationDbContextMigrationTests
             var persistedHomepagePublicity = await context.HomepagePublicity.SingleAsync(item => item.HomepagePublicityId == 1);
             Assert.Equal("Draft headline", persistedHomepagePublicity.DraftHeadline);
             Assert.Equal("Published headline", persistedHomepagePublicity.PublishedHeadline);
+            Assert.True(persistedHomepagePublicity.DraftSummary?.Length > 1000);
+            Assert.True(persistedHomepagePublicity.PublishedSummary?.Length > 1000);
         }
         finally
         {
@@ -246,6 +249,93 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.True(states[confirmedUserId].AccountConfirmed);
             Assert.False(states[pendingUserId].EmailConfirmed);
             Assert.False(states[pendingUserId].AccountConfirmed);
+        }
+        finally
+        {
+            await context.Database.EnsureDeletedAsync();
+        }
+    }
+
+    [Fact]
+    public async Task ExpandHomepagePublicitySummaryLength_preserves_existing_copy_and_allows_longer_updates()
+    {
+        var databaseName = $"AnchorWebHomepagePublicity_{Guid.NewGuid():N}";
+        var connectionString = new SqlConnectionStringBuilder
+        {
+            DataSource = @"(localdb)\MSSQLLocalDB",
+            InitialCatalog = databaseName,
+            IntegratedSecurity = true,
+            TrustServerCertificate = true,
+            ConnectTimeout = 30
+        }.ConnectionString;
+
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseSqlServer(connectionString)
+            .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning))
+            .Options;
+
+        await using var context = new ApplicationDbContext(options);
+        await context.Database.EnsureDeletedAsync();
+
+        const string migrationBeforeExpandedHomepageCopy = "20260525163343_AddHomepagePublicity";
+        var originalSummary = new string('x', 900);
+        var expandedSummary = CreateLongHomepageSummary();
+
+        try
+        {
+            await context.Database.MigrateAsync(migrationBeforeExpandedHomepageCopy);
+
+            await context.Database.ExecuteSqlRawAsync(
+                """
+                INSERT INTO HomepagePublicity
+                (
+                    HomepagePublicityId,
+                    DraftEyebrow,
+                    DraftHeadline,
+                    DraftSummary,
+                    DraftUpdatedAtUtc,
+                    PublishedEyebrow,
+                    PublishedHeadline,
+                    PublishedSummary,
+                    PublishedUpdatedAtUtc
+                )
+                VALUES
+                (
+                    1,
+                    {0},
+                    {1},
+                    {2},
+                    {3},
+                    {4},
+                    {5},
+                    {6},
+                    {7}
+                );
+                """,
+                "Guest Welcome",
+                "Draft headline",
+                originalSummary,
+                new DateTimeOffset(2026, 5, 25, 16, 30, 0, TimeSpan.Zero),
+                "Weekend Welcome",
+                "Published headline",
+                originalSummary,
+                new DateTimeOffset(2026, 5, 25, 17, 0, 0, TimeSpan.Zero));
+
+            await context.Database.MigrateAsync();
+
+            var persistedBeforeUpdate = await context.HomepagePublicity.SingleAsync(item => item.HomepagePublicityId == 1);
+            Assert.Equal(originalSummary, persistedBeforeUpdate.DraftSummary);
+            Assert.Equal(originalSummary, persistedBeforeUpdate.PublishedSummary);
+
+            persistedBeforeUpdate.DraftSummary = expandedSummary;
+            persistedBeforeUpdate.PublishedSummary = expandedSummary;
+            await context.SaveChangesAsync();
+
+            var persistedAfterUpdate = await context.HomepagePublicity.SingleAsync(item => item.HomepagePublicityId == 1);
+            Assert.Equal(expandedSummary, persistedAfterUpdate.DraftSummary);
+            Assert.Equal(expandedSummary, persistedAfterUpdate.PublishedSummary);
+            Assert.NotNull(persistedAfterUpdate.DraftSummary);
+            Assert.True(persistedAfterUpdate.DraftSummary.Length > 1000);
         }
         finally
         {
@@ -742,5 +832,12 @@ public sealed class ApplicationDbContextMigrationTests
 
         return (startDate, dayOfWeek);
     }
+
+    private static string CreateLongHomepageSummary() =>
+        string.Join(
+            Environment.NewLine + Environment.NewLine,
+            Enumerable.Repeat(
+                "This is a longer guest-facing welcome paragraph that verifies homepage publicity migrations preserve existing content and allow staff to save a fuller homepage story.",
+                10));
 }
 

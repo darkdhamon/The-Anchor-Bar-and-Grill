@@ -657,6 +657,30 @@ html.anchor-theme-dark .site-shell {
     color: var(--text-secondary);
 }
 
+.page-hero__copy-group,
+.publicity-preview__body {
+    display: grid;
+    gap: 1rem;
+}
+
+.page-hero__copy-group {
+    max-width: 52rem;
+}
+
+.page-hero__copy,
+.publicity-preview__body p {
+    margin: 0;
+    color: var(--text-secondary);
+    line-height: 1.7;
+}
+
+.publicity-preview__lead {
+    margin: 0;
+    font-size: 1.08rem;
+    line-height: 1.55;
+    color: var(--text-primary);
+}
+
 .hero-actions {
     display: flex;
     flex-wrap: wrap;

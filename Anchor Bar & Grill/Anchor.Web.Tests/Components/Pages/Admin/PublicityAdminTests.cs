@@ -40,14 +40,20 @@ public sealed class PublicityAdminTests : BunitContext
     [Fact]
     public void PublicityAdminHome_SaveDraft_updates_the_editor_state()
     {
+        var longSummary = string.Join(
+            Environment.NewLine + Environment.NewLine,
+            Enumerable.Repeat(
+                "Guests should see the updated homepage summary after publish, including enough room for a fuller welcome story.",
+                10));
         var cut = Render<PublicityAdminHome>();
 
         cut.Find("[id='HomepagePublicity.Eyebrow']").Change("Weekend Welcome");
         cut.Find("[id='HomepagePublicity.Headline']").Change("Fresh weekend copy");
-        cut.Find("[id='HomepagePublicity.Summary']").Change("Guests should see the updated homepage summary after publish.");
+        cut.Find("[id='HomepagePublicity.Summary']").Change(longSummary);
         cut.FindAll("button").Single(button => button.TextContent.Contains("Save draft", StringComparison.OrdinalIgnoreCase)).Click();
 
         Assert.Equal("Fresh weekend copy", publicityService.DraftContent?.Headline);
+        Assert.Equal(longSummary, publicityService.DraftContent?.Summary);
         Assert.Contains("Homepage draft saved", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -78,6 +84,22 @@ public sealed class PublicityAdminTests : BunitContext
 
         Assert.Contains("May 25, 2026 at 3:30 PM UTC", cut.Markup, StringComparison.Ordinal);
         Assert.Contains("May 24, 2026 at 7:00 PM UTC", cut.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PublicityAdminHome_RendersMultiParagraphPublishedPreviewWithoutEmptyEyebrow()
+    {
+        publicityService.PublishedContent = new HomepagePublicityContent(
+            string.Empty,
+            "Welcome to The Anchor Bar & Grill",
+            "First published paragraph." + Environment.NewLine + Environment.NewLine + "Second published paragraph.");
+
+        var cut = Render<PublicityAdminHome>();
+
+        Assert.Empty(cut.FindAll(".publicity-preview .feature-card__eyebrow"));
+        Assert.Equal("First published paragraph.", cut.Find(".publicity-preview__lead").TextContent.Trim());
+        Assert.Equal(2, cut.FindAll(".publicity-preview__body p").Count);
+        Assert.Contains("Second published paragraph.", cut.Markup, StringComparison.Ordinal);
     }
 
     [Fact]
