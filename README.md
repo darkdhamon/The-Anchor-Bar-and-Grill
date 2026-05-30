@@ -4,10 +4,10 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 
 ## Current Application Scope
 
-- Guest-facing homepage with a welcome-first layout that is separate from the menu, now backed by published publicity-copy content that Admins can draft and publish from the site
+- Guest-facing homepage with a three-column landing-page layout on wide screens, stacking as intro, weekly specials, and upcoming events on mobile, with published publicity-copy content centered between the two sidebars
 - Homepage weekly specials now preview recurring specials that are active today or will occur within the next six days, while still respecting lifetime dates and recurring seasonal windows, sorting recurring specials by their next actually available occurrence, and only surfacing upcoming dated specials when they have a real valid occurrence in that preview window, with `Today`, `Now available`, and `Limited-time special` wording based on what is actually active right now
-- Homepage preview of special weekly menu items so guests can see day-of-week favorites before opening the full menu
-- Homepage list of upcoming events in the next month so guests can plan without leaving the landing page
+- Homepage weekly-specials sidebar uses the live menu-special feed when it has data and falls back to the site's preview specials when public special data is not ready yet
+- Homepage upcoming-events sidebar now prefers repository-backed upcoming event queries and falls back to the site's preview events when the live public event feed is still empty
 - Database-backed event catalog foundation with explicit publication state, recurring schedule rules, and repository-backed upcoming-event queries for future public and admin event workflows
 - Database-backed public menu page inspired by the existing printed menu
 - Fixed public menu tabs for `Breakfast`, `Lunch`, `Dinner`, and `Drinks`
@@ -86,7 +86,6 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - Production exception issue bodies include redacted request context such as route values, query values, form fields, selected headers, trace identifiers, and authenticated user roles to help recreate the failure without leaking secrets
 - Repeated matching production exceptions are temporarily deduplicated in memory so GitHub does not get flooded during a burst
 - The shared local development and UAT account credentials are documented in [docs/reference/uat-credentials.local.md](docs/reference/uat-credentials.local.md); if those local passwords or roles change, update that file in the same change
-- The current homepage uses a styled building-photo placeholder until a real exterior image is added to the project
 - The event mockup data now demonstrates weekly, every-other-week, and nth-weekday monthly recurrence patterns so the UI direction can be reviewed before backend scheduling is built
 - On mobile, the shared header now keeps public and admin mockup links inside the expandable menu and uses an icon-style site-menu control so it does not compete with the food Menu link
 - The shared header now shows public navigation to everyone, while staff tools only appear after sign-in and are filtered by the current user's roles

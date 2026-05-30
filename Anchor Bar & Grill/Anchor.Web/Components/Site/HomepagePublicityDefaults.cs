@@ -5,7 +5,7 @@ namespace Anchor.Web.Components.Site;
 public static class HomepagePublicityDefaults
 {
     public static readonly HomepagePublicityContent Content = new(
-        "Guest Welcome",
-        "Welcome aboard The Anchor.",
-        "This homepage mockup is intentionally separate from the menu so first-time guests can understand what The Anchor Bar & Grill offers before they dive into food, events, or contact details.");
+        "Madison Lake Favorite",
+        "Comfort food, community nights, and an easy place to settle in.",
+        "The Anchor Bar & Grill brings together burgers, baskets, drinks, and familiar favorites with the weekly specials and upcoming events guests usually want to check first.");
 }

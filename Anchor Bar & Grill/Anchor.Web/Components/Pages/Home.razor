@@ -1,23 +1,16 @@
 @page "/"
-@using Anchor.Domain.Menu
-@using Anchor.Domain.Publicity
 @attribute [ExcludeFromInteractiveRouting]
-@inject IMenuQueryService MenuQueryService
-@inject IHomepagePublicityService HomepagePublicityService
-@inject TimeProvider TimeProvider
 
 <PageTitle>Home</PageTitle>
 
-<section class="hero-grid">
-    <div class="page-hero page-hero--home">
+<section class="home-shell">
+    <article class="page-hero page-hero--home home-main">
         <p class="page-hero__eyebrow">@homepageContent.Eyebrow</p>
         <h1>@homepageContent.Headline</h1>
-        <p class="page-hero__lead">
-            @homepageContent.Summary
-        </p>
+        <p class="page-hero__lead">@homepageContent.Summary</p>
 
         <div class="hero-actions">
-            @foreach (var action in MockupContent.HomeActions)
+            @foreach (var action in homeActions)
             {
                 <a class="hero-actions__link @(action.IsPrimary ? "hero-actions__link--primary" : "hero-actions__link--secondary")"
                    href="@action.Href"
@@ -27,168 +20,82 @@
             }
         </div>
 
-        <div class="hero-callouts">
-            @foreach (var callout in MockupContent.HomeCallouts)
-            {
-                <article class="hero-callout">
-                    <h2>@callout.Title</h2>
-                    <p>@callout.Description</p>
-                </article>
-            }
+        <div class="home-main__support">
+            <p class="home-main__support-title">Start with tonight's plan.</p>
+            <p class="home-main__support-copy">
+                Explore the menu, check what's coming up next, or head straight to contact details before you make the trip.
+            </p>
         </div>
-    </div>
+    </article>
 
-    <aside class="hero-visual" aria-label="Homepage building image placeholder">
-        <div class="hero-visual__frame">
-            <span class="hero-visual__badge">Exterior Photo Placement</span>
-            <strong>The building image can anchor the guest first impression here.</strong>
-            <p>Use the final restaurant exterior photo once it is available in the project.</p>
+    <aside class="feature-card feature-card--tight home-rail home-rail--specials" aria-labelledby="home-specials-heading">
+        <div class="home-rail__header">
+            <p class="feature-card__eyebrow">This Week</p>
+            <h2 id="home-specials-heading">Weekly specials</h2>
+            <p>Keep the dinner features and repeat favorites guests usually ask about closest to the top.</p>
         </div>
 
-        <ul class="hero-visual__notes">
-            @foreach (var note in MockupContent.BuildingPhotoNotes)
-            {
-                <li>@note</li>
-            }
-        </ul>
-    </aside>
-</section>
-
-<section class="section-shell">
-    <div class="section-heading">
-        <p class="section-heading__eyebrow">What The Homepage Should Do</p>
-        <h2>Give guests a fast, friendly way into the rest of the site.</h2>
-    </div>
-
-    <div class="feature-grid">
-        @foreach (var highlight in MockupContent.HomeHighlights)
-        {
-            <article class="feature-card">
-                <p class="feature-card__eyebrow">@highlight.Eyebrow</p>
-                <h3>@highlight.Title</h3>
-                <p>@highlight.Description</p>
-            </article>
-        }
-    </div>
-</section>
-
-<section class="section-shell">
-    <div class="section-heading">
-        <p class="section-heading__eyebrow">Weekly Specials</p>
-        <h2>Put special menu items in front of guests right away.</h2>
-    </div>
-
-        <div class="recurring-specials-grid">
+        <div class="home-rail__list">
             @foreach (var special in homeSpecialItems)
             {
-            <article class="feature-card recurring-special @(special.IsAvailableNow ? "recurring-special--today" : string.Empty)">
-                <div class="recurring-special__header">
-                    <div>
-                        <p class="feature-card__eyebrow">@special.BadgeLabel</p>
-                        <h3>@special.Title</h3>
-                    </div>
-
-                    @if (!string.IsNullOrWhiteSpace(special.AvailabilityLabel))
-                    {
-                        <span class="@GetHomeSpecialStatusClass(special)">@special.AvailabilityLabel</span>
-                    }
-                </div>
-
-                @if (!string.IsNullOrWhiteSpace(special.TimeSummary))
-                {
-                    <p class="event-card__meta">@special.TimeSummary</p>
-                }
-                <p>@special.Description</p>
-
-                <div class="recurring-special__footer">
-                    <span class="recurring-special__price">@special.Callout</span>
-                    <span class="recurring-special__placement">@special.PlacementSummary</span>
-                </div>
-            </article>
-        }
-    </div>
-</section>
-
-<section class="split-section">
-    <article class="split-card split-card--events">
-        <div class="section-heading">
-            <p class="section-heading__eyebrow">Next 30 Days</p>
-            <h2>Show upcoming events on the homepage while they are still close enough to plan around.</h2>
-        </div>
-
-        <div class="event-preview-list">
-            @foreach (var item in homeUpcomingEvents)
-            {
-                <article class="event-preview @(item.Image is not null ? "event-preview--with-image" : "event-preview--text-only")">
-                    @if (item.Image is not null)
-                    {
-                        <div class="event-preview__visual">
-                            <img class="event-preview__image" src="@item.Image.Source" alt="@item.Image.AltText" />
-                        </div>
-                    }
-
-                    <div class="event-preview__content">
-                        <div class="event-preview__top">
-                            <div class="event-preview__badges">
-                                <span class="event-preview__badge">@item.PromoBadge</span>
-                                <span class="status-pill @(item.IsRecurring ? "status-pill--recurring" : "status-pill--one-time")">@item.ScheduleTypeLabel</span>
-                            </div>
-                            <p class="event-preview__date">@item.DateLabel</p>
+                <article class="home-rail-card home-rail-card--special">
+                    <div class="home-rail-card__header">
+                        <div class="home-rail-card__copy">
+                            <span class="home-rail-card__badge">@special.BadgeLabel</span>
+                            <h3>@special.Title</h3>
                         </div>
 
-                        <h3>@item.Title</h3>
-                        <p class="event-preview__meta">@item.DateTimeLabel</p>
-                        <p class="event-preview__schedule">@item.ScheduleDetail</p>
-                        <p>@item.Description</p>
+                        @if (!string.IsNullOrWhiteSpace(special.AvailabilityLabel))
+                        {
+                            <span class="@GetHomeSpecialStatusClass(special)">@special.AvailabilityLabel</span>
+                        }
                     </div>
+
+                    @if (!string.IsNullOrWhiteSpace(special.TimeSummary))
+                    {
+                        <p class="home-rail-card__meta">@special.TimeSummary</p>
+                    }
+
+                    <p class="home-rail-card__description">@special.Description</p>
+
+                    @if (!string.IsNullOrWhiteSpace(special.Callout))
+                    {
+                        <p class="home-rail-card__callout">@special.Callout</p>
+                    }
                 </article>
             }
         </div>
-    </article>
 
-    <article class="split-card split-card--visit">
-        <div class="section-heading">
-            <p class="section-heading__eyebrow">Visit Snapshot</p>
-            <h2>Keep the essentials close at hand.</h2>
+        <a class="home-rail__link" href="/menu" data-enhance-nav="false">Explore the full menu</a>
+    </aside>
+
+    <aside class="feature-card feature-card--tight home-rail home-rail--events" aria-labelledby="home-events-heading">
+        <div class="home-rail__header">
+            <p class="feature-card__eyebrow">Plan Ahead</p>
+            <h2 id="home-events-heading">Upcoming events</h2>
+            <p>Show the next few public dates in one glance so guests can decide whether tonight is a quick stop or a longer stay.</p>
         </div>
 
-        <dl class="contact-stack">
-            <div>
-                <dt>Address</dt>
-                <dd>@MockupContent.Contact.StreetAddress<br />@MockupContent.Contact.CityState</dd>
-            </div>
-            <div>
-                <dt>Phone</dt>
-                <dd>@MockupContent.Contact.PhoneNumber</dd>
-            </div>
-            <div>
-                <dt>Next pages to visit</dt>
-                <dd>Menu, events, about, and contact should all be one click away from here.</dd>
-            </div>
-        </dl>
-    </article>
+        <div class="home-rail__list">
+            @foreach (var item in homeUpcomingEvents)
+            {
+                <article class="home-rail-card home-rail-card--event">
+                    <div class="home-rail-card__header">
+                        <div class="home-rail-card__copy">
+                            <span class="home-rail-card__badge">@item.PromoBadge</span>
+                            <h3>@item.Title</h3>
+                        </div>
+
+                        <span class="status-pill @(item.IsRecurring ? "status-pill--recurring" : "status-pill--one-time")">@item.ScheduleTypeLabel</span>
+                    </div>
+
+                    <p class="home-rail-card__meta">@item.DateTimeLabel</p>
+                    <p class="home-rail-card__schedule">@item.ScheduleSummary</p>
+                    <p class="home-rail-card__description">@item.Description</p>
+                </article>
+            }
+        </div>
+
+        <a class="home-rail__link" href="/events" data-enhance-nav="false">See all events</a>
+    </aside>
 </section>
-
-@code {
-    private DateOnly today;
-    private IReadOnlyList<PublicHomeSpecialView> homeSpecialItems = [];
-    private IReadOnlyList<UpcomingEventOccurrence> homeUpcomingEvents = [];
-    private HomepagePublicityContent homepageContent = HomepagePublicityDefaults.Content;
-
-    private static string GetHomeSpecialStatusClass(PublicHomeSpecialView special) =>
-        special.AvailabilityLabel switch
-        {
-            "Today" => "status-pill status-pill--today",
-            "Now available" => "status-pill status-pill--schedule",
-            "Limited-time special" => "status-pill status-pill--limited",
-            _ => "status-pill status-pill--schedule"
-        };
-
-    protected override async Task OnInitializedAsync()
-    {
-        today = DateOnly.FromDateTime(TimeProvider.GetLocalNow().DateTime);
-        homeUpcomingEvents = MockupContent.GetUpcomingEvents(today, 30);
-        homeSpecialItems = await MenuQueryService.GetHomeSpecialsAsync(today);
-        homepageContent = await HomepagePublicityService.GetPublishedHomepageAsync() ?? HomepagePublicityDefaults.Content;
-    }
-}
