@@ -879,6 +879,10 @@ html.anchor-theme-dark .site-shell {
 .home-carousel {
     padding: 0.85rem;
     min-height: 0;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    justify-self: stretch;
     background:
         linear-gradient(145deg, rgba(48, 154, 221, 0.18), rgba(31, 36, 58, 0.24)),
         var(--surface);
@@ -889,9 +893,13 @@ html.anchor-theme-dark .site-shell {
 
 .home-carousel__viewport {
     position: relative;
-    min-height: 430px;
+    width: 100%;
+    max-width: 100%;
+    min-height: 0;
+    aspect-ratio: 16 / 9;
     border-radius: calc(var(--anchor-border-radius) - 0.45rem);
     overflow: hidden;
+    display: grid;
     background:
         radial-gradient(circle at top right, rgba(89, 175, 226, 0.28), transparent 32%),
         linear-gradient(145deg, rgba(31, 36, 58, 0.98), rgba(40, 44, 68, 0.96));
@@ -900,6 +908,7 @@ html.anchor-theme-dark .site-shell {
 .home-carousel__slide {
     position: absolute;
     inset: 0;
+    display: grid;
     opacity: 0;
     transform: translateX(4%);
     transition: opacity 0.45s ease, transform 0.55s ease;
@@ -916,8 +925,9 @@ html.anchor-theme-dark .site-shell {
     display: block;
     width: 100%;
     height: 100%;
-    min-height: 430px;
-    object-fit: cover;
+    min-height: 0;
+    object-fit: contain;
+    object-position: center;
 }
 
 .home-carousel__caption {
@@ -3554,11 +3564,6 @@ button.menu-editor-filter-chip {
 
     .admin-list__item--media {
         align-items: start;
-    }
-
-    .home-carousel__viewport,
-    .home-carousel__image {
-        min-height: 320px;
     }
 
     .home-carousel__caption {
