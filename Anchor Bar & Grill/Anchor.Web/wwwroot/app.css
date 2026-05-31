@@ -452,6 +452,7 @@ html.anchor-theme-dark .site-shell {
 .admin-card,
 .admin-help,
 .feature-card,
+.home-carousel,
 .hero-visual,
 .hero-callout,
 .contact-channel,
@@ -581,6 +582,7 @@ html.anchor-theme-dark .site-shell {
 
 .hero-callout h2,
 .feature-card h3,
+.home-carousel__caption-title,
 .menu-section__header h2,
 .menu-item h3,
 .event-card h3,
@@ -643,6 +645,166 @@ html.anchor-theme-dark .site-shell {
     display: grid;
     gap: 0.65rem;
     color: var(--text-secondary);
+}
+
+.home-carousel {
+    padding: 0.85rem;
+    min-height: 100%;
+    background:
+        linear-gradient(145deg, rgba(48, 154, 221, 0.18), rgba(31, 36, 58, 0.24)),
+        var(--surface);
+    display: grid;
+    gap: 0.9rem;
+    overflow: hidden;
+}
+
+.home-carousel__viewport {
+    position: relative;
+    min-height: 430px;
+    border-radius: calc(var(--anchor-border-radius) - 0.45rem);
+    overflow: hidden;
+    background:
+        radial-gradient(circle at top right, rgba(89, 175, 226, 0.28), transparent 32%),
+        linear-gradient(145deg, rgba(31, 36, 58, 0.98), rgba(40, 44, 68, 0.96));
+}
+
+.home-carousel__slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transform: translateX(4%);
+    transition: opacity 0.45s ease, transform 0.55s ease;
+    pointer-events: none;
+}
+
+.home-carousel__slide.is-active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+.home-carousel__image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 430px;
+    object-fit: cover;
+}
+
+.home-carousel__caption {
+    position: absolute;
+    inset: auto 0 0;
+    padding: 1.35rem;
+    color: var(--anchor-white);
+    background:
+        linear-gradient(180deg, rgba(31, 36, 58, 0.03), rgba(31, 36, 58, 0.8) 42%, rgba(31, 36, 58, 0.94));
+}
+
+.home-carousel__caption-shell {
+    max-width: 28rem;
+    display: grid;
+    gap: 0.45rem;
+}
+
+.home-carousel__eyebrow {
+    margin: 0;
+    color: rgba(247, 247, 244, 0.78);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.88rem;
+    font-family: "Patrick Hand", "Segoe UI", cursive;
+}
+
+.home-carousel__caption-title {
+    margin: 0;
+    color: var(--anchor-white);
+    font-size: clamp(1.9rem, 3.6vw, 2.8rem);
+    line-height: 0.96;
+    letter-spacing: 0.04em;
+}
+
+.home-carousel__description {
+    color: rgba(247, 247, 244, 0.82);
+    line-height: 1.45;
+}
+
+.home-carousel__controls,
+.home-carousel__status,
+.home-carousel__indicator-row {
+    display: flex;
+    align-items: center;
+}
+
+.home-carousel__controls {
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.home-carousel__status {
+    gap: 0.9rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.home-carousel__indicator-row {
+    gap: 0.55rem;
+    flex-wrap: wrap;
+}
+
+.home-carousel__control,
+.home-carousel__indicator {
+    border: 1px solid var(--outline);
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.home-carousel__control {
+    border-radius: 999px;
+    padding: 0.72rem 1rem;
+    min-width: 4.8rem;
+    background: var(--surface-strong);
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.home-carousel__control:hover,
+.home-carousel__control:focus-visible {
+    background: rgba(48, 154, 221, 0.14);
+    border-color: rgba(48, 154, 221, 0.38);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+}
+
+.home-carousel__indicator {
+    width: 0.9rem;
+    height: 0.9rem;
+    padding: 0;
+    border-radius: 50%;
+    background: transparent;
+}
+
+.home-carousel__indicator:hover,
+.home-carousel__indicator:focus-visible {
+    border-color: rgba(89, 175, 226, 0.55);
+    transform: scale(1.04);
+}
+
+.home-carousel__indicator.is-active {
+    background: var(--anchor-gold);
+    border-color: rgba(213, 202, 85, 0.7);
+    box-shadow: 0 0 0 0.2rem rgba(213, 202, 85, 0.16);
+}
+
+.home-carousel__count {
+    font-family: "Bebas Neue", "Impact", sans-serif;
+    font-size: 1.3rem;
+    letter-spacing: 0.08em;
+    color: var(--accent-readable);
 }
 
 .section-shell,
@@ -1807,5 +1969,40 @@ html.anchor-theme-dark .site-shell {
 
     .admin-list__item--media {
         align-items: start;
+    }
+
+    .home-carousel__viewport,
+    .home-carousel__image {
+        min-height: 320px;
+    }
+
+    .home-carousel__caption {
+        padding: 1rem;
+    }
+
+    .home-carousel__caption-title {
+        font-size: clamp(1.8rem, 9vw, 2.35rem);
+    }
+
+    .home-carousel__controls {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .home-carousel__control {
+        flex: 1 1 8rem;
+    }
+
+    .home-carousel__status {
+        width: 100%;
+        order: -1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-carousel__slide,
+    .home-carousel__control,
+    .home-carousel__indicator {
+        transition: none;
     }
 }

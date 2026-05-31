@@ -207,13 +207,21 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     }
 
     [Fact]
-    public void HomePage_RendersGuestWelcomeAndBuildingPlaceholder()
+    public void HomePage_RendersGuestWelcomeAndPlaceholderCarousel()
     {
         var cut = Render<Home>();
 
         Assert.Contains("Welcome aboard The Anchor.", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Exterior Photo Placement", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Exterior Photo Placement", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Browse the Menu", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("data-anchor-carousel=\"true\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(5, cut.FindAll("[data-anchor-carousel-slide]").Count);
+        Assert.Equal(5, cut.FindAll("[data-anchor-carousel-to]").Count);
+        Assert.Contains("data-anchor-carousel-prev", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("data-anchor-carousel-next", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("/images/home-carousel/live-music-stage.jpg", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Patio nights with a crowd", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Open-air bar seating area with bright stools and a long stone counter.", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Monday Night Burgers", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Sunday Pork Chop Dinner", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Thursday Trivia", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -424,6 +432,20 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.False(File.Exists(externalLoginPageFile));
         Assert.False(File.Exists(externalLoginsManagePageFile));
         Assert.False(File.Exists(externalLoginPickerFile));
+    }
+
+    [Fact]
+    public void ThemeJavaScript_ContainsHomepageCarouselHooks()
+    {
+        var repositoryRoot = GetRepositoryRoot();
+        var themeScriptFile = Path.Combine(repositoryRoot, "Anchor Bar & Grill", "Anchor.Web", "wwwroot", "theme.js");
+        var themeScript = File.ReadAllText(themeScriptFile);
+
+        Assert.Contains("data-anchor-carousel", themeScript, StringComparison.Ordinal);
+        Assert.Contains("data-anchor-carousel-prev", themeScript, StringComparison.Ordinal);
+        Assert.Contains("data-anchor-carousel-next", themeScript, StringComparison.Ordinal);
+        Assert.Contains("data-anchor-carousel-interval", themeScript, StringComparison.Ordinal);
+        Assert.Contains("touchstart", themeScript, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

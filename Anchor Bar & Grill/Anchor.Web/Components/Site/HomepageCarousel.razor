@@ -1,0 +1,76 @@
+<section class="home-carousel"
+         data-anchor-carousel="true"
+         data-anchor-carousel-interval="@AutoAdvanceIntervalMs"
+         aria-label="@Label"
+         aria-roledescription="carousel">
+    <div class="home-carousel__viewport">
+        @for (var index = 0; index < Slides.Count; index++)
+        {
+            var slide = Slides[index];
+            var isActive = index == 0;
+
+            <figure class="home-carousel__slide @(isActive ? "is-active" : null)"
+                    data-anchor-carousel-slide
+                    aria-hidden="@(isActive ? "false" : "true")"
+                    aria-label="@(FormattableString.Invariant($"{index + 1} of {Slides.Count}"))"
+                    aria-roledescription="slide">
+                <img class="home-carousel__image" src="@slide.ImageSource" alt="@slide.AltText" />
+                <figcaption class="home-carousel__caption">
+                    <div class="home-carousel__caption-shell">
+                        <p class="home-carousel__eyebrow">@slide.Eyebrow</p>
+                        <p class="home-carousel__caption-title">@slide.Title</p>
+                        <p class="home-carousel__description">@slide.Description</p>
+                    </div>
+                </figcaption>
+            </figure>
+        }
+    </div>
+
+    @if (Slides.Count > 1)
+    {
+        <div class="home-carousel__controls">
+            <button type="button"
+                    class="home-carousel__control"
+                    data-anchor-carousel-prev
+                    aria-label="Show the previous homepage photo">
+                <span aria-hidden="true">Prev</span>
+            </button>
+
+            <div class="home-carousel__status">
+                <div class="home-carousel__indicator-row" aria-label="Homepage photo slide selector">
+                    @for (var index = 0; index < Slides.Count; index++)
+                    {
+                        var slide = Slides[index];
+
+                        <button type="button"
+                                class="home-carousel__indicator @(index == 0 ? "is-active" : null)"
+                                data-anchor-carousel-to="@index"
+                                aria-current="@(index == 0 ? "true" : "false")"
+                                aria-label="Show slide @(index + 1): @slide.Title"></button>
+                    }
+                </div>
+
+                <p class="home-carousel__count" data-anchor-carousel-count>1 / @Slides.Count</p>
+            </div>
+
+            <button type="button"
+                    class="home-carousel__control"
+                    data-anchor-carousel-next
+                    aria-label="Show the next homepage photo">
+                <span aria-hidden="true">Next</span>
+            </button>
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public IReadOnlyList<HomepageCarouselSlide> Slides { get; set; } = Array.Empty<HomepageCarouselSlide>();
+
+    [Parameter]
+    public string Label { get; set; } = "Homepage photo highlights";
+
+    [Parameter]
+    public int AutoAdvanceIntervalMs { get; set; } = 6500;
+}
