@@ -15,9 +15,14 @@
 
             @if (homepageSummaryParagraphs.Count > 0)
             {
-                <div class="page-hero__copy-group">
-                    <p class="page-hero__lead">@homepageSummaryParagraphs[0]</p>
+                <p class="page-hero__lead">@homepageSummaryParagraphs[0]</p>
+            }
 
+            <HomepageCarousel Slides="PlaceholderCarouselSlides" Label="Homepage photo highlights" />
+
+            @if (homepageSummaryParagraphs.Count > 1)
+            {
+                <div class="page-hero__copy-group">
                     @for (var i = 1; i < homepageSummaryParagraphs.Count; i++)
                     {
                         <p class="page-hero__copy">@homepageSummaryParagraphs[i]</p>
@@ -43,8 +48,6 @@
                 </p>
             </div>
         </article>
-
-        <HomepageCarousel Slides="PlaceholderCarouselSlides" Label="Homepage photo highlights" />
     </div>
 
     <aside class="feature-card feature-card--tight home-rail home-rail--specials" aria-labelledby="home-specials-heading">

@@ -265,6 +265,10 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Empty(cut.FindAll(".home-main .page-hero__eyebrow"));
         Assert.Equal("Published homepage messaging should flow through to the guest-facing welcome block.", cut.Find(".home-main .page-hero__lead").TextContent.Trim());
         Assert.Single(cut.FindAll(".home-main .page-hero__copy"));
+        var homeHeroMarkup = cut.Find(".home-main .page-hero").InnerHtml;
+        Assert.True(
+            homeHeroMarkup.IndexOf("data-anchor-carousel=\"true\"", StringComparison.OrdinalIgnoreCase) <
+            homeHeroMarkup.IndexOf("A second paragraph should render as supporting body copy.", StringComparison.OrdinalIgnoreCase));
         Assert.Contains("Browse the Menu", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Plan Your Visit", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("data-anchor-carousel=\"true\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
