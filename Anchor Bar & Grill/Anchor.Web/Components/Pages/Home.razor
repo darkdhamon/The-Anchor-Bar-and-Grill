@@ -6,8 +6,6 @@
 <section class="home-shell">
     <div class="home-main">
         <article class="page-hero page-hero--home">
-            <HomepageCarousel Slides="PlaceholderCarouselSlides" Label="Homepage photo highlights" />
-
             @if (!string.IsNullOrWhiteSpace(homepageContent.Eyebrow))
             {
                 <p class="page-hero__eyebrow">@homepageContent.Eyebrow</p>
@@ -19,6 +17,8 @@
             {
                 <p class="page-hero__lead">@homepageSummaryParagraphs[0]</p>
             }
+
+            <HomepageCarousel Slides="PlaceholderCarouselSlides" Label="Homepage photo highlights" />
 
             @if (homepageSummaryParagraphs.Count > 1)
             {
