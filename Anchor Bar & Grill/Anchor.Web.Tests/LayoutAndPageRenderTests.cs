@@ -265,7 +265,12 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Empty(cut.FindAll(".home-main .page-hero__eyebrow"));
         Assert.Equal("Published homepage messaging should flow through to the guest-facing welcome block.", cut.Find(".home-main .page-hero__lead").TextContent.Trim());
         Assert.Single(cut.FindAll(".home-main .page-hero__copy"));
-        var homeHeroMarkup = cut.Find(".home-main .page-hero").InnerHtml;
+        var homeHero = cut.Find(".home-main .page-hero");
+        var homeHeroMarkup = homeHero.InnerHtml;
+        Assert.Contains("home-carousel", homeHero.FirstElementChild?.ClassName ?? string.Empty, StringComparison.Ordinal);
+        Assert.True(
+            homeHeroMarkup.IndexOf("data-anchor-carousel=\"true\"", StringComparison.OrdinalIgnoreCase) <
+            homeHeroMarkup.IndexOf("Fresh copy from the publicity editor.", StringComparison.OrdinalIgnoreCase));
         Assert.True(
             homeHeroMarkup.IndexOf("data-anchor-carousel=\"true\"", StringComparison.OrdinalIgnoreCase) <
             homeHeroMarkup.IndexOf("A second paragraph should render as supporting body copy.", StringComparison.OrdinalIgnoreCase));
@@ -642,6 +647,23 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("@media (max-width: 960px) {", stylesheet, StringComparison.Ordinal);
         Assert.Matches(new Regex("\\.home-main\\s*\\{\\s*padding:\\s*0;", RegexOptions.Multiline), stylesheet);
         Assert.DoesNotMatch(new Regex("\\.home-main\\s*\\{\\s*padding:\\s*1\\.75rem;", RegexOptions.Multiline), stylesheet);
+    }
+
+    [Fact]
+    public void HomepageCarousel_Styles_EnableLargeScreenWrapLayout()
+    {
+        var repositoryRoot = GetRepositoryRoot();
+        var stylesheetFile = Path.Combine(repositoryRoot, "Anchor Bar & Grill", "Anchor.Web", "wwwroot", "app.css");
+        var stylesheet = File.ReadAllText(stylesheetFile);
+
+        Assert.Contains(".page-hero--home {", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("display: flow-root;", stylesheet, StringComparison.Ordinal);
+        Assert.Contains(".page-hero--home > .home-carousel {", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("margin-bottom: 1.35rem;", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("@media (min-width: 1280px) {", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("float: right;", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("width: 48%;", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("clear: both;", stylesheet, StringComparison.Ordinal);
     }
 
     [Fact]

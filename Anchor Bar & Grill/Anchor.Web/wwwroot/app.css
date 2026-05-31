@@ -649,10 +649,15 @@ html.anchor-theme-dark .site-shell {
 }
 
 .page-hero--home {
+    display: flow-root;
     background:
         radial-gradient(circle at top left, rgba(89, 175, 226, 0.2), transparent 35%),
         linear-gradient(160deg, rgba(247, 247, 244, 0.12), transparent),
         var(--surface);
+}
+
+.page-hero--home > .home-carousel {
+    margin-bottom: 1.35rem;
 }
 
 .page-hero--section {
@@ -3367,6 +3372,17 @@ button.menu-editor-filter-chip {
 }
 
 @media (min-width: 1280px) {
+    .page-hero--home > .home-carousel {
+        float: right;
+        width: 48%;
+        min-width: 18rem;
+        margin: 0 0 1.35rem 1.5rem;
+    }
+
+    .page-hero--home .home-main__support {
+        clear: both;
+    }
+
     .menu-page .menu-layout {
         grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
     }
