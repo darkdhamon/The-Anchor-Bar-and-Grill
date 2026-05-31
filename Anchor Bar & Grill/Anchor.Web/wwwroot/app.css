@@ -907,7 +907,7 @@ html.anchor-theme-dark .site-shell {
     width: 100%;
     max-width: 100%;
     min-height: 0;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 4 / 3;
     border-radius: calc(var(--anchor-border-radius) - 0.45rem);
     overflow: hidden;
     display: grid;

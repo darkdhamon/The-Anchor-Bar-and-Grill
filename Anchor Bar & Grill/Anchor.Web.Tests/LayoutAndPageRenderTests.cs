@@ -637,14 +637,14 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     }
 
     [Fact]
-    public void HomepageCarousel_Styles_UseWidescreenContainPresentation()
+    public void HomepageCarousel_Styles_UseFourByThreeContainPresentation()
     {
         var repositoryRoot = GetRepositoryRoot();
         var stylesheetFile = Path.Combine(repositoryRoot, "Anchor Bar & Grill", "Anchor.Web", "wwwroot", "app.css");
         var stylesheet = File.ReadAllText(stylesheetFile);
 
         Assert.Contains(".home-carousel__viewport {", stylesheet, StringComparison.Ordinal);
-        Assert.Contains("aspect-ratio: 16 / 9;", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("aspect-ratio: 4 / 3;", stylesheet, StringComparison.Ordinal);
         Assert.Contains(".home-carousel__image {", stylesheet, StringComparison.Ordinal);
         Assert.Contains("object-fit: contain;", stylesheet, StringComparison.Ordinal);
         Assert.Contains("max-width: 100%;", stylesheet, StringComparison.Ordinal);
