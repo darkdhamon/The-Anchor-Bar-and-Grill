@@ -210,7 +210,7 @@
       const intervalMs = Number.isFinite(configuredInterval) && configuredInterval >= 2500 ? configuredInterval : 10000;
       let activeIndex = Math.max(slides.findIndex((slide) => slide.classList.contains("is-active")), 0);
       let autoAdvanceHandle = null;
-      let captionsCollapsed = false;
+      let captionsCollapsed = true;
       let touchStartX = null;
 
       function clearAutoAdvance() {
