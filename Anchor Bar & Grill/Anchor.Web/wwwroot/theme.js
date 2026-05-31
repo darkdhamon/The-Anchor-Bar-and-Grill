@@ -200,6 +200,7 @@
       carousel.dataset.anchorCarouselInitialized = "true";
 
       const indicators = Array.from(carousel.querySelectorAll("[data-anchor-carousel-to]"));
+      const captions = Array.from(carousel.querySelectorAll("[data-anchor-carousel-caption]"));
       const previousButton = carousel.querySelector("[data-anchor-carousel-prev]");
       const nextButton = carousel.querySelector("[data-anchor-carousel-next]");
       const count = carousel.querySelector("[data-anchor-carousel-count]");
@@ -221,6 +222,12 @@
           const isActive = index === activeIndex;
           slide.classList.toggle("is-active", isActive);
           slide.setAttribute("aria-hidden", isActive ? "false" : "true");
+        });
+
+        captions.forEach((caption, index) => {
+          const isActive = index === activeIndex;
+          caption.classList.toggle("is-active", isActive);
+          caption.setAttribute("aria-hidden", isActive ? "false" : "true");
         });
 
         indicators.forEach((indicator, index) => {

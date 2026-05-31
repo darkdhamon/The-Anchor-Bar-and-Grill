@@ -930,19 +930,23 @@ html.anchor-theme-dark .site-shell {
     object-position: center;
 }
 
-.home-carousel__caption {
-    position: absolute;
-    inset: auto 0 0;
-    padding: 1.35rem;
-    color: var(--anchor-white);
-    background:
-        linear-gradient(180deg, rgba(31, 36, 58, 0.03), rgba(31, 36, 58, 0.8) 42%, rgba(31, 36, 58, 0.94));
+.home-carousel__caption-track {
+    display: grid;
 }
 
-.home-carousel__caption-shell {
-    max-width: 28rem;
-    display: grid;
+.home-carousel__caption-panel {
+    display: none;
     gap: 0.45rem;
+    padding: 1.15rem 1.2rem;
+    border-radius: calc(var(--anchor-border-radius) - 0.45rem);
+    color: var(--anchor-white);
+    background:
+        radial-gradient(circle at top right, rgba(89, 175, 226, 0.16), transparent 42%),
+        linear-gradient(180deg, rgba(31, 36, 58, 0.96), rgba(40, 44, 68, 0.92));
+}
+
+.home-carousel__caption-panel.is-active {
+    display: grid;
 }
 
 .home-carousel__eyebrow {
@@ -963,6 +967,7 @@ html.anchor-theme-dark .site-shell {
 }
 
 .home-carousel__description {
+    margin: 0;
     color: rgba(247, 247, 244, 0.82);
     line-height: 1.45;
 }
@@ -3264,7 +3269,11 @@ button.menu-editor-filter-chip {
 
 @media (max-width: 960px) {
     .home-main {
-        padding: 1.75rem;
+        padding: 0;
+    }
+
+    .page-hero {
+        padding: 1.5rem;
     }
 
     .hero-grid,
@@ -3566,26 +3575,51 @@ button.menu-editor-filter-chip {
         align-items: start;
     }
 
-    .home-carousel__caption {
-        padding: 1rem;
+    .page-hero {
+        padding: 1.1rem;
+    }
+
+    .home-carousel {
+        padding: 0.65rem;
+        gap: 0.75rem;
     }
 
     .home-carousel__caption-title {
-        font-size: clamp(1.8rem, 9vw, 2.35rem);
+        font-size: clamp(1.55rem, 8vw, 2.1rem);
+    }
+
+    .home-carousel__caption-panel {
+        padding: 0.9rem;
+        gap: 0.35rem;
+    }
+
+    .home-carousel__eyebrow {
+        font-size: 0.76rem;
+    }
+
+    .home-carousel__description {
+        font-size: 0.95rem;
+        line-height: 1.4;
     }
 
     .home-carousel__controls {
         flex-wrap: wrap;
         justify-content: center;
+        gap: 0.75rem;
     }
 
     .home-carousel__control {
-        flex: 1 1 8rem;
+        flex: 1 1 7rem;
+        padding: 0.65rem 0.9rem;
     }
 
     .home-carousel__status {
         width: 100%;
         order: -1;
+    }
+
+    .home-carousel__count {
+        font-size: 1.15rem;
     }
 }
 

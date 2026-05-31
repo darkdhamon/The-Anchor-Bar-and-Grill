@@ -273,7 +273,9 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Plan Your Visit", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("data-anchor-carousel=\"true\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(5, cut.FindAll("[data-anchor-carousel-slide]").Count);
+        Assert.Equal(5, cut.FindAll("[data-anchor-carousel-caption]").Count);
         Assert.Equal(5, cut.FindAll("[data-anchor-carousel-to]").Count);
+        Assert.Single(cut.FindAll(".home-carousel__caption-panel.is-active"));
         Assert.Contains("data-anchor-carousel-prev", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("data-anchor-carousel-next", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("/images/home-carousel/live-music-stage.jpg", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -597,6 +599,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("data-anchor-carousel-prev", themeScript, StringComparison.Ordinal);
         Assert.Contains("data-anchor-carousel-next", themeScript, StringComparison.Ordinal);
         Assert.Contains("data-anchor-carousel-interval", themeScript, StringComparison.Ordinal);
+        Assert.Contains("data-anchor-carousel-caption", themeScript, StringComparison.Ordinal);
         Assert.Contains("touchstart", themeScript, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -624,6 +627,21 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains(".home-carousel__image {", stylesheet, StringComparison.Ordinal);
         Assert.Contains("object-fit: contain;", stylesheet, StringComparison.Ordinal);
         Assert.Contains("max-width: 100%;", stylesheet, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void HomepageCarousel_Styles_UseSeparateCaptionPanelAndRecoverMobileWidth()
+    {
+        var repositoryRoot = GetRepositoryRoot();
+        var stylesheetFile = Path.Combine(repositoryRoot, "Anchor Bar & Grill", "Anchor.Web", "wwwroot", "app.css");
+        var stylesheet = File.ReadAllText(stylesheetFile);
+
+        Assert.Contains(".home-carousel__caption-panel {", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("display: none;", stylesheet, StringComparison.Ordinal);
+        Assert.Contains(".home-carousel__caption-panel.is-active {", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("@media (max-width: 960px) {", stylesheet, StringComparison.Ordinal);
+        Assert.Matches(new Regex("\\.home-main\\s*\\{\\s*padding:\\s*0;", RegexOptions.Multiline), stylesheet);
+        Assert.DoesNotMatch(new Regex("\\.home-main\\s*\\{\\s*padding:\\s*1\\.75rem;", RegexOptions.Multiline), stylesheet);
     }
 
     [Fact]

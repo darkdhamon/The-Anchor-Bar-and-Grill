@@ -15,14 +15,23 @@
                     aria-label="@(FormattableString.Invariant($"{index + 1} of {Slides.Count}"))"
                     aria-roledescription="slide">
                 <img class="home-carousel__image" src="@slide.ImageSource" alt="@slide.AltText" />
-                <figcaption class="home-carousel__caption">
-                    <div class="home-carousel__caption-shell">
-                        <p class="home-carousel__eyebrow">@slide.Eyebrow</p>
-                        <p class="home-carousel__caption-title">@slide.Title</p>
-                        <p class="home-carousel__description">@slide.Description</p>
-                    </div>
-                </figcaption>
             </figure>
+        }
+    </div>
+
+    <div class="home-carousel__caption-track" aria-live="polite">
+        @for (var index = 0; index < Slides.Count; index++)
+        {
+            var slide = Slides[index];
+            var isActive = index == 0;
+
+            <div class="home-carousel__caption-panel @(isActive ? "is-active" : null)"
+                 data-anchor-carousel-caption
+                 aria-hidden="@(isActive ? "false" : "true")">
+                <p class="home-carousel__eyebrow">@slide.Eyebrow</p>
+                <p class="home-carousel__caption-title">@slide.Title</p>
+                <p class="home-carousel__description">@slide.Description</p>
+            </div>
         }
     </div>
 
