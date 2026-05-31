@@ -1,3 +1,5 @@
+using Anchor.Infrastructure;
+using Anchor.Infrastructure.Data;
 using Anchor.Domain;
 using Anchor.Domain.Identity;
 using Anchor.Domain.Identity.Bootstrap;
@@ -7,13 +9,20 @@ using Anchor.Web.Components;
 using Anchor.Web.Components.Account;
 using Anchor.Web.Configuration;
 using Anchor.Web.Data;
+using Anchor.Web.Images;
 using Anchor.Web.Issues;
+using Microsoft.AspNetCore.Hosting.StaticWebAssets;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+if (builder.Environment.IsDevelopment())
+{
+    StaticWebAssetsLoader.UseStaticWebAssets(builder.Environment, builder.Configuration);
+}
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -34,19 +43,18 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorizationBuilder()
     .AddAnchorAuthorizationPolicies();
 
+builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.Configure<AnchorIdentityOptions>(builder.Configuration.GetSection(AnchorIdentityConfigurationKeys.SectionName));
 builder.Services.AddAnchorDomainServices();
 builder.Services.AddGitHubIssueServices(builder.Configuration);
 builder.Services.AddProductionExceptionIssueReporting(builder.Configuration);
 builder.Services.AddScoped<IConfirmedAccountConfigurationStore, JsonConfirmedAccountConfigurationStore>();
-builder.Services.AddScoped<IIdentityAdministrationRepository, IdentityAdministrationRepository>();
-builder.Services.AddScoped<IIdentityBootstrapRepository, IdentityBootstrapRepository>();
+builder.Services.AddScoped<IMenuItemImageStorage, LocalMenuItemImageStorage>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+builder.Services.AddAnchorInfrastructure(connectionString);
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
@@ -66,6 +74,9 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await dbContext.Database.MigrateAsync();
+
     var bootstrapService = scope.ServiceProvider.GetRequiredService<IIdentityBootstrapService>();
     await bootstrapService.BootstrapAsync();
 }

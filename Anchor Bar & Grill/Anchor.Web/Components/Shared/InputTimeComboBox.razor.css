@@ -1,0 +1,88 @@
+.time-combobox {
+    position: relative;
+}
+
+.time-combobox__frame {
+    position: relative;
+}
+
+.time-combobox__frame:has(.time-combobox__input.input-validation-error),
+.time-combobox__frame:has(.time-combobox__input.invalid),
+.time-combobox__frame:has(.time-combobox__input[aria-invalid="true"]) {
+    border-radius: 1rem;
+    box-shadow: 0 0 0 0.24rem var(--validation-ring);
+}
+
+.time-combobox__input {
+    padding-right: 3rem;
+}
+
+.time-combobox__toggle {
+    position: absolute;
+    top: 50%;
+    right: 0.45rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-secondary);
+    transform: translateY(-50%);
+    display: inline-grid;
+    place-items: center;
+}
+
+.time-combobox__toggle:hover,
+.time-combobox__toggle:focus-visible {
+    background: rgba(89, 175, 226, 0.14);
+    color: var(--text-primary);
+    outline: none;
+}
+
+.time-combobox__toggle-icon {
+    width: 0.8rem;
+    height: 0.8rem;
+    border-right: 0.14rem solid currentColor;
+    border-bottom: 0.14rem solid currentColor;
+    transform: rotate(45deg) translateY(-0.08rem);
+}
+
+.time-combobox__menu {
+    position: absolute;
+    top: calc(100% + 0.45rem);
+    left: 0;
+    right: 0;
+    z-index: 30;
+    max-height: 15rem;
+    overflow-y: auto;
+    padding: 0.4rem;
+    border: 1px solid var(--outline);
+    border-radius: 1rem;
+    background: var(--surface-strong);
+    box-shadow: var(--anchor-shadow);
+    display: grid;
+    gap: 0.2rem;
+}
+
+.time-combobox__option {
+    border: 0;
+    border-radius: 0.8rem;
+    background: transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+    font: inherit;
+    padding: 0.7rem 0.85rem;
+    text-align: left;
+}
+
+.time-combobox__option:hover,
+.time-combobox__option:focus-visible,
+.time-combobox__option--active {
+    background: rgba(89, 175, 226, 0.14);
+    outline: none;
+}
+
+.time-combobox__option--nearest {
+    background: rgba(89, 175, 226, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(89, 175, 226, 0.18);
+}

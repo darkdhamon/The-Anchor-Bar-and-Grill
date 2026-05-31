@@ -1,6 +1,7 @@
 @page "/admin/events"
 @using Anchor.Domain.Identity
 @using Microsoft.AspNetCore.Authorization
+@inject TimeProvider TimeProvider
 
 @attribute [Authorize(Policy = ApplicationPolicies.EventManagement)]
 
@@ -158,7 +159,7 @@
                 </div>
 
                 <div class="admin-list">
-                    @foreach (var item in MockupContent.EventDefinitions)
+                    @foreach (var item in eventDefinitions)
                     {
                         <article class="admin-list__item admin-list__item--media">
                             @if (item.Image is not null)
@@ -192,7 +193,6 @@
 </section>
 
 @code {
-    private static readonly IReadOnlyList<string> eventBadgeOptions = MockupContent.EventBadgeOptions;
     private static readonly IReadOnlyList<string> recurrencePatternOptions =
     [
         "Weekly",
@@ -224,9 +224,10 @@
         DayOfWeek.Sunday
     ];
 
-    private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
-    private readonly EventDefinition exampleEvent = MockupContent.EventDefinitions
-        .First(item => item.Title == "Friday Live Music");
+    private DateOnly today => DateOnly.FromDateTime(TimeProvider.GetLocalNow().DateTime);
+    private IReadOnlyList<string> eventBadgeOptions => MockupContent.GetEventBadgeOptions(today);
+    private IReadOnlyList<EventDefinition> eventDefinitions => MockupContent.GetEventDefinitions(today);
+    private EventDefinition exampleEvent => eventDefinitions.First(item => item.Title == "Friday Live Music");
 
     private string exampleRecurringEndDate =>
         exampleEvent.Recurrence?.EndsOn?.ToString("yyyy-MM-dd") ?? string.Empty;

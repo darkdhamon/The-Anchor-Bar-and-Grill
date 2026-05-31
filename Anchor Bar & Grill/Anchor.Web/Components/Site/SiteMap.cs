@@ -27,7 +27,7 @@ public static class SiteMap
     public static IReadOnlyList<RouteLink> AdminAccessLinks { get; } =
     [
         new("/help", "Help", "Explain the current staff workflow, role responsibilities, and admin tools by subject."),
-        new("/admin/about", "Publicity Editor", "Maintain the restaurant story, amenities, and guest notes."),
+        new("/admin/publicity", "Publicity Editor", "Maintain homepage messaging and future restaurant-story content."),
         new("/admin/contact", "Contact Editor", "Manage contact details, hours, and guest response guidance."),
         new("/admin/users", "User Management", "Confirm staff accounts and assign operational or technical roles."),
         new("/admin/security", "Security", "Manage runtime confirmed-account behavior and review bootstrap coverage.")

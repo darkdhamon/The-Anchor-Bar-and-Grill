@@ -5,7 +5,6 @@ namespace Anchor.Web.Components.Site;
 public static class MockupContent
 {
     private static readonly DateOnly OfferReferenceDate = DateOnly.FromDateTime(DateTime.Today);
-    private static readonly DateOnly EventReferenceDate = DateOnly.FromDateTime(DateTime.Today);
 
     public static ContactDetails Contact { get; } = new(
         "301 Main Street",
@@ -120,7 +119,7 @@ public static class MockupContent
         new(DayOfWeek.Sunday, "Sunday Pork Chop Dinner", "A hearty end-of-week dinner special that should read as a repeatable tradition.", "$17 dinner plate", "After 3:00 PM", "Weekly specials block")
     ];
 
-    public static IReadOnlyList<EventDefinition> EventDefinitions { get; } =
+    public static IReadOnlyList<EventDefinition> GetEventDefinitions(DateOnly referenceDate) =>
     [
         new(
             "Thursday Trivia",
@@ -128,51 +127,51 @@ public static class MockupContent
             "Weekly Favorite",
             new(19, 0),
             new("images/events/trivia-night.svg", "Mockup event image for Thursday trivia"),
-            StartsOn: NextOccurrenceOnOrAfter(EventReferenceDate.AddDays(-14), DayOfWeek.Thursday),
+            StartsOn: NextOccurrenceOnOrAfter(referenceDate.AddDays(-14), DayOfWeek.Thursday),
             Recurrence: new(
                 EventRecurrencePattern.Weekly,
                 DayOfWeek.Thursday,
-                EndsOn: NextOccurrenceOnOrAfter(EventReferenceDate.AddDays(35), DayOfWeek.Thursday))),
+                EndsOn: NextOccurrenceOnOrAfter(referenceDate.AddDays(35), DayOfWeek.Thursday))),
         new(
             "Friday Live Music",
             "A rotating lineup of regional acts with a brighter evening atmosphere.",
             "Live Music",
             new(20, 30),
             new("images/events/live-music.svg", "Mockup event image for Friday live music"),
-            StartsOn: NextOccurrenceOnOrAfter(EventReferenceDate.AddDays(-7), DayOfWeek.Friday),
+            StartsOn: NextOccurrenceOnOrAfter(referenceDate.AddDays(-7), DayOfWeek.Friday),
             Recurrence: new(
                 EventRecurrencePattern.Weekly,
                 DayOfWeek.Friday,
                 Interval: 2,
-                EndsOn: NextOccurrenceOnOrAfter(EventReferenceDate.AddDays(49), DayOfWeek.Friday))),
+                EndsOn: NextOccurrenceOnOrAfter(referenceDate.AddDays(49), DayOfWeek.Friday))),
         new(
             "Third Friday Steak Night",
             "A once-a-month dinner event that should read clearly as the third Friday tradition.",
             "Monthly Feature",
             new(18, 30),
-            StartsOn: GetNthWeekdayOfMonth(EventReferenceDate.Year, EventReferenceDate.Month, DayOfWeek.Friday, EventRecurrenceWeek.Third),
+            StartsOn: GetNthWeekdayOfMonth(referenceDate.Year, referenceDate.Month, DayOfWeek.Friday, EventRecurrenceWeek.Third),
             Recurrence: new(
                 EventRecurrencePattern.MonthlyNthWeekday,
                 DayOfWeek.Friday,
                 WeekOfMonth: EventRecurrenceWeek.Third,
-                EndsOn: GetNthWeekdayOfMonth(EventReferenceDate.AddMonths(2).Year, EventReferenceDate.AddMonths(2).Month, DayOfWeek.Friday, EventRecurrenceWeek.Third))),
+                EndsOn: GetNthWeekdayOfMonth(referenceDate.AddMonths(2).Year, referenceDate.AddMonths(2).Month, DayOfWeek.Friday, EventRecurrenceWeek.Third))),
         new(
             "Summer Kickoff Patio Party",
             "Kick off patio season with shared plates, a feature drink menu, and extended evening energy.",
             "Seasonal",
             new(18, 0),
             new("images/events/patio-party.svg", "Mockup event image for a patio party"),
-            StartsOn: EventReferenceDate.AddDays(12)),
+            StartsOn: referenceDate.AddDays(12)),
         new(
             "Community Bingo Fundraiser",
             "A family-friendly fundraiser event with raffle prizes and simple dinner specials.",
             "Community Night",
             new(11, 0),
-            StartsOn: EventReferenceDate.AddDays(25))
+            StartsOn: referenceDate.AddDays(25))
     ];
 
-    public static IReadOnlyList<string> EventBadgeOptions { get; } =
-        EventDefinitions
+    public static IReadOnlyList<string> GetEventBadgeOptions(DateOnly referenceDate) =>
+        GetEventDefinitions(referenceDate)
             .Select(item => item.PromoBadge)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(item => item, StringComparer.OrdinalIgnoreCase)
@@ -253,8 +252,9 @@ public static class MockupContent
     private static IReadOnlyList<UpcomingEventOccurrence> GetUpcomingEvents(DateOnly fromDate, DateOnly throughDate)
     {
         List<UpcomingEventOccurrence> upcomingEvents = [];
+        var eventDefinitions = GetEventDefinitions(fromDate);
 
-        foreach (var item in EventDefinitions)
+        foreach (var item in eventDefinitions)
         {
             foreach (var occursOn in item.GetOccurrences(fromDate, throughDate))
             {
@@ -269,7 +269,7 @@ public static class MockupContent
 
     private static DateOnly GetEventPreviewEndDate(DateOnly fromDate)
     {
-        var lastScheduledDate = EventDefinitions
+        var lastScheduledDate = GetEventDefinitions(fromDate)
             .Select(item => item.GetPreviewEndDate())
             .DefaultIfEmpty(fromDate)
             .Max();

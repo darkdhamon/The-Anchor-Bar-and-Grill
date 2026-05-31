@@ -45,6 +45,7 @@
                     <li>If a staff member forgets the current password, an <strong>Admin</strong> can set a fresh temporary password from <strong>User Management</strong>.</li>
                     <li><strong>User Management</strong> keeps each employee's first name, last name, and phone number current.</li>
                     <li><strong>Manage Account</strong> lets each signed-in user update the same first name, last name, and phone number details for their own account.</li>
+                    <li>Across account and admin forms, validation errors now highlight the affected field directly so staff can see which input needs attention instead of relying only on the text message.</li>
                     <li>When an <strong>Admin</strong> changes someone else's role or sign-in approval, that staff member only needs to refresh the page to pick up the new access.</li>
                 </ul>
             </article>
@@ -57,6 +58,53 @@
                     <li>The fallback confirmed-account value lives in <code>appsettings.json</code>, and an environment variable can still override the live behavior.</li>
                     <li><strong>Security</strong> shows both the effective value and the fallback file value.</li>
                     <li>Do not remove the final <strong>Admin</strong> or final <strong>IT</strong> assignment, and do not remove <strong>Admin</strong> from your own signed-in account.</li>
+                </ul>
+            </article>
+
+            <article class="feature-card feature-card--tight">
+                <p class="feature-card__eyebrow">Subject</p>
+                <h3>Homepage publicity workflow</h3>
+                <ul class="feature-list">
+                    <li><strong>Publicity Editor</strong> now groups its work under <strong>Homepage intro</strong> and <strong>About page</strong> areas, with <strong>/admin/publicity</strong> as the default Homepage intro route so the active section stays obvious when staff land there first.</li>
+                    <li>The homepage intro editor keeps separate <strong>draft</strong> and <strong>published</strong> copy. <strong>Save draft</strong> keeps work in progress out of the live site, while <strong>Save &amp; Publish</strong> updates the guest-facing homepage welcome block immediately.</li>
+                    <li>The public homepage now uses that published intro in the center column, while the weekly-specials and upcoming-events sidebars prefer live menu and event data and only fall back to the site's preview examples when those public sidebar feeds do not have data yet.</li>
+                    <li>The editor shows the last saved draft time, the last published time, and a preview of the currently published homepage intro, with those timestamps rendered in <strong>UTC</strong> so Admins see one consistent audit clock across environments.</li>
+                    <li>The About page editor is still a placeholder in that same grouped area, making it clear where the future restaurant-story workflow will land.</li>
+                </ul>
+            </article>
+
+            <article class="feature-card feature-card--tight">
+                <p class="feature-card__eyebrow">Subject</p>
+                <h3>Menu publishing workflow</h3>
+                <ul class="feature-list">
+                    <li><strong>Menu Editor</strong> manages four fixed public tabs: <strong>Breakfast</strong>, <strong>Lunch</strong>, <strong>Dinner</strong>, and <strong>Drinks</strong>.</li>
+                    <li>Staff switch between dedicated <strong>Food</strong>, <strong>Drinks</strong>, and <strong>Hours</strong> workspaces from a left-side navigation rail instead of working through one long stacked form. Each workspace keeps its own right-side quick guide so the current workflow stays visible while you edit.</li>
+                    <li>The Food and Drinks workspaces use a section tree on the left and one explicit-save detail panel on the right so staff can stay focused on a single record at a time. Browser sections start collapsed by default, and clicking a section header expands or collapses that section while the row action buttons stay independent.</li>
+                    <li>Specials are now first-class menu items with an attached special schedule block. Staff edit the shared item fields once, then turn on <strong>Is special</strong> when the item needs weekday or dated special behavior. On the public menu, those special items appear both in their normal section and in a top-level <strong>Specials</strong> accordion when that service has specials.</li>
+                    <li>The browser tree supports both meal filtering and content filtering so staff can focus on <strong>Standard</strong> items, <strong>Specials</strong>, or the full mixed catalog.</li>
+                    <li>The browser tree supports <strong>Active</strong>, <strong>Both</strong>, and <strong>Archived</strong> views. Archived records appear muted, while hidden records stay visible with their own status treatment.</li>
+                    <li>Sections now support an optional public callout note, default menu visibility chips for Breakfast, Lunch, Dinner, or Drinks, and an optional parent section. Guests only see sections that currently contain visible items, while the editor keeps the selected empty section and newly created empty sections visible so staff can finish building them out. New section forms also keep the save action disabled until the section has a name, and food sections still need at least one menu chip turned on.</li>
+                    <li>Food items can now belong to multiple sections at once. Staff use the section chips on the item form to place one item in every section where it belongs, and the browser tree shows that same item under each assigned section.</li>
+                    <li>Item menu visibility can inherit from the selected sections or be narrowed to a subset of those section menus. This lets one section stay visible for Lunch and Dinner while a specific item inside that section only appears for Lunch.</li>
+                    <li>Parent sections can group both direct items and child sections, but nesting stops there: only top-level sections can be parents, and child sections cannot contain their own subsections. When a section already has child subsections, the editor locks its parent picker so staff do not accidentally turn that section into a child too. The guest-facing parent section follows the same mixed order you configure in the editor, including when direct items and child-section headings share the same sort order, so child-section headings stay in the exact spot you place them among the direct items. If the same item is assigned to both a child section and one of that child section's deeper legacy descendants, guests see that item only once and the deeper subsection placement wins. If the child is enabled on a service where the parent is not, that child section becomes its own top-level public menu accordion.</li>
+                    <li>Section names and menu item names must stay unique. If staff type an item name that already exists and tab away from the field, the editor offers to switch straight into the existing item instead of silently creating a duplicate.</li>
+                    <li>Section and item ordering use the same live tree controls: <strong>Up</strong> and <strong>Down</strong> move one slot at a time, while drag-and-drop drops the record directly into its new slot. Mixed section-content moves now save as one operation, so a parent card does not end up with half-applied order changes if one side of the reorder fails.</li>
+                    <li>The Hours workspace opens with a stacked summary list for every service. Staff can scan the grouped public hours first, then click any service row to jump directly into editing that service.</li>
+                    <li>Menu-hour inputs accept shorthand such as <strong>1300</strong> or <strong>1pm</strong> and also provide a reusable time-pick list so staff do not have to memorize one rigid format. Save stays disabled until every available day has valid opening and closing times, and same-day closing times must still come after opening times unless <strong>Closes next day</strong> is enabled.</li>
+                    <li>Recurring seasonal items now use month/day windows such as October through April or December 20 through January 5. Leave the day blank to use the first or last day of the selected month automatically.</li>
+                    <li>Weekly recurring specials now use weekday chips, so one special can run on multiple days such as both Saturday and Sunday. Dated specials still use explicit date ranges.</li>
+                    <li>The Menu Editor now favors chip-style toggles over dense checkbox lists for service visibility, special scheduling, and other small multi-select choices, making active and inactive states easier to scan.</li>
+                    <li>New food sections start with Lunch and Dinner enabled, Breakfast disabled, and Drinks disabled until staff intentionally change those defaults for the new section. Drink sections now skip that toggle entirely and automatically appear on the Drinks menu.</li>
+                    <li>Menu-item images can now be uploaded directly from the item editor. The upload stages a processed <code>.webp</code> preview under the local gallery path, rejects raw uploads over <strong>50 MB</strong>, rejects unusually large decoded image dimensions before full processing, and keeps the eventual saved file at <strong>5 MB</strong> or smaller while still handling common phone-camera JPG uploads through server-side normalization.</li>
+                    <li>The item editor still supports manually typing a known image URL or site path, but that field now lives under <strong>Advanced image path</strong> so upload is the primary workflow. Staged uploads are only committed when the item save succeeds, abandoned staged uploads are discarded automatically, replaced local uploads are cleaned up after a successful save or delete, editor uploads render as contained thumbnails instead of full-size images, and both the editor thumbnail and the public menu thumbnail open a larger in-page preview modal when clicked.</li>
+                    <li>Existing menu items now keep their current price-variant rows stable while staff add a second size or serving option, so editing prices no longer depends on recreating the whole item from scratch.</li>
+                    <li>The public menu now groups repeated hours into compact ranges such as <strong>Daily</strong>, <strong>Monday-Friday</strong>, or <strong>Sunday-Thursday</strong>, and highlights the row that includes today instead of repeating a separate today's-hours callout.</li>
+                    <li>The public menu now uses a left sidebar for <strong>Breakfast</strong>, <strong>Lunch</strong>, <strong>Dinner</strong>, and <strong>Drinks</strong>, keeps the active service hours directly under those sidebar choices, drops the extra hero banner so guests land straight in the menu content, and pins the sidebar beneath the sticky site header on larger screens. When guests open <strong>/menu</strong> without a tab selected, the site now defaults to the service that is open right now or the next one to open. Upcoming dated specials only appear there when they have a real scheduled occurrence that also fits the item's own lifetime and recurring-season rules.</li>
+                    <li>The homepage weekly-special preview now looks at today plus the next six days, ordering recurring specials by the next day they are actually available inside that window and only surfacing upcoming dated specials when one of their scheduled dates is truly valid inside the preview range. Single-day dated specials show <strong>Today</strong> when active, multi-day or recurring specials that are active right now show <strong>Now available</strong>, and dated specials that are coming up soon show <strong>Limited-time special</strong>.</li>
+                    <li>Public menu categories open as accordion sections so guests can focus on one category at a time, with the first visible category expanded by default.</li>
+                    <li>On larger screens, the public menu and Menu Editor expand to use the available browser width so staff can review more sections and form fields without feeling boxed into a narrow center column.</li>
+                    <li>Use <strong>Archive</strong> when an item or section should disappear from the guest view without being permanently deleted. Special items archive the same way as standard items. <strong>Delete</strong> always requires a second confirmation.</li>
+                    <li>Public menu labels such as <strong>Coming Soon</strong>, <strong>Seasonal</strong>, and <strong>Limited Time</strong> are derived from menu offer dates at runtime.</li>
                 </ul>
             </article>
 
@@ -84,6 +132,7 @@
                 <h3>Admin</h3>
                 <ul class="feature-list">
                     <li>Own <strong>User Management</strong>, <strong>Security</strong>, <strong>Publicity Editor</strong>, and <strong>Contact Editor</strong>.</li>
+                    <li><strong>Publicity Editor</strong> currently controls the homepage intro draft/publish workflow, while the grouped About-page area remains reserved for later work.</li>
                     <li>Help is available to Admin accounts so onboarding, role assignment, and security rules stay easy to review.</li>
                     <li>Admins do not use <strong>Event Editor</strong> or <strong>Menu Editor</strong> unless those roles are assigned separately in a future change.</li>
                 </ul>
@@ -102,7 +151,16 @@
                 <p class="feature-card__eyebrow">Role Type</p>
                 <h3>MenuManager</h3>
                 <ul class="feature-list">
-                    <li>Use <strong>Menu Editor</strong> to maintain menu items, pricing, sections, and recurring specials.</li>
+                    <li>Use <strong>Menu Editor</strong> to maintain sections, parent/child section groupings, section callouts, section menu defaults, recurring seasonal item windows, price variants, menu items, special-item schedule extensions, and per-tab service hours.</li>
+                    <li>The Menu Editor now keeps the detail form pinned while you scroll the browser, uses a dedicated left-side workspace rail for Food, Drinks, and Hours, starts browser sections collapsed so large menus stay easy to scan, lets staff open or close a section by clicking its header instead of hunting for a separate toggle button, mixes child-section headers with direct items inside parent cards so staff can order them together, keeps both the catalog workspaces and the Hours workspace aligned with a right-side quick guide instead of repeating that same information in a large intro block, keeps new sections unsaveable until they have a name plus any required visibility choices, locks the parent picker when a section already owns child subsections, and now sends that same mixed order through to the guest-facing menu.</li>
+                    <li>Item save errors appear inside the detail panel near the action buttons, so staff do not need to scroll back to the top of the page to see why a save failed.</li>
+                    <li>Text-entry fields across the Menu Editor and other admin forms accept both normal typing and committed text input, so Windows voice dictation and similar accessibility tools work more consistently.</li>
+                    <li>Menu managers can now upload menu-item images directly from the item form instead of hand-typing a path. Upload first stages a processed preview, commits it into the local menu gallery only after the item save succeeds, automatically discards abandoned staged uploads, cleans up replaced local files after successful saves or deletes, and lets staff inspect both editor and public-menu thumbnails in a larger preview modal.</li>
+                    <li>Food items can appear on Breakfast, Lunch, and Dinner, and one food item can belong to multiple sections at the same time. Drink items belong to the Drinks tab through their section family.</li>
+                    <li>Recurring weekly specials can now run on more than one weekday, and recurring seasonal items can return every year without re-entering a new date range.</li>
+                    <li>Hide a menu item when it should appear only through a special offer instead of the regular public catalog.</li>
+                    <li>The editor prevents duplicate section names and duplicate item names, and item-name blur prompts can jump directly into the matching existing item.</li>
+                    <li>The shared time-picker input keeps opening and closing hours visually consistent across future editors anywhere staff need to select a time.</li>
                     <li>This role does not automatically grant event, publicity, contact, security, or user-management access.</li>
                 </ul>
             </article>

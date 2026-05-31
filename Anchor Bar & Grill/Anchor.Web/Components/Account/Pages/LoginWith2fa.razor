@@ -1,8 +1,8 @@
-﻿@page "/Account/LoginWith2fa"
+@page "/Account/LoginWith2fa"
 
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Identity
-@using Anchor.Web.Data
+@using Anchor.Infrastructure.Data
 
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
@@ -23,7 +23,7 @@
             <DataAnnotationsValidator />
             <ValidationSummary class="text-danger" role="alert" />
             <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.TwoFactorCode" id="Input.TwoFactorCode" class="form-control" autocomplete="off" />
+                <CommitAwareInputText @bind-Value="Input.TwoFactorCode" id="Input.TwoFactorCode" class="form-control" autocomplete="off" />
                 <label for="Input.TwoFactorCode" class="form-label">Authenticator code</label>
                 <ValidationMessage For="() => Input.TwoFactorCode" class="text-danger" />
             </div>
@@ -101,3 +101,4 @@
         public bool RememberMachine { get; set; }
     }
 }
+
