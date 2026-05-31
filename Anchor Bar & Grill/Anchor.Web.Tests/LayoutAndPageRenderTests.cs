@@ -601,6 +601,18 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     }
 
     [Fact]
+    public void HomepageCarousel_Styles_DoNotForceFullHeightInTheHeroColumn()
+    {
+        var repositoryRoot = GetRepositoryRoot();
+        var stylesheetFile = Path.Combine(repositoryRoot, "Anchor Bar & Grill", "Anchor.Web", "wwwroot", "app.css");
+        var stylesheet = File.ReadAllText(stylesheetFile);
+
+        Assert.Contains(".home-carousel {", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("min-height: 0;", stylesheet, StringComparison.Ordinal);
+        Assert.DoesNotContain("min-height: 100%;", stylesheet.Substring(stylesheet.IndexOf(".home-carousel {", StringComparison.Ordinal), 120), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void RazorComponents_DoNotUseRootlessInternalHrefOrActionValues()
     {
         var componentsRoot = Path.Combine(GetRepositoryRoot(), "Anchor Bar & Grill", "Anchor.Web", "Components");

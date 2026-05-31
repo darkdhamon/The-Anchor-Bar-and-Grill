@@ -878,7 +878,7 @@ html.anchor-theme-dark .site-shell {
 
 .home-carousel {
     padding: 0.85rem;
-    min-height: 100%;
+    min-height: 0;
     background:
         linear-gradient(145deg, rgba(48, 154, 221, 0.18), rgba(31, 36, 58, 0.24)),
         var(--surface);
