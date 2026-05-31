@@ -280,7 +280,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.True(
             homeHeroMarkup.IndexOf("data-anchor-carousel=\"true\"", StringComparison.OrdinalIgnoreCase) <
             homeHeroMarkup.IndexOf("Browse the Menu", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains("data-anchor-carousel-interval=\"10000\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("data-anchor-carousel-interval=\"5000\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Browse the Menu", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Plan Your Visit", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("data-anchor-carousel=\"true\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -621,7 +621,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("touchcancel", themeScript, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("pointerenter", themeScript, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("pointerleave", themeScript, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("10000", themeScript, StringComparison.Ordinal);
+        Assert.Contains("5000", themeScript, StringComparison.Ordinal);
     }
 
     [Fact]

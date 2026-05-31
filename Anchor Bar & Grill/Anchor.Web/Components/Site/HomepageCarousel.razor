@@ -87,7 +87,7 @@
     public string Label { get; set; } = "Homepage photo highlights";
 
     [Parameter]
-    public int AutoAdvanceIntervalMs { get; set; } = 10000;
+    public int AutoAdvanceIntervalMs { get; set; } = 5000;
 
     private readonly string captionTrackId = $"home-carousel-caption-{Guid.NewGuid():N}";
 }
