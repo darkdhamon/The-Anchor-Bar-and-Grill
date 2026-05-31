@@ -661,6 +661,11 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("display: none;", stylesheet, StringComparison.Ordinal);
         Assert.Contains(".home-carousel__caption-panel.is-active {", stylesheet, StringComparison.Ordinal);
         Assert.Contains(".home-carousel__caption-toggle {", stylesheet, StringComparison.Ordinal);
+        Assert.Contains(".home-carousel__control--prev {", stylesheet, StringComparison.Ordinal);
+        Assert.Contains(".home-carousel__control--next {", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("left: 0.85rem;", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("right: 0.85rem;", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("bottom: 0.9rem;", stylesheet, StringComparison.Ordinal);
         Assert.Contains("@media (max-width: 960px) {", stylesheet, StringComparison.Ordinal);
         Assert.Matches(new Regex("\\.home-main\\s*\\{\\s*padding:\\s*0;", RegexOptions.Multiline), stylesheet);
         Assert.DoesNotMatch(new Regex("\\.home-main\\s*\\{\\s*padding:\\s*1\\.75rem;", RegexOptions.Multiline), stylesheet);

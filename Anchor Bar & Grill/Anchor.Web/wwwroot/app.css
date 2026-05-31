@@ -1004,27 +1004,27 @@ html.anchor-theme-dark .site-shell {
     transform: translateY(-1px);
 }
 
-.home-carousel__controls,
 .home-carousel__status,
 .home-carousel__indicator-row {
     display: flex;
     align-items: center;
 }
 
-.home-carousel__controls {
-    justify-content: space-between;
-    gap: 1rem;
-}
-
 .home-carousel__status {
-    gap: 0.9rem;
-    flex-wrap: wrap;
+    position: absolute;
+    left: 50%;
+    bottom: 0.9rem;
+    z-index: 2;
+    transform: translateX(-50%);
     justify-content: center;
+    padding: 0.5rem 0.8rem;
+    border-radius: 999px;
+    background: rgba(16, 18, 31, 0.72);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
 }
 
 .home-carousel__indicator-row {
-    gap: 0.55rem;
-    flex-wrap: wrap;
+    gap: 0.45rem;
 }
 
 .home-carousel__control,
@@ -1039,21 +1039,40 @@ html.anchor-theme-dark .site-shell {
 }
 
 .home-carousel__control {
+    position: absolute;
+    top: 50%;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    padding: 0;
     border-radius: 999px;
-    padding: 0.72rem 1rem;
-    min-width: 4.8rem;
-    background: var(--surface-strong);
-    color: var(--text-primary);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    background: rgba(16, 18, 31, 0.72);
+    color: var(--anchor-white);
+    transform: translateY(-50%);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+}
+
+.home-carousel__control--prev {
+    left: 0.85rem;
+}
+
+.home-carousel__control--next {
+    right: 0.85rem;
+}
+
+.home-carousel__control span {
+    font-size: 1.7rem;
+    line-height: 1;
 }
 
 .home-carousel__control:hover,
 .home-carousel__control:focus-visible {
     background: rgba(48, 154, 221, 0.14);
     border-color: rgba(48, 154, 221, 0.38);
-    color: var(--text-primary);
-    transform: translateY(-1px);
+    color: var(--anchor-white);
+    transform: translateY(-50%) scale(1.04);
 }
 
 .home-carousel__indicator {
@@ -1077,10 +1096,14 @@ html.anchor-theme-dark .site-shell {
 }
 
 .home-carousel__count {
-    font-family: "Bebas Neue", "Impact", sans-serif;
-    font-size: 1.3rem;
-    letter-spacing: 0.08em;
-    color: var(--accent-readable);
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
 }
 
 .section-shell,
@@ -3645,24 +3668,14 @@ button.menu-editor-filter-chip {
         line-height: 1.4;
     }
 
-    .home-carousel__controls {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 0.75rem;
-    }
-
     .home-carousel__control {
-        flex: 1 1 7rem;
-        padding: 0.65rem 0.9rem;
+        width: 2.7rem;
+        height: 2.7rem;
     }
 
     .home-carousel__status {
-        width: 100%;
-        order: -1;
-    }
-
-    .home-carousel__count {
-        font-size: 1.15rem;
+        bottom: 0.7rem;
+        padding: 0.4rem 0.7rem;
     }
 }
 

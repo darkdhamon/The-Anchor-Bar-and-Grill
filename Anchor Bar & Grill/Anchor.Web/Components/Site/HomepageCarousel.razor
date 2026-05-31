@@ -17,6 +17,40 @@
                 <img class="home-carousel__image" src="@slide.ImageSource" alt="@slide.AltText" />
             </figure>
         }
+
+        @if (Slides.Count > 1)
+        {
+            <button type="button"
+                    class="home-carousel__control home-carousel__control--prev"
+                    data-anchor-carousel-prev
+                    aria-label="Show the previous homepage photo">
+                <span aria-hidden="true">&#8249;</span>
+            </button>
+
+            <div class="home-carousel__status">
+                <div class="home-carousel__indicator-row" aria-label="Homepage photo slide selector">
+                    @for (var index = 0; index < Slides.Count; index++)
+                    {
+                        var slide = Slides[index];
+
+                        <button type="button"
+                                class="home-carousel__indicator @(index == 0 ? "is-active" : null)"
+                                data-anchor-carousel-to="@index"
+                                aria-current="@(index == 0 ? "true" : "false")"
+                                aria-label="Show slide @(index + 1): @slide.Title"></button>
+                    }
+                </div>
+
+                <p class="home-carousel__count" data-anchor-carousel-count>1 / @Slides.Count</p>
+            </div>
+
+            <button type="button"
+                    class="home-carousel__control home-carousel__control--next"
+                    data-anchor-carousel-next
+                    aria-label="Show the next homepage photo">
+                <span aria-hidden="true">&#8250;</span>
+            </button>
+        }
     </div>
 
     <div id="@captionTrackId" class="home-carousel__caption-track" aria-live="polite" hidden>
@@ -42,42 +76,6 @@
             aria-expanded="false">
         Show caption
     </button>
-
-    @if (Slides.Count > 1)
-    {
-        <div class="home-carousel__controls">
-            <button type="button"
-                    class="home-carousel__control"
-                    data-anchor-carousel-prev
-                    aria-label="Show the previous homepage photo">
-                <span aria-hidden="true">Prev</span>
-            </button>
-
-            <div class="home-carousel__status">
-                <div class="home-carousel__indicator-row" aria-label="Homepage photo slide selector">
-                    @for (var index = 0; index < Slides.Count; index++)
-                    {
-                        var slide = Slides[index];
-
-                        <button type="button"
-                                class="home-carousel__indicator @(index == 0 ? "is-active" : null)"
-                                data-anchor-carousel-to="@index"
-                                aria-current="@(index == 0 ? "true" : "false")"
-                                aria-label="Show slide @(index + 1): @slide.Title"></button>
-                    }
-                </div>
-
-                <p class="home-carousel__count" data-anchor-carousel-count>1 / @Slides.Count</p>
-            </div>
-
-            <button type="button"
-                    class="home-carousel__control"
-                    data-anchor-carousel-next
-                    aria-label="Show the next homepage photo">
-                <span aria-hidden="true">Next</span>
-            </button>
-        </div>
-    }
 </section>
 
 @code {
