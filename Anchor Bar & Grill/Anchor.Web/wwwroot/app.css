@@ -983,6 +983,27 @@ html.anchor-theme-dark .site-shell {
     line-height: 1.45;
 }
 
+.home-carousel__caption-toggle {
+    justify-self: end;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: var(--accent-readable);
+    font-family: "Bebas Neue", "Impact", sans-serif;
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-decoration: underline;
+    text-decoration-thickness: 0.08em;
+    text-underline-offset: 0.2em;
+}
+
+.home-carousel__caption-toggle:hover,
+.home-carousel__caption-toggle:focus-visible {
+    color: var(--anchor-white);
+    transform: translateY(-1px);
+}
+
 .home-carousel__controls,
 .home-carousel__status,
 .home-carousel__indicator-row {
@@ -3386,12 +3407,7 @@ button.menu-editor-filter-chip {
         float: right;
         width: 48%;
         min-width: 18rem;
-        margin: 0 0 1.35rem 1.5rem;
-    }
-
-    .page-hero--home .hero-actions,
-    .page-hero--home .home-main__support {
-        clear: both;
+        margin: 0.45rem 0 1.35rem 1.5rem;
     }
 
     .menu-page .menu-layout {

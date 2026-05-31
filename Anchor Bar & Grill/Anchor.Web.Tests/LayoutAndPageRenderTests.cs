@@ -267,17 +267,20 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Single(cut.FindAll(".home-main .page-hero__copy"));
         var homeHero = cut.Find(".home-main .page-hero");
         var homeHeroMarkup = homeHero.InnerHtml;
-        var homeLead = cut.Find(".home-main .page-hero__lead");
-        Assert.Contains("home-carousel", homeLead.NextElementSibling?.ClassName ?? string.Empty, StringComparison.Ordinal);
+        var homeHeadline = cut.Find(".home-main .page-hero h1");
+        Assert.Contains("home-carousel", homeHeadline.NextElementSibling?.ClassName ?? string.Empty, StringComparison.Ordinal);
         Assert.True(
             homeHeroMarkup.IndexOf("Fresh copy from the publicity editor.", StringComparison.OrdinalIgnoreCase) <
             homeHeroMarkup.IndexOf("data-anchor-carousel=\"true\"", StringComparison.OrdinalIgnoreCase));
         Assert.True(
+            homeHeroMarkup.IndexOf("data-anchor-carousel=\"true\"", StringComparison.OrdinalIgnoreCase) <
+            homeHeroMarkup.IndexOf("Published homepage messaging should flow through to the guest-facing welcome block.", StringComparison.OrdinalIgnoreCase));
+        Assert.True(
             homeHeroMarkup.IndexOf("Published homepage messaging should flow through to the guest-facing welcome block.", StringComparison.OrdinalIgnoreCase) <
-            homeHeroMarkup.IndexOf("data-anchor-carousel=\"true\"", StringComparison.OrdinalIgnoreCase));
+            homeHeroMarkup.IndexOf("A second paragraph should render as supporting body copy.", StringComparison.OrdinalIgnoreCase));
         Assert.True(
             homeHeroMarkup.IndexOf("data-anchor-carousel=\"true\"", StringComparison.OrdinalIgnoreCase) <
-            homeHeroMarkup.IndexOf("A second paragraph should render as supporting body copy.", StringComparison.OrdinalIgnoreCase));
+            homeHeroMarkup.IndexOf("Browse the Menu", StringComparison.OrdinalIgnoreCase));
         Assert.Contains("data-anchor-carousel-interval=\"10000\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Browse the Menu", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Plan Your Visit", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -285,7 +288,9 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Equal(5, cut.FindAll("[data-anchor-carousel-slide]").Count);
         Assert.Equal(5, cut.FindAll("[data-anchor-carousel-caption]").Count);
         Assert.Equal(5, cut.FindAll("[data-anchor-carousel-to]").Count);
+        Assert.Single(cut.FindAll("[data-anchor-carousel-caption-toggle]"));
         Assert.Single(cut.FindAll(".home-carousel__caption-panel.is-active"));
+        Assert.Contains("Hide caption", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("data-anchor-carousel-prev", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("data-anchor-carousel-next", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("/images/home-carousel/live-music-stage.jpg", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -610,6 +615,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("data-anchor-carousel-next", themeScript, StringComparison.Ordinal);
         Assert.Contains("data-anchor-carousel-interval", themeScript, StringComparison.Ordinal);
         Assert.Contains("data-anchor-carousel-caption", themeScript, StringComparison.Ordinal);
+        Assert.Contains("data-anchor-carousel-caption-toggle", themeScript, StringComparison.Ordinal);
         Assert.Contains("touchstart", themeScript, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("touchend", themeScript, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("touchcancel", themeScript, StringComparison.OrdinalIgnoreCase);
@@ -654,6 +660,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains(".home-carousel__caption-panel {", stylesheet, StringComparison.Ordinal);
         Assert.Contains("display: none;", stylesheet, StringComparison.Ordinal);
         Assert.Contains(".home-carousel__caption-panel.is-active {", stylesheet, StringComparison.Ordinal);
+        Assert.Contains(".home-carousel__caption-toggle {", stylesheet, StringComparison.Ordinal);
         Assert.Contains("@media (max-width: 960px) {", stylesheet, StringComparison.Ordinal);
         Assert.Matches(new Regex("\\.home-main\\s*\\{\\s*padding:\\s*0;", RegexOptions.Multiline), stylesheet);
         Assert.DoesNotMatch(new Regex("\\.home-main\\s*\\{\\s*padding:\\s*1\\.75rem;", RegexOptions.Multiline), stylesheet);
@@ -678,8 +685,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("@media (min-width: 1280px) {", stylesheet, StringComparison.Ordinal);
         Assert.Contains("float: right;", stylesheet, StringComparison.Ordinal);
         Assert.Contains("width: 48%;", stylesheet, StringComparison.Ordinal);
-        Assert.Contains(".page-hero--home .hero-actions,", stylesheet, StringComparison.Ordinal);
-        Assert.Contains("clear: both;", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("margin: 0.45rem 0 1.35rem 1.5rem;", stylesheet, StringComparison.Ordinal);
     }
 
     [Fact]

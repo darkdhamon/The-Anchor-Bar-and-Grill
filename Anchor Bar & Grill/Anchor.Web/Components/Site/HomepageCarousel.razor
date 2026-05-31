@@ -19,7 +19,7 @@
         }
     </div>
 
-    <div class="home-carousel__caption-track" aria-live="polite">
+    <div id="@captionTrackId" class="home-carousel__caption-track" aria-live="polite">
         @for (var index = 0; index < Slides.Count; index++)
         {
             var slide = Slides[index];
@@ -34,6 +34,14 @@
             </div>
         }
     </div>
+
+    <button type="button"
+            class="home-carousel__caption-toggle"
+            data-anchor-carousel-caption-toggle
+            aria-controls="@captionTrackId"
+            aria-expanded="true">
+        Hide caption
+    </button>
 
     @if (Slides.Count > 1)
     {
@@ -82,4 +90,6 @@
 
     [Parameter]
     public int AutoAdvanceIntervalMs { get; set; } = 10000;
+
+    private readonly string captionTrackId = $"home-carousel-caption-{Guid.NewGuid():N}";
 }

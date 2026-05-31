@@ -201,6 +201,8 @@
 
       const indicators = Array.from(carousel.querySelectorAll("[data-anchor-carousel-to]"));
       const captions = Array.from(carousel.querySelectorAll("[data-anchor-carousel-caption]"));
+      const captionTrack = carousel.querySelector(".home-carousel__caption-track");
+      const captionToggle = carousel.querySelector("[data-anchor-carousel-caption-toggle]");
       const previousButton = carousel.querySelector("[data-anchor-carousel-prev]");
       const nextButton = carousel.querySelector("[data-anchor-carousel-next]");
       const count = carousel.querySelector("[data-anchor-carousel-count]");
@@ -208,6 +210,7 @@
       const intervalMs = Number.isFinite(configuredInterval) && configuredInterval >= 2500 ? configuredInterval : 10000;
       let activeIndex = Math.max(slides.findIndex((slide) => slide.classList.contains("is-active")), 0);
       let autoAdvanceHandle = null;
+      let captionsCollapsed = false;
       let touchStartX = null;
 
       function clearAutoAdvance() {
@@ -239,6 +242,17 @@
         if (count) {
           count.textContent = `${activeIndex + 1} / ${slides.length}`;
         }
+      }
+
+      function syncCaptionVisibility() {
+        if (!captionTrack || !captionToggle) {
+          return;
+        }
+
+        captionTrack.hidden = captionsCollapsed;
+        carousel.classList.toggle("is-caption-collapsed", captionsCollapsed);
+        captionToggle.textContent = captionsCollapsed ? "Show caption" : "Hide caption";
+        captionToggle.setAttribute("aria-expanded", captionsCollapsed ? "false" : "true");
       }
 
       function restartAutoAdvance() {
@@ -275,6 +289,11 @@
             moveTo(targetIndex);
           }
         });
+      });
+
+      captionToggle?.addEventListener("click", () => {
+        captionsCollapsed = !captionsCollapsed;
+        syncCaptionVisibility();
       });
 
       carousel.addEventListener("mouseenter", clearAutoAdvance);
@@ -345,6 +364,7 @@
       });
 
       syncCarousel();
+      syncCaptionVisibility();
       restartAutoAdvance();
     });
   }

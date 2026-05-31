@@ -13,12 +13,12 @@
 
             <h1>@homepageContent.Headline</h1>
 
+            <HomepageCarousel Slides="PlaceholderCarouselSlides" Label="Homepage photo highlights" />
+
             @if (homepageSummaryParagraphs.Count > 0)
             {
                 <p class="page-hero__lead">@homepageSummaryParagraphs[0]</p>
             }
-
-            <HomepageCarousel Slides="PlaceholderCarouselSlides" Label="Homepage photo highlights" />
 
             @if (homepageSummaryParagraphs.Count > 1)
             {
