@@ -205,7 +205,7 @@
       const nextButton = carousel.querySelector("[data-anchor-carousel-next]");
       const count = carousel.querySelector("[data-anchor-carousel-count]");
       const configuredInterval = Number.parseInt(carousel.getAttribute("data-anchor-carousel-interval") ?? "", 10);
-      const intervalMs = Number.isFinite(configuredInterval) && configuredInterval >= 2500 ? configuredInterval : 6500;
+      const intervalMs = Number.isFinite(configuredInterval) && configuredInterval >= 2500 ? configuredInterval : 10000;
       let activeIndex = Math.max(slides.findIndex((slide) => slide.classList.contains("is-active")), 0);
       let autoAdvanceHandle = null;
       let touchStartX = null;
@@ -279,6 +279,10 @@
 
       carousel.addEventListener("mouseenter", clearAutoAdvance);
       carousel.addEventListener("mouseleave", restartAutoAdvance);
+      carousel.addEventListener("pointerenter", clearAutoAdvance);
+      carousel.addEventListener("pointerleave", restartAutoAdvance);
+      carousel.addEventListener("mouseover", clearAutoAdvance);
+      carousel.addEventListener("mouseout", restartAutoAdvance);
       carousel.addEventListener("focusin", clearAutoAdvance);
       carousel.addEventListener("focusout", () => {
         window.setTimeout(() => {
@@ -325,6 +329,10 @@
           return;
         }
 
+        restartAutoAdvance();
+      }, { passive: true });
+      carousel.addEventListener("touchcancel", () => {
+        touchStartX = null;
         restartAutoAdvance();
       }, { passive: true });
 
