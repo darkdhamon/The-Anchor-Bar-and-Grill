@@ -12,6 +12,39 @@ public partial class Home
     private const int HomeEventsPreviewDays = 30;
     private const int MaxHomeSpecials = 5;
     private const int MaxHomeEvents = 4;
+    private static readonly IReadOnlyList<HomepageCarouselSlide> PlaceholderCarouselSlides =
+    [
+        new(
+            "/images/home-carousel/live-music-stage.jpg",
+            "Live band performing on the patio stage while guests watch from nearby tables.",
+            "Live Music",
+            "Patio nights with a crowd",
+            "Bands set up right off the deck so the whole patio feels like part of the show."),
+        new(
+            "/images/home-carousel/outdoor-bar.jpg",
+            "Open-air bar seating area with bright stools and a long stone counter.",
+            "Outdoor Bar",
+            "A warm-weather stop for drinks",
+            "The outside bar gives guests a quick place to gather before events, dinner, or a full patio night."),
+        new(
+            "/images/home-carousel/exterior-trail-view.jpg",
+            "Exterior view of The Anchor building from the nearby walking path.",
+            "Exterior",
+            "The Anchor from the trail",
+            "The building stays easy to spot from the path, with quick access to the patio and front entrance."),
+        new(
+            "/images/home-carousel/patio-and-parking.jpg",
+            "Patio building, flags, and nearby parking spaces viewed from the side of the lot.",
+            "Arrival",
+            "Parking, patio, and walk-up view",
+            "This angle shows how close the patio and parking are once guests pull in."),
+        new(
+            "/images/home-carousel/main-dining-room.jpg",
+            "Main indoor dining room with tables, high-top seating, and televisions.",
+            "Inside",
+            "Main dining room ready for game day",
+            "Inside seating keeps the room casual and open, with TVs and high-tops mixed into the regular dining area.")
+    ];
 
     private static readonly IReadOnlyList<HomeActionLink> homeActions =
     [

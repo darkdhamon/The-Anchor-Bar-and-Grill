@@ -4,44 +4,51 @@
 <PageTitle>Home</PageTitle>
 
 <section class="home-shell">
-    <article class="page-hero page-hero--home home-main">
-        @if (!string.IsNullOrWhiteSpace(homepageContent.Eyebrow))
-        {
-            <p class="page-hero__eyebrow">@homepageContent.Eyebrow</p>
-        }
+    <div class="home-main">
+        <article class="page-hero page-hero--home">
+            @if (!string.IsNullOrWhiteSpace(homepageContent.Eyebrow))
+            {
+                <p class="page-hero__eyebrow">@homepageContent.Eyebrow</p>
+            }
 
-        <h1>@homepageContent.Headline</h1>
+            <HomepageCarousel Slides="PlaceholderCarouselSlides" Label="Homepage photo highlights" />
 
-        @if (homepageSummaryParagraphs.Count > 0)
-        {
-            <div class="page-hero__copy-group">
+            <h1>@homepageContent.Headline</h1>
+
+            @if (homepageSummaryParagraphs.Count > 0)
+            {
                 <p class="page-hero__lead">@homepageSummaryParagraphs[0]</p>
+            }
 
-                @for (var i = 1; i < homepageSummaryParagraphs.Count; i++)
+            @if (homepageSummaryParagraphs.Count > 1)
+            {
+                <div class="page-hero__copy-group">
+                    @for (var i = 1; i < homepageSummaryParagraphs.Count; i++)
+                    {
+                        <p class="page-hero__copy">@homepageSummaryParagraphs[i]</p>
+                    }
+                </div>
+            }
+
+            <div class="hero-actions">
+                @foreach (var action in homeActions)
                 {
-                    <p class="page-hero__copy">@homepageSummaryParagraphs[i]</p>
+                    <a class="hero-actions__link @(action.IsPrimary ? "hero-actions__link--primary" : "hero-actions__link--secondary")"
+                       href="@action.Href"
+                       data-enhance-nav="false">
+                        @action.Label
+                    </a>
                 }
             </div>
-        }
 
-        <div class="hero-actions">
-            @foreach (var action in homeActions)
-            {
-                <a class="hero-actions__link @(action.IsPrimary ? "hero-actions__link--primary" : "hero-actions__link--secondary")"
-                   href="@action.Href"
-                   data-enhance-nav="false">
-                    @action.Label
-                </a>
-            }
-        </div>
-
-        <div class="home-main__support">
-            <p class="home-main__support-title">Start with tonight's plan.</p>
-            <p class="home-main__support-copy">
-                Explore the menu, check what's coming up next, or head straight to contact details before you make the trip.
-            </p>
-        </div>
-    </article>
+            <div class="home-main__support">
+                <p class="home-main__support-title">Start with tonight's plan.</p>
+                <p class="home-main__support-copy">
+                    Explore the menu, check what's coming up next, or head straight to contact details before you make the trip.
+                </p>
+            </div>
+        </article>
+    </div>
 
     <aside class="feature-card feature-card--tight home-rail home-rail--specials" aria-labelledby="home-specials-heading">
         <div class="home-rail__header">
