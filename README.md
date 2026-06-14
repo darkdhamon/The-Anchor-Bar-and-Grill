@@ -20,7 +20,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - Optional menu-item image support in the public menu and menu editor, including direct menu-item uploads into the local gallery folder with click-to-enlarge previews
 - Optional offer start/end dates for menu items, recurring seasonal month/day windows for annually returning items, and guest-facing `Coming Soon`, `Seasonal`, and `Limited Time` labels derived at runtime
 - Database-backed Menu Editor with a left-side workspace rail for dedicated `Food`, `Drinks`, and `Hours` views, plus workspace-specific right-side quick guides, collapsible section-tree browsing with header-click expand/collapse behavior, item-backed special offers, parent/child sections, chip-style visibility and scheduling controls, section callouts, archive-aware filters, content filters, duplicate-name protection, and service-hour management
-- Events mockup page that lists all upcoming events, including recurring schedules, optional event images, and richer cadence examples such as every other week or the third Friday of the month
+- Database-backed public events page that lists live upcoming event dates, expands recurring schedules into their next published occurrences, supports optional event images, and shows a friendly empty state when no public events are currently scheduled
 - About mockup page for the restaurant story and guest experience
 - Contact mockup page for location, phone, hours, dynamic social media links, and guest inquiry layout
 - Role-gated editor pages for managing menus, events, publicity content, and contact details
@@ -89,7 +89,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - Repeated matching production exceptions are temporarily deduplicated in memory so GitHub does not get flooded during a burst
 - The shared local development and UAT account credentials are documented in [docs/reference/uat-credentials.local.md](docs/reference/uat-credentials.local.md); if those local passwords or roles change, update that file in the same change
 - The current homepage carousel uses committed placeholder photos from the venue until publicity-gallery wiring is added in a later issue
-- The event mockup data now demonstrates weekly, every-other-week, and nth-weekday monthly recurrence patterns so the UI direction can be reviewed before backend scheduling is built
+- The public events page now reads from the repository-backed event catalog, expands recurring schedules from the current request time, and keeps a friendly empty state when no published events are scheduled
 - The shared header now uses a lower-profile brand row with one larger overhanging logo carrying the restaurant name through its image alt text, restored full-size desktop header labels, tighter vertical spacing in the nav/account controls, no duplicate visible site-name text, added top-page clearance so content starts below the logo, and a compact theme toggle
 - Desktop header navigation stays guest-first for everyone, while signed-in staff tools move into one role-filtered `Account` dropdown instead of living in a separate inline link strip
 - Mobile header navigation now opens one drawer that groups guest links first and then either `Staff Access` or authenticated account tools, with the friendly `Hi, ...` greeting moved inside those account surfaces

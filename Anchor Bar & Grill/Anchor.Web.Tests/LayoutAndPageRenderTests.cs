@@ -441,15 +441,29 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     {
         var cut = Render<Events>();
 
-        Assert.Contains("Events mockup", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Thursday Trivia", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Friday Live Music", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Third Friday Steak Night", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Summer Kickoff Patio Party", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Community Bingo Fundraiser", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.NotEmpty(cut.FindAll(".event-card__image"));
-        Assert.Contains("Show every currently scheduled event in one public-facing list.", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("every other Friday", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Upcoming events", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Events mockup", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Dockside Acoustic Night", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Sunday Community Bingo", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(cut.FindAll(".event-card__image"));
+        Assert.Contains("/images/home-carousel/live-music-stage.jpg", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("See the live public event calendar for the next 90 days", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Recurring every Sunday at 11:00 AM - next on May 24, 2026", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Browse the Menu", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(timeProvider.GetLocalNow().DateTime, eventQueryService.LastRequestedLocalNow);
+        Assert.Equal(90, eventQueryService.LastRequestedDaysAhead);
+    }
+
+    [Fact]
+    public void EventsPage_ShowsFriendlyEmptyState_When_No_Live_Events_Are_Published()
+    {
+        Services.AddSingleton<IEventQueryService>(new FakeEventQueryService { UpcomingEvents = [] });
+
+        var cut = Render<Events>();
+
+        Assert.Contains("No published events are on the calendar right now.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Check back soon for live music, community nights, and one-time specials as they are posted.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(cut.FindAll(".event-card"));
     }
 
     [Fact]
@@ -1258,6 +1272,10 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 
     private sealed class FakeEventQueryService : IEventQueryService
     {
+        public DateTime? LastRequestedLocalNow { get; private set; }
+
+        public int? LastRequestedDaysAhead { get; private set; }
+
         public IReadOnlyList<EventOccurrenceRecord> UpcomingEvents { get; set; } =
         [
             new(
@@ -1266,7 +1284,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                 "An unplugged evening set that keeps the room lively without overpowering dinner service.",
                 "A stripped-back live set for guests who want music and conversation at the same time.",
                 "Live Music",
-                null,
+                "/images/home-carousel/live-music-stage.jpg",
                 new DateOnly(2026, 5, 23),
                 new TimeOnly(19, 30),
                 null,
@@ -1293,8 +1311,13 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         public Task<IReadOnlyList<EventOccurrenceRecord>> GetUpcomingEventsAsync(
             DateTime localNow,
             int daysAhead = 30,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(UpcomingEvents);
+            CancellationToken cancellationToken = default)
+        {
+            LastRequestedLocalNow = localNow;
+            LastRequestedDaysAhead = daysAhead;
+
+            return Task.FromResult(UpcomingEvents);
+        }
     }
 
     private sealed class FakeMenuManagementService : IMenuManagementService
