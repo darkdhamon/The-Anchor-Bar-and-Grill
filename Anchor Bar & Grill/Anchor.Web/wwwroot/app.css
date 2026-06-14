@@ -1845,20 +1845,48 @@ body.image-preview-open {
     font-weight: 600;
 }
 
-.public-events-empty,
-.public-events-callout {
-    max-width: 56rem;
+.public-events-section {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.public-events-heading {
+    max-width: 68rem;
+}
+
+.public-events-heading h2 {
+    max-width: 24ch;
+    font-size: clamp(2.4rem, 4.8vw, 4rem);
+}
+
+.public-events-heading p:last-child {
+    max-width: 48rem;
+}
+
+.public-events-support-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.9fr);
+    align-items: stretch;
 }
 
 .public-events-empty {
+    max-width: none;
     background:
         linear-gradient(180deg, rgba(48, 154, 221, 0.08), transparent 44%),
         var(--surface);
 }
 
+.public-events-callout-shell {
+    display: grid;
+    max-width: 56rem;
+}
+
 .public-events-callout {
     display: grid;
     gap: 1rem;
+    max-width: none;
+    align-content: start;
 }
 
 .public-events-callout .hero-actions {
@@ -3390,6 +3418,10 @@ button.menu-editor-filter-chip {
     .site-header__desktop-nav {
         flex-wrap: wrap;
         justify-content: space-between;
+    }
+
+    .public-events-support-grid {
+        grid-template-columns: 1fr;
     }
 
     .menu-editor-hours-summaries {
