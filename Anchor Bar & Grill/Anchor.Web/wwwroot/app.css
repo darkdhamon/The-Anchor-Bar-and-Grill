@@ -1840,6 +1840,31 @@ body.image-preview-open {
     font-family: "Patrick Hand", "Segoe UI", cursive;
 }
 
+.event-card__summary {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.public-events-empty,
+.public-events-callout {
+    max-width: 56rem;
+}
+
+.public-events-empty {
+    background:
+        linear-gradient(180deg, rgba(48, 154, 221, 0.08), transparent 44%),
+        var(--surface);
+}
+
+.public-events-callout {
+    display: grid;
+    gap: 1rem;
+}
+
+.public-events-callout .hero-actions {
+    justify-content: flex-start;
+}
+
 .recurring-special {
     display: grid;
     gap: 0.9rem;
