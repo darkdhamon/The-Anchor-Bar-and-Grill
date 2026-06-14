@@ -12,7 +12,6 @@
 
     const grid = root.querySelector("[data-public-events-grid='true']");
     const template = root.querySelector("[data-public-events-template='card']");
-    const feed = root.querySelector("[data-public-events-feed='true']");
     const status = root.querySelector("[data-public-events-status='true']");
     const loadButton = root.querySelector("[data-public-events-load='true']");
     const sentinel = root.querySelector("[data-public-events-sentinel='true']");
@@ -20,7 +19,6 @@
 
     if (!(grid instanceof HTMLElement)
       || !(template instanceof HTMLTemplateElement)
-      || !(feed instanceof HTMLElement)
       || !(status instanceof HTMLElement)
       || !(loadButton instanceof HTMLButtonElement)
       || !(sentinel instanceof HTMLElement)
@@ -40,7 +38,6 @@
     }
 
     function syncFeedVisibility() {
-      feed.hidden = !hasMore;
       loadButton.hidden = !hasMore;
 
       if (!hasMore) {
