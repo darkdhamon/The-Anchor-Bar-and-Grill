@@ -107,6 +107,7 @@
       setRequiredText(card, "[data-public-event-date='true']", item?.dateLabel);
       setRequiredText(card, "[data-public-event-title='true']", item?.title);
       setRequiredText(card, "[data-public-event-datetime='true']", item?.dateTimeLabel);
+      setOptionalText(card, "[data-public-event-timing-notes='true']", item?.timingNotes);
       setRequiredText(card, "[data-public-event-schedule='true']", item?.scheduleSummary);
       setOptionalText(card, "[data-public-event-summary='true']", item?.summary);
       setOptionalText(card, "[data-public-event-description='true']", item?.description);

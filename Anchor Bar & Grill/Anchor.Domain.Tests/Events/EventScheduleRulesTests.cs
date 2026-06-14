@@ -32,6 +32,33 @@ public sealed class EventScheduleRulesTests
     }
 
     [Fact]
+    public void Validate_allows_optional_end_time_and_timing_notes()
+    {
+        var request = new SaveEventRequest(
+            null,
+            "Paddlefish Day Special",
+            "Festival day feature",
+            "Live music after parade timing shifts.",
+            "Live Music",
+            null,
+            new DateOnly(2026, 9, 6),
+            new TimeOnly(18, 0),
+            null,
+            false,
+            1,
+            EventPublicationState.Published,
+            EventRecurrencePattern.None,
+            0,
+            null,
+            null,
+            null);
+
+        var errors = EventScheduleRules.Validate(request);
+
+        Assert.Empty(errors);
+    }
+
+    [Fact]
     public void GetOccurrences_expands_open_ended_every_other_week_schedule()
     {
         var record = CreateRecord(
@@ -314,7 +341,8 @@ public sealed class EventScheduleRulesTests
             0,
             null,
             null,
-            null);
+            null,
+            new string('N', 301));
 
         var errors = EventScheduleRules.Validate(request);
 
@@ -323,6 +351,7 @@ public sealed class EventScheduleRulesTests
         Assert.Contains(errors, error => error.Contains("description cannot exceed", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(errors, error => error.Contains("promo badge cannot exceed", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(errors, error => error.Contains("image path cannot exceed", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(errors, error => error.Contains("timing notes cannot exceed", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

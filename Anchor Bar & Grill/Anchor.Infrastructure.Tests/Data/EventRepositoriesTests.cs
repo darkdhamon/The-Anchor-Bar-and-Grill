@@ -102,7 +102,8 @@ public sealed class EventRepositoriesTests
                 2,
                 DayOfWeek.Friday,
                 EventRecurrenceWeek.Third,
-                new DateOnly(2026, 7, 31)));
+                new DateOnly(2026, 7, 31),
+                "  Estimated timing may shift based on parade schedule.  "));
         await repository.SaveChangesAsync();
 
         var saved = await context.DbContext.Events.FindAsync(eventId);
@@ -118,6 +119,42 @@ public sealed class EventRepositoriesTests
         Assert.Equal(DayOfWeek.Friday, saved.RecursOnDayOfWeek);
         Assert.Null(saved.RecursOnWeekOfMonth);
         Assert.Equal(new DateOnly(2026, 7, 31), saved.RecursUntil);
+        Assert.Equal("Estimated timing may shift based on parade schedule.", saved.TimingNotes);
+    }
+
+    [Fact]
+    public async Task UpsertEventAsync_allows_null_ends_time_and_timing_notes()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+        var repository = new EventManagementRepository(context.DbContext);
+
+        var eventId = await repository.UpsertEventAsync(
+            new SaveEventRequest(
+                null,
+                "Paddlefish Day Feature",
+                "Parade-linked set",
+                "Timing will depend on the downtown float route.",
+                "Live Music",
+                null,
+                new DateOnly(2026, 9, 12),
+                new TimeOnly(13, 0),
+                null,
+                false,
+                7,
+                EventPublicationState.Published,
+                EventRecurrencePattern.None,
+                0,
+                null,
+                null,
+                null));
+        await repository.SaveChangesAsync();
+
+        var saved = await context.DbContext.Events.FindAsync(eventId);
+
+        Assert.NotNull(saved);
+        Assert.Equal("Paddlefish Day Feature", saved!.Title);
+        Assert.Null(saved.EndsAt);
+        Assert.Null(saved.TimingNotes);
     }
 
     [Fact]

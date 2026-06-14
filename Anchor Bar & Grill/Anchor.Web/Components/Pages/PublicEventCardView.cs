@@ -11,16 +11,17 @@ internal sealed record PublicEventCardView(
     string ImageAltText,
     string DateLabel,
     string DateTimeLabel,
+    string? TimingNotes,
     string ScheduleSummary,
     string Summary,
     string? Description,
     bool IsRecurring,
     string ScheduleTypeLabel);
 
-internal sealed record PublicEventsFeedResponse(
-    IReadOnlyList<PublicEventCardView> Events,
-    string NextFromDate,
-    bool HasMore);
+    internal sealed record PublicEventsFeedResponse(
+        IReadOnlyList<PublicEventCardView> Events,
+        string NextFromDate,
+        bool HasMore);
 
 internal static class PublicEventCardMapper
 {
@@ -39,6 +40,7 @@ internal static class PublicEventCardMapper
             $"{item.Title} event image",
             item.OccursOn.ToString("ddd, MMM d", CultureInfo.InvariantCulture),
             GetDateTimeLabel(item),
+            GetTimingNotes(item.TimingNotes),
             item.ScheduleSummary,
             summary,
             description,
@@ -55,6 +57,9 @@ internal static class PublicEventCardMapper
 
         return $"{dateLabel} at {timeLabel}";
     }
+
+    private static string? GetTimingNotes(string? timingNotes) =>
+        string.IsNullOrWhiteSpace(timingNotes) ? null : timingNotes.Trim();
 
     private static string FormatTime(TimeOnly time) =>
         time.ToString("h:mm tt", CultureInfo.InvariantCulture);

@@ -1845,6 +1845,12 @@ body.image-preview-open {
     font-weight: 600;
 }
 
+.event-card__timing-note {
+    margin: 0;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
 .public-events-section {
     display: grid;
     gap: 1.25rem;

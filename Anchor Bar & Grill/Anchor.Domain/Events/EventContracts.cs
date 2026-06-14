@@ -19,7 +19,8 @@ public sealed record EventRecord(
     int RecurrenceInterval,
     DayOfWeek? RecursOnDayOfWeek,
     EventRecurrenceWeek? RecursOnWeekOfMonth,
-    DateOnly? RecursUntil)
+    DateOnly? RecursUntil,
+    string? TimingNotes = null)
 {
     public bool IsRecurring => RecurrencePattern != EventRecurrencePattern.None;
 }
@@ -37,7 +38,8 @@ public sealed record EventOccurrenceRecord(
     bool EndsNextDay,
     int SortOrder,
     bool IsRecurring,
-    string ScheduleSummary)
+    string ScheduleSummary,
+    string? TimingNotes = null)
 {
     public DateTime StartsAtLocal => OccursOn.ToDateTime(StartsAt);
 

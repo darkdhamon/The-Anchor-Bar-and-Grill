@@ -131,6 +131,7 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Contains("RecursOnDayOfWeek", eventColumns);
             Assert.Contains("RecursOnWeekOfMonth", eventColumns);
             Assert.Contains("RecursUntil", eventColumns);
+            Assert.Contains("TimingNotes", eventColumns);
             Assert.Contains("DraftHeadline", homepagePublicityColumns);
             Assert.Contains("DraftSummary", homepagePublicityColumns);
             Assert.Contains("PublishedHeadline", homepagePublicityColumns);
