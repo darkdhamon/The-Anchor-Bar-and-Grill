@@ -1863,34 +1863,11 @@ body.image-preview-open {
     max-width: 48rem;
 }
 
-.public-events-support-grid {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.9fr);
-    align-items: stretch;
-}
-
 .public-events-empty {
-    max-width: none;
+    max-width: 56rem;
     background:
         linear-gradient(180deg, rgba(48, 154, 221, 0.08), transparent 44%),
         var(--surface);
-}
-
-.public-events-callout-shell {
-    display: grid;
-    max-width: 56rem;
-}
-
-.public-events-callout {
-    display: grid;
-    gap: 1rem;
-    max-width: none;
-    align-content: start;
-}
-
-.public-events-callout .hero-actions {
-    justify-content: flex-start;
 }
 
 .recurring-special {
@@ -3418,10 +3395,6 @@ button.menu-editor-filter-chip {
     .site-header__desktop-nav {
         flex-wrap: wrap;
         justify-content: space-between;
-    }
-
-    .public-events-support-grid {
-        grid-template-columns: 1fr;
     }
 
     .menu-editor-hours-summaries {

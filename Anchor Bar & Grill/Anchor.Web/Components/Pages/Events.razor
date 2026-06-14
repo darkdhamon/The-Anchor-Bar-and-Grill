@@ -60,37 +60,10 @@
     }
     else
     {
-        <div class="public-events-support-grid">
-            <article class="feature-card feature-card--tight menu-empty-state public-events-empty">
-                <p class="feature-card__eyebrow">Nothing Scheduled Yet</p>
-                <h3>No published events are on the calendar right now.</h3>
-                <p>Check back soon for live music, community nights, and one-time specials as they are posted.</p>
-            </article>
-
-            <article class="feature-card feature-card--tight public-events-callout">
-                <p class="feature-card__eyebrow">Plan Your Visit</p>
-                <h3>Need the menu or contact details before you head over?</h3>
-                <p>Use the live event calendar alongside the current menu and contact page so your whole group knows what to expect before arrival.</p>
-                <div class="hero-actions">
-                    <a class="hero-actions__link hero-actions__link--primary" href="/menu" data-enhance-nav="false">Browse the Menu</a>
-                    <a class="hero-actions__link hero-actions__link--secondary" href="/contact" data-enhance-nav="false">Get Contact Info</a>
-                </div>
-            </article>
-        </div>
+        <article class="feature-card feature-card--tight menu-empty-state public-events-empty">
+            <p class="feature-card__eyebrow">Nothing Scheduled Yet</p>
+            <h3>No published events are on the calendar right now.</h3>
+            <p>Check back soon for live music, community nights, and one-time specials as they are posted.</p>
+        </article>
     }
 </section>
-
-@if (upcomingEvents.Count > 0)
-{
-    <section class="public-events-callout-shell">
-        <article class="feature-card feature-card--tight public-events-callout">
-            <p class="feature-card__eyebrow">Plan Your Visit</p>
-            <h3>Need the menu or contact details before you head over?</h3>
-            <p>Use the live event calendar alongside the current menu and contact page so your whole group knows what to expect before arrival.</p>
-            <div class="hero-actions">
-                <a class="hero-actions__link hero-actions__link--primary" href="/menu" data-enhance-nav="false">Browse the Menu</a>
-                <a class="hero-actions__link hero-actions__link--secondary" href="/contact" data-enhance-nav="false">Get Contact Info</a>
-            </div>
-        </article>
-    </section>
-}
