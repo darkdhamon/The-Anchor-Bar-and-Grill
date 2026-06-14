@@ -63,6 +63,7 @@ project.fragment.lock.json
 artifacts/
 **/.artifacts/
 .codex-run/
+/.codex-remote-attachments/
 
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
