@@ -450,6 +450,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("See the live public event calendar for the next 90 days", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Recurring every Sunday at 11:00 AM - next on May 24, 2026", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Browse the Menu", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(cut.FindAll(".public-events-callout-shell"));
         Assert.Equal(timeProvider.GetLocalNow().DateTime, eventQueryService.LastRequestedLocalNow);
         Assert.Equal(90, eventQueryService.LastRequestedDaysAhead);
     }
@@ -464,6 +465,8 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("No published events are on the calendar right now.", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Check back soon for live music, community nights, and one-time specials as they are posted.", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Empty(cut.FindAll(".event-card"));
+        Assert.Single(cut.FindAll(".public-events-support-grid"));
+        Assert.Empty(cut.FindAll(".public-events-callout-shell"));
     }
 
     [Fact]
