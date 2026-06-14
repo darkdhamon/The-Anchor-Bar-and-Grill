@@ -43,3 +43,8 @@ public sealed record EventOccurrenceRecord(
 
     public string TimeLabel => StartsAt.ToString("h:mm tt", CultureInfo.InvariantCulture);
 }
+
+public sealed record UpcomingEventWindowResult(
+    IReadOnlyList<EventOccurrenceRecord> Events,
+    DateOnly NextFromDate,
+    bool HasMore);

@@ -119,4 +119,59 @@ public sealed class EventRepositoriesTests
         Assert.Null(saved.RecursOnWeekOfMonth);
         Assert.Equal(new DateOnly(2026, 7, 31), saved.RecursUntil);
     }
+
+    [Fact]
+    public async Task HasUpcomingPublicEventCandidatesAsync_ignores_unpublished_and_expired_records()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+
+        context.DbContext.Events.AddRange(
+            new EventEntity
+            {
+                EventId = Guid.NewGuid(),
+                Title = "Published Tonight",
+                Summary = "Summary",
+                Description = "Description",
+                StartsOn = new DateOnly(2026, 5, 18),
+                StartsAt = new TimeOnly(19, 0),
+                SortOrder = 1,
+                PublicationState = EventPublicationState.Published,
+                RecurrencePattern = EventRecurrencePattern.None,
+                RecurrenceInterval = 1
+            },
+            new EventEntity
+            {
+                EventId = Guid.NewGuid(),
+                Title = "Draft Patio Party",
+                Summary = "Summary",
+                Description = "Description",
+                StartsOn = new DateOnly(2026, 6, 1),
+                StartsAt = new TimeOnly(18, 0),
+                SortOrder = 2,
+                PublicationState = EventPublicationState.Draft,
+                RecurrencePattern = EventRecurrencePattern.None,
+                RecurrenceInterval = 1
+            },
+            new EventEntity
+            {
+                EventId = Guid.NewGuid(),
+                Title = "Published Weekly",
+                Summary = "Summary",
+                Description = "Description",
+                StartsOn = new DateOnly(2026, 5, 4),
+                StartsAt = new TimeOnly(18, 0),
+                SortOrder = 3,
+                PublicationState = EventPublicationState.Published,
+                RecurrencePattern = EventRecurrencePattern.Weekly,
+                RecurrenceInterval = 1,
+                RecursOnDayOfWeek = DayOfWeek.Monday,
+                RecursUntil = new DateOnly(2026, 5, 18)
+            });
+        await context.DbContext.SaveChangesAsync();
+
+        var repository = new EventQueryRepository(context.DbContext);
+
+        Assert.True(await repository.HasUpcomingPublicEventCandidatesAsync(new DateOnly(2026, 5, 18)));
+        Assert.False(await repository.HasUpcomingPublicEventCandidatesAsync(new DateOnly(2026, 5, 19)));
+    }
 }
