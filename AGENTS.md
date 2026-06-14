@@ -12,7 +12,7 @@
 - Never commit directly to `main`.
 - All changes must reach `main` through a pull request.
 - Non-code-related changes may be committed directly to `dev`.
-- All new work branches must be created from `dev` so they include the most recent unreleased changes.
+- All new work branches and worktrees must be created from `origin/dev`, not local `dev`, so they start from the latest remote unreleased changes.
 - After every code-related change, commit the change and push the branch so code work is not left only in the local repository.
 - Every pull request from `dev` into `main` must include release notes covering all changes since the previous merge from `dev` into `main`.
 
