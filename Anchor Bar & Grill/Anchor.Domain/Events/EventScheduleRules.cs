@@ -9,6 +9,7 @@ public static class EventScheduleRules
     private const int MaxDescriptionLength = 2000;
     private const int MaxPromoBadgeLength = 80;
     private const int MaxImagePathLength = 300;
+    private const int MaxTimingNotesLength = 300;
     private const int MaxRecurrenceInterval = 1200;
 
     public static IReadOnlyList<string> Validate(SaveEventRequest request)
@@ -19,6 +20,7 @@ public static class EventScheduleRules
         var description = request.Description ?? string.Empty;
         var promoBadge = request.PromoBadge ?? string.Empty;
         var imagePath = request.ImagePath ?? string.Empty;
+        var timingNotes = request.TimingNotes ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(request.Title))
         {
@@ -58,6 +60,11 @@ public static class EventScheduleRules
         if (imagePath.Length > MaxImagePathLength)
         {
             errors.Add($"Event image path cannot exceed {MaxImagePathLength} characters.");
+        }
+
+        if (timingNotes.Length > MaxTimingNotesLength)
+        {
+            errors.Add($"Event timing notes cannot exceed {MaxTimingNotesLength} characters.");
         }
 
         if (request.EndsAt.HasValue && !request.EndsNextDay && request.EndsAt.Value <= request.StartsAt)

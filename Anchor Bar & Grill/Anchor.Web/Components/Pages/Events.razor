@@ -63,6 +63,10 @@
 
                     <h3>@item.Title</h3>
                     <p class="event-card__meta">@item.DateTimeLabel</p>
+                    @if (!string.IsNullOrWhiteSpace(item.TimingNotes))
+                    {
+                        <p class="event-card__timing-note">@item.TimingNotes</p>
+                    }
                     <p class="event-card__schedule">@item.ScheduleSummary</p>
 
                     @if (!string.IsNullOrWhiteSpace(item.Summary))
@@ -96,6 +100,7 @@
 
                 <h3 data-public-event-title="true"></h3>
                 <p class="event-card__meta" data-public-event-datetime="true"></p>
+                <p class="event-card__timing-note" data-public-event-timing-notes="true" hidden></p>
                 <p class="event-card__schedule" data-public-event-schedule="true"></p>
                 <p class="event-card__summary" data-public-event-summary="true"></p>
                 <p data-public-event-description="true" hidden></p>

@@ -91,7 +91,8 @@ public sealed class EventQueryService(IEventQueryRepository repository) : IEvent
                     record.EndsNextDay,
                     record.SortOrder,
                     record.IsRecurring,
-                    EventScheduleRules.GetScheduleSummaryForOccurrence(record, occursOn)));
+                    EventScheduleRules.GetScheduleSummaryForOccurrence(record, occursOn),
+                    record.TimingNotes));
             }
         }
 

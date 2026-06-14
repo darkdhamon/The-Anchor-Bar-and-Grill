@@ -42,7 +42,8 @@ public sealed class PublicEventsFeedEndpointTests : IClassFixture<WebApplication
                     false,
                     10,
                     false,
-                    "One-time event on Sep 11, 2026 at 7:30 PM")
+                    "One-time event on Sep 11, 2026 at 7:30 PM",
+                    "Arrives early before set-up with potential start drift due to parade timing.")
             ],
                 new DateOnly(2026, 12, 11),
                 false)
@@ -70,11 +71,61 @@ public sealed class PublicEventsFeedEndpointTests : IClassFixture<WebApplication
         Assert.Equal("/images/home-carousel/live-music-stage.jpg", eventCard.ImagePath);
         Assert.Equal("Fri, Sep 11", eventCard.DateLabel);
         Assert.Equal("Fri, Sep 11, 2026 at 7:30 PM", eventCard.DateTimeLabel);
+        Assert.Equal("Arrives early before set-up with potential start drift due to parade timing.", eventCard.TimingNotes);
         Assert.Equal("One Time", eventCard.ScheduleTypeLabel);
         Assert.Equal("2026-12-11", response.NextFromDate);
         Assert.False(response.HasMore);
         Assert.Equal(new DateOnly(2026, 8, 20), fakeService.LastRequestedFromDate);
         Assert.True(fakeService.LastRequestedSkipEmptyWindows);
+    }
+
+    [Fact]
+    public async Task EventsFeed_ShowsStartOnlyLabel_WhenEndTimeIsNotSet()
+    {
+        var fakeService = new FakeEventQueryService
+        {
+            WindowResult = new UpcomingEventWindowResult(
+            [
+                new EventOccurrenceRecord(
+                    Guid.Parse("B0B8F7C0-2E73-4D0E-9F55-4F9A5AA6CB2D"),
+                    "Paddlefish Day",
+                    "Festival weekend crowd draw.",
+                    "Timing tied to city parade windows.",
+                    "Festival",
+                    null,
+                    new DateOnly(2026, 9, 12),
+                    new TimeOnly(13, 0),
+                    null,
+                    false,
+                    5,
+                    false,
+                    "One-time event on Sep 12, 2026 at 1:00 PM",
+                    null)
+            ],
+                new DateOnly(2026, 12, 11),
+                false)
+        };
+
+        using var client = factory.WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting("ConnectionStrings:DefaultConnection", TestConnectionString);
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IEventQueryService>();
+                services.AddSingleton<IEventQueryService>(fakeService);
+            });
+        }).CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
+
+        var response = await client.GetFromJsonAsync<PublicEventsFeedResponseDto>("/events/feed?from=2026-09-01");
+
+        Assert.NotNull(response);
+        var eventCard = Assert.Single(response!.Events);
+        Assert.Equal("Paddlefish Day", eventCard.Title);
+        Assert.Equal("Sat, Sep 12, 2026 at 1:00 PM", eventCard.DateTimeLabel);
+        Assert.Null(eventCard.TimingNotes);
     }
 
     private static void EnsureDatabaseReady()
@@ -138,6 +189,7 @@ public sealed class PublicEventsFeedEndpointTests : IClassFixture<WebApplication
         string ImageAltText,
         string DateLabel,
         string DateTimeLabel,
+        string? TimingNotes,
         string ScheduleSummary,
         string Summary,
         string? Description,
