@@ -6,4 +6,8 @@ public interface IEventQueryRepository
         DateOnly fromDate,
         DateOnly throughDate,
         CancellationToken cancellationToken = default);
+
+    Task<bool> HasUpcomingPublicEventCandidatesAsync(
+        DateOnly fromDate,
+        CancellationToken cancellationToken = default);
 }

@@ -101,6 +101,7 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
+app.MapPublicEventEndpoints();
 app.MapAdditionalIdentityEndpoints();
 
 app.Run();

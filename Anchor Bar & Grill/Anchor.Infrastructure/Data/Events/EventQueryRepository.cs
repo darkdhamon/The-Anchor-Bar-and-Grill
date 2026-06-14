@@ -23,6 +23,18 @@ public sealed class EventQueryRepository(ApplicationDbContext dbContext) : IEven
             .Select(Projection)
             .ToListAsync(cancellationToken);
 
+    public Task<bool> HasUpcomingPublicEventCandidatesAsync(
+        DateOnly fromDate,
+        CancellationToken cancellationToken = default) =>
+        dbContext.Events
+            .AsNoTracking()
+            .Where(item => item.PublicationState == EventPublicationState.Published)
+            .AnyAsync(
+                item => item.RecurrencePattern == EventRecurrencePattern.None
+                    ? item.StartsOn >= fromDate
+                    : item.RecursUntil == null || item.RecursUntil >= fromDate,
+                cancellationToken);
+
     private static readonly Expression<Func<EventEntity, EventRecord>> Projection = item =>
         new EventRecord(
             item.EventId,
