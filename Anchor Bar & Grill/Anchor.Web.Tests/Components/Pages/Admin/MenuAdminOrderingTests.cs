@@ -33,7 +33,7 @@ public sealed class MenuAdminOrderingTests : BunitContext
     public MenuAdminOrderingTests()
     {
         var timeComboBoxModule = JSInterop.SetupModule("./Components/Shared/InputTimeComboBox.razor.js");
-        timeComboBoxModule.SetupVoid("scrollRelevantOption", _ => true);
+        timeComboBoxModule.SetupVoid("scrollRelevantOption", _ => true).SetVoidResult();
 
         Services.AddSingleton<IHttpContextAccessor>(new HttpContextAccessor());
         Services.AddLogging();
