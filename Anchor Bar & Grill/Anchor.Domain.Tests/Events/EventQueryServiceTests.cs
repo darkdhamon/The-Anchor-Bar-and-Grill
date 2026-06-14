@@ -213,6 +213,27 @@ public sealed class EventQueryServiceTests
                 Events.Any(item =>
                     item.RecurrencePattern == EventRecurrencePattern.None
                         ? item.StartsOn >= fromDate
-                        : item.RecursUntil == null || item.RecursUntil >= fromDate));
+                        : IsRenderableRecurringRow(item) && (item.RecursUntil == null || item.RecursUntil >= fromDate)));
+
+        private static bool IsRenderableRecurringRow(EventRecord item)
+        {
+            if (item.RecurrencePattern == EventRecurrencePattern.Weekly)
+            {
+                return IsValidRecurringInterval(item.RecurrenceInterval)
+                    && item.RecursOnDayOfWeek is >= DayOfWeek.Sunday and <= DayOfWeek.Saturday;
+            }
+
+            if (item.RecurrencePattern == EventRecurrencePattern.MonthlyNthWeekday)
+            {
+                return IsValidRecurringInterval(item.RecurrenceInterval)
+                    && item.RecursOnDayOfWeek is >= DayOfWeek.Sunday and <= DayOfWeek.Saturday
+                    && item.RecursOnWeekOfMonth is >= EventRecurrenceWeek.First and <= EventRecurrenceWeek.Last;
+            }
+
+            return false;
+        }
+
+        private static bool IsValidRecurringInterval(int recurrenceInterval) =>
+            recurrenceInterval is >= 1 and <= 1200;
     }
 }

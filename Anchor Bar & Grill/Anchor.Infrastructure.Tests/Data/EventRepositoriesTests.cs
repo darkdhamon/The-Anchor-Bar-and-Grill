@@ -174,4 +174,33 @@ public sealed class EventRepositoriesTests
         Assert.True(await repository.HasUpcomingPublicEventCandidatesAsync(new DateOnly(2026, 5, 18)));
         Assert.False(await repository.HasUpcomingPublicEventCandidatesAsync(new DateOnly(2026, 5, 19)));
     }
+
+    [Fact]
+    public async Task HasUpcomingPublicEventCandidatesAsync_ignores_invalid_recurring_rows()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+
+        context.DbContext.Events.AddRange(
+            new EventEntity
+            {
+                EventId = Guid.NewGuid(),
+                Title = "Published Broken Recurring",
+                Summary = "Summary",
+                Description = "Description",
+                StartsOn = new DateOnly(2026, 5, 4),
+                StartsAt = new TimeOnly(18, 0),
+                SortOrder = 1,
+                PublicationState = EventPublicationState.Published,
+                RecurrencePattern = EventRecurrencePattern.MonthlyNthWeekday,
+                RecurrenceInterval = 0,
+                RecursOnDayOfWeek = DayOfWeek.Monday,
+                RecursOnWeekOfMonth = (EventRecurrenceWeek)99
+            });
+
+        await context.DbContext.SaveChangesAsync();
+
+        var repository = new EventQueryRepository(context.DbContext);
+
+        Assert.False(await repository.HasUpcomingPublicEventCandidatesAsync(new DateOnly(2026, 5, 18)));
+    }
 }
