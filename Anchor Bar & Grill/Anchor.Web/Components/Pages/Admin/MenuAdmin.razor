@@ -1,6 +1,7 @@
 @page "/admin/menu"
 @using Anchor.Domain.Identity
 @using Anchor.Domain.Menu
+@using Anchor.Web.Time
 @using Microsoft.AspNetCore.Authorization
 
 @attribute [Authorize(Policy = ApplicationPolicies.MenuManagement)]
@@ -140,7 +141,12 @@
                                             <input type="checkbox" @bind="day.IsAvailable" />
                                         </label>
                                         <div>
-                                            <label for="@GetHoursInputId(day.DayOfWeek, "open")">Open</label>
+                                            <label for="@GetHoursInputId(day.DayOfWeek, "open")">
+                                                <span class="field-label-with-hint">
+                                                    <span>Open</span>
+                                                    <abbr class="field-hint-badge" title="@RestaurantTimeInfo.EntryTooltip">@RestaurantTimeInfo.ShortLabel</abbr>
+                                                </span>
+                                            </label>
                                             <InputTimeComboBox Id="@GetHoursInputId(day.DayOfWeek, "open")"
                                                                @bind-Value="day.OpensAtText"
                                                                Placeholder="Type 1300 or pick a time"
@@ -148,7 +154,12 @@
                                                                Disabled="@(!day.IsAvailable)" />
                                         </div>
                                         <div>
-                                            <label for="@GetHoursInputId(day.DayOfWeek, "close")">Close</label>
+                                            <label for="@GetHoursInputId(day.DayOfWeek, "close")">
+                                                <span class="field-label-with-hint">
+                                                    <span>Close</span>
+                                                    <abbr class="field-hint-badge" title="@RestaurantTimeInfo.EntryTooltip">@RestaurantTimeInfo.ShortLabel</abbr>
+                                                </span>
+                                            </label>
                                             <InputTimeComboBox Id="@GetHoursInputId(day.DayOfWeek, "close")"
                                                                @bind-Value="day.ClosesAtText"
                                                                Placeholder="Type 1300 or pick a time"
@@ -176,6 +187,7 @@
                             </div>
 
                             <p class="admin-field-note">Type shorthand like <code>1300</code>, <code>930</code>, or <code>1pm</code>, or open the list for a nearby half-hour pick. Save stays disabled until every available day has valid opening and closing times. Use <strong>Closes next day</strong> when the tab stays open past midnight.</p>
+                            <p class="admin-field-note">All service hours on this page use @RestaurantTimeInfo.DisplayLabel so public schedule changes follow the restaurant's local clock instead of the server's timezone.</p>
                         </section>
 
                         <aside class="admin-card menu-editor-guide menu-editor-hours-guide" aria-label="How to use the hours editor">
@@ -202,7 +214,7 @@
 
                                 <section class="menu-editor-guide__section">
                                     <p class="menu-editor-guide__eyebrow">4. Type or pick times</p>
-                                    <p>Use shorthand like <code>1300</code> or <code>1pm</code>, or open the time list for a nearby half-hour pick. Use <strong>Closes next day</strong> when a service crosses midnight.</p>
+                                    <p>Use shorthand like <code>1300</code> or <code>1pm</code>, or open the time list for a nearby half-hour pick. Those hour inputs use @RestaurantTimeInfo.DisplayLabel. Use <strong>Closes next day</strong> when a service crosses midnight.</p>
                                 </section>
 
                                 <section class="menu-editor-guide__section">
@@ -900,7 +912,12 @@
                                             }
 
                                             <div>
-                                                <label for="special-start-time">Start time</label>
+                                                <label for="special-start-time">
+                                                    <span class="field-label-with-hint">
+                                                        <span>Start time</span>
+                                                        <abbr class="field-hint-badge" title="@RestaurantTimeInfo.EntryTooltip">@RestaurantTimeInfo.ShortLabel</abbr>
+                                                    </span>
+                                                </label>
                                                 <InputTimeComboBox Id="special-start-time"
                                                                    @bind-Value="itemForm.SpecialStartsAtText"
                                                                    Placeholder="Optional"
@@ -908,7 +925,12 @@
                                             </div>
 
                                             <div>
-                                                <label for="special-end-time">End time</label>
+                                                <label for="special-end-time">
+                                                    <span class="field-label-with-hint">
+                                                        <span>End time</span>
+                                                        <abbr class="field-hint-badge" title="@RestaurantTimeInfo.EntryTooltip">@RestaurantTimeInfo.ShortLabel</abbr>
+                                                    </span>
+                                                </label>
                                                 <InputTimeComboBox Id="special-end-time"
                                                                    @bind-Value="itemForm.SpecialEndsAtText"
                                                                    Placeholder="Optional"
@@ -920,7 +942,7 @@
                                                 <div class="chip-list">
                                                     <button type="button" class="@GetChoiceChipClass(itemForm.SpecialClosesNextDay)" @onclick="() => itemForm.SpecialClosesNextDay = !itemForm.SpecialClosesNextDay">Closes next day</button>
                                                 </div>
-                                                <p class="admin-field-note">Use this when a special starts late and ends after midnight.</p>
+                                                <p class="admin-field-note">Use this when a special starts late and ends after midnight. Special-item start and end times also use @RestaurantTimeInfo.DisplayLabel.</p>
                                             </div>
 
                                             <label class="editor-form__message">
