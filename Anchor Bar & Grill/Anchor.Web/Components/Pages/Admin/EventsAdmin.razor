@@ -1,5 +1,6 @@
 @page "/admin/events"
 @using Anchor.Domain.Identity
+@using Anchor.Web.Time
 @using Microsoft.AspNetCore.Authorization
 @inject TimeProvider TimeProvider
 
@@ -49,8 +50,12 @@
                         <small>Use the first occurrence date for recurring events and the actual date for one-time events.</small>
                     </label>
                     <label>
-                        Event time
+                        <span class="field-label-with-hint">
+                            <span>Event time</span>
+                            <abbr class="field-hint-badge" title="@RestaurantTimeInfo.EntryTooltip">@RestaurantTimeInfo.ShortLabel</abbr>
+                        </span>
                         <input type="time" value="@exampleEvent.TimeInputValue" />
+                        <small>Event times are entered in @RestaurantTimeInfo.DisplayLabel.</small>
                     </label>
                     <label>
                         Promo badge
@@ -149,6 +154,7 @@
 
                 <p class="admin-field-note">Leave the image field blank when an event does not need artwork. The public events list should still render cleanly without it.</p>
                 <p class="admin-field-note">Recurring events should stay tied to one event definition so editing the title, badge, or description updates every future occurrence.</p>
+                <p class="admin-field-note">All event dates and times on this page use @RestaurantTimeInfo.DisplayLabel so the public schedule stays aligned with the restaurant's real-world operating time.</p>
                 <p class="admin-field-note">This mockup assumes the same scheduling tool can support weekly, every-other-week, and nth-weekday monthly patterns before any backend recurrence engine is built, while keeping any recurring gap within one year.</p>
             </section>
 

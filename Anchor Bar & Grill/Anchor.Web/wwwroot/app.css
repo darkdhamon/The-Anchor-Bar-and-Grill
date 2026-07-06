@@ -2067,6 +2067,32 @@ body.image-preview-open {
     line-height: 1.4;
 }
 
+.field-label-with-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}
+
+.field-hint-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.8rem;
+    padding: 0.08rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid rgba(89, 175, 226, 0.28);
+    background: rgba(89, 175, 226, 0.12);
+    color: var(--accent-readable);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: help;
+}
+
 .editor-form__message {
     grid-column: 1 / -1;
 }

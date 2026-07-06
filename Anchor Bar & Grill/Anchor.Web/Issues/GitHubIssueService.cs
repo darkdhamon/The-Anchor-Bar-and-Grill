@@ -99,6 +99,11 @@ public sealed class GitHubIssueService(HttpClient httpClient, IOptions<GitHubIss
             return "GitHub project status field name must be configured when project placement is enabled.";
         }
 
+        if (!TryResolveProjectOwnerType(out _))
+        {
+            return "GitHub project owner type must be configured as either 'User' or 'Organization' when project placement is enabled.";
+        }
+
         var projectStatusName = ResolveProjectStatusName(request.ProjectStatusName);
         if (string.IsNullOrWhiteSpace(projectStatusName))
         {
@@ -155,45 +160,9 @@ public sealed class GitHubIssueService(HttpClient httpClient, IOptions<GitHubIss
 
     private async Task<ProjectConfiguration> GetProjectConfigurationAsync(string? requestedStatusName, CancellationToken cancellationToken)
     {
+        var ownerType = ResolveProjectOwnerType();
         var responseJson = await SendGraphQlAsync(
-            """
-            query($owner: String!, $number: Int!) {
-              user(login: $owner) {
-                projectV2(number: $number) {
-                  id
-                  fields(first: 50) {
-                    nodes {
-                      ... on ProjectV2SingleSelectField {
-                        id
-                        name
-                        options {
-                          id
-                          name
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-              organization(login: $owner) {
-                projectV2(number: $number) {
-                  id
-                  fields(first: 50) {
-                    nodes {
-                      ... on ProjectV2SingleSelectField {
-                        id
-                        name
-                        options {
-                          id
-                          name
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-            """,
+            GetProjectConfigurationQuery(ownerType),
             new
             {
                 owner = ResolveProjectOwner(),
@@ -201,7 +170,7 @@ public sealed class GitHubIssueService(HttpClient httpClient, IOptions<GitHubIss
             },
             cancellationToken);
 
-        var projectNode = responseJson?["data"]?["user"]?["projectV2"] ?? responseJson?["data"]?["organization"]?["projectV2"];
+        var projectNode = GetProjectNode(responseJson, ownerType);
         if (projectNode is null)
         {
             throw new InvalidOperationException("Configured GitHub project was not found.");
@@ -344,10 +313,76 @@ public sealed class GitHubIssueService(HttpClient httpClient, IOptions<GitHubIss
             ? configuredUri
             : DefaultApiBaseAddress;
 
+    private static string GetProjectConfigurationQuery(GitHubProjectOwnerType ownerType) =>
+        ownerType switch
+        {
+            GitHubProjectOwnerType.User =>
+                """
+                query($owner: String!, $number: Int!) {
+                  user(login: $owner) {
+                    projectV2(number: $number) {
+                      id
+                      fields(first: 50) {
+                        nodes {
+                          ... on ProjectV2SingleSelectField {
+                            id
+                            name
+                            options {
+                              id
+                              name
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                """,
+            GitHubProjectOwnerType.Organization =>
+                """
+                query($owner: String!, $number: Int!) {
+                  organization(login: $owner) {
+                    projectV2(number: $number) {
+                      id
+                      fields(first: 50) {
+                        nodes {
+                          ... on ProjectV2SingleSelectField {
+                            id
+                            name
+                            options {
+                              id
+                              name
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                """,
+            _ => throw new InvalidOperationException("GitHub project owner type is not supported.")
+        };
+
+    private static JsonNode? GetProjectNode(JsonNode? responseJson, GitHubProjectOwnerType ownerType) =>
+        ownerType switch
+        {
+            GitHubProjectOwnerType.User => responseJson?["data"]?["user"]?["projectV2"],
+            GitHubProjectOwnerType.Organization => responseJson?["data"]?["organization"]?["projectV2"],
+            _ => null
+        };
+
     private string ResolveProjectOwner() =>
         string.IsNullOrWhiteSpace(options.ProjectOwner)
             ? options.RepositoryOwner?.Trim() ?? string.Empty
             : options.ProjectOwner.Trim();
+
+    private GitHubProjectOwnerType ResolveProjectOwnerType() =>
+        TryResolveProjectOwnerType(out var ownerType)
+            ? ownerType
+            : throw new InvalidOperationException("GitHub project owner type must be configured as either 'User' or 'Organization'.");
+
+    private bool TryResolveProjectOwnerType(out GitHubProjectOwnerType ownerType) =>
+        Enum.TryParse(options.ProjectOwnerType?.Trim(), ignoreCase: true, out ownerType);
 
     private string ResolveProjectStatusName(string? requestedStatusName) =>
         string.IsNullOrWhiteSpace(requestedStatusName)
