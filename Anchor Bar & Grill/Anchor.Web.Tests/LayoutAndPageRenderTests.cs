@@ -453,6 +453,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("data-public-events-feed-url=\"/events/feed\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("data-public-events-has-more=\"true\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Load more dates", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.False(cut.Find("[data-public-events-feed='true']").HasAttribute("hidden"));
         Assert.Equal(timeProvider.GetLocalNow().DateTime, eventQueryService.LastRequestedLocalNow);
         Assert.Equal(90, eventQueryService.LastRequestedDaysAhead);
         Assert.Equal(DateOnly.FromDateTime(timeProvider.GetLocalNow().DateTime), eventQueryService.LastRequestedFromDate);
@@ -474,6 +475,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Check back soon for live music, community nights, and one-time specials as they are posted.", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Empty(cut.FindAll(".event-card"));
         Assert.DoesNotContain("Plan Your Visit", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.True(cut.Find("[data-public-events-feed='true']").HasAttribute("hidden"));
     }
 
     [Fact]
@@ -490,6 +492,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Nothing In The Next 90 Days Yet", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("No published events are scheduled in the opening calendar window.", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("No published events are on the calendar right now.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.False(cut.Find("[data-public-events-feed='true']").HasAttribute("hidden"));
     }
 
     [Fact]
