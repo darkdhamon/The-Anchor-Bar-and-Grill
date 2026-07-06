@@ -11,6 +11,7 @@ using Anchor.Web.Configuration;
 using Anchor.Web.Data;
 using Anchor.Web.Images;
 using Anchor.Web.Issues;
+using Anchor.Web.Time;
 using Microsoft.AspNetCore.Hosting.StaticWebAssets;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -43,7 +44,9 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorizationBuilder()
     .AddAnchorAuthorizationPolicies();
 
-builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.Configure<RestaurantTimeOptions>(builder.Configuration.GetSection(RestaurantTimeOptions.SectionName));
+var restaurantTimeZoneId = builder.Configuration[$"{RestaurantTimeOptions.SectionName}:{nameof(RestaurantTimeOptions.TimeZoneId)}"];
+builder.Services.AddSingleton<TimeProvider>(_ => RestaurantTimeProvider.CreateSystemClock(restaurantTimeZoneId));
 builder.Services.Configure<AnchorIdentityOptions>(builder.Configuration.GetSection(AnchorIdentityConfigurationKeys.SectionName));
 builder.Services.AddAnchorDomainServices();
 builder.Services.AddGitHubIssueServices(builder.Configuration);

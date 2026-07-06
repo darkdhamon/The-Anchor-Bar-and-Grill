@@ -16,6 +16,8 @@ public sealed class GitHubIssueOptions
 
     public string ProjectOwner { get; set; } = string.Empty;
 
+    public string ProjectOwnerType { get; set; } = nameof(GitHubProjectOwnerType.User);
+
     public int ProjectNumber { get; set; }
 
     public string ProjectStatusFieldName { get; set; } = "Status";

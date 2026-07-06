@@ -492,6 +492,8 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("every other Friday", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Third Friday Steak Night", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Choose an existing badge or type a new one to create it on the fly", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Central Time (America/Chicago)", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(">CT<", cut.Markup, StringComparison.Ordinal);
         Assert.Equal(2, cut.FindAll("input[type='date']").Count);
         Assert.Single(cut.FindAll("input[type='time']"));
         Assert.Contains("Delete", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -514,6 +516,19 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Delete section", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Breakfast", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Drinks", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void MenuAdminHoursWorkspace_ExplainsCentralTimeUsage()
+    {
+        var cut = Render<MenuAdmin>();
+
+        cut.FindAll(".menu-editor-tabs button")
+            .Single(button => string.Equals(button.TextContent.Trim(), "Hours", StringComparison.Ordinal))
+            .Click();
+
+        Assert.Contains("Central Time (America/Chicago)", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(">CT<", cut.Markup, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -554,6 +569,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Publicity Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Contact Editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("EventManager", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Central Time (America/Chicago)", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("self-register", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
