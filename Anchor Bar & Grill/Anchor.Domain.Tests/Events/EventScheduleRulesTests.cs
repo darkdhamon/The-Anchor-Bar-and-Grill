@@ -142,6 +142,34 @@ public sealed class EventScheduleRulesTests
     }
 
     [Fact]
+    public void GetOccurrences_returns_empty_for_recurring_event_with_interval_above_one_year_cap()
+    {
+        var weeklyRecord = CreateRecord(
+            EventRecurrencePattern.Weekly,
+            startsOn: new DateOnly(2026, 5, 18),
+            recursOnDayOfWeek: DayOfWeek.Monday,
+            recurrenceInterval: EventScheduleRules.MaxWeeklyRecurrenceInterval + 1);
+        var monthlyRecord = CreateRecord(
+            EventRecurrencePattern.MonthlyNthWeekday,
+            startsOn: new DateOnly(2026, 5, 15),
+            recursOnDayOfWeek: DayOfWeek.Friday,
+            recursOnWeekOfMonth: EventRecurrenceWeek.Third,
+            recurrenceInterval: EventScheduleRules.MaxMonthlyRecurrenceInterval + 1);
+
+        var weeklyOccurrences = EventScheduleRules.GetOccurrences(
+            weeklyRecord,
+            new DateOnly(2026, 5, 1),
+            new DateOnly(2027, 12, 31));
+        var monthlyOccurrences = EventScheduleRules.GetOccurrences(
+            monthlyRecord,
+            new DateOnly(2026, 5, 1),
+            new DateOnly(2027, 12, 31));
+
+        Assert.Empty(weeklyOccurrences);
+        Assert.Empty(monthlyOccurrences);
+    }
+
+    [Fact]
     public void GetOccurrences_returns_empty_for_recurring_event_with_invalid_persisted_enum_values()
     {
         var record = CreateRecord(
@@ -295,7 +323,7 @@ public sealed class EventScheduleRulesTests
     }
 
     [Fact]
-    public void Validate_rejects_recurrence_interval_above_supported_cap()
+    public void Validate_rejects_weekly_recurrence_interval_above_one_year_cap()
     {
         var request = new SaveEventRequest(
             null,
@@ -311,14 +339,41 @@ public sealed class EventScheduleRulesTests
             1,
             EventPublicationState.Published,
             EventRecurrencePattern.Weekly,
-            1201,
+            EventScheduleRules.MaxWeeklyRecurrenceInterval + 1,
             DayOfWeek.Monday,
             null,
             null);
 
         var errors = EventScheduleRules.Validate(request);
 
-        Assert.Contains(errors, error => error.Contains("interval greater", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(errors, error => error.Contains("52 weeks", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Validate_rejects_monthly_recurrence_interval_above_one_year_cap()
+    {
+        var request = new SaveEventRequest(
+            null,
+            "Steak Night",
+            "Monthly feature",
+            "Questions and prizes.",
+            null,
+            null,
+            new DateOnly(2026, 6, 1),
+            new TimeOnly(19, 0),
+            null,
+            false,
+            1,
+            EventPublicationState.Published,
+            EventRecurrencePattern.MonthlyNthWeekday,
+            EventScheduleRules.MaxMonthlyRecurrenceInterval + 1,
+            DayOfWeek.Friday,
+            EventRecurrenceWeek.Third,
+            null);
+
+        var errors = EventScheduleRules.Validate(request);
+
+        Assert.Contains(errors, error => error.Contains("12 months", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

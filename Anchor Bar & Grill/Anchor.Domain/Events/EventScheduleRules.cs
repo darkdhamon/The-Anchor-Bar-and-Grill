@@ -10,7 +10,8 @@ public static class EventScheduleRules
     private const int MaxPromoBadgeLength = 80;
     private const int MaxImagePathLength = 300;
     private const int MaxTimingNotesLength = 300;
-    private const int MaxRecurrenceInterval = 1200;
+    public const int MaxWeeklyRecurrenceInterval = 52;
+    public const int MaxMonthlyRecurrenceInterval = 12;
 
     public static IReadOnlyList<string> Validate(SaveEventRequest request)
     {
@@ -82,15 +83,6 @@ public static class EventScheduleRules
             errors.Add("Event recurrence pattern is invalid.");
         }
 
-        if (request.RecurrencePattern != EventRecurrencePattern.None && request.RecurrenceInterval < 1)
-        {
-            errors.Add("Recurring events must use an interval of at least 1.");
-        }
-        else if (request.RecurrencePattern != EventRecurrencePattern.None && request.RecurrenceInterval > MaxRecurrenceInterval)
-        {
-            errors.Add($"Recurring events cannot use an interval greater than {MaxRecurrenceInterval}.");
-        }
-
         if (request.RecursUntil is { } recursUntil && recursUntil < request.StartsOn)
         {
             errors.Add("Recurs until cannot be earlier than the first event date.");
@@ -107,6 +99,15 @@ public static class EventScheduleRules
                 break;
 
             case EventRecurrencePattern.Weekly:
+                if (request.RecurrenceInterval < 1)
+                {
+                    errors.Add("Recurring events must use an interval of at least 1.");
+                }
+                else if (!IsSupportedRecurringInterval(request.RecurrencePattern, request.RecurrenceInterval))
+                {
+                    errors.Add(GetRecurrenceIntervalCapError(request.RecurrencePattern));
+                }
+
                 if (request.RecursOnDayOfWeek is null)
                 {
                     errors.Add("Weekly recurring events must include a day of week.");
@@ -124,6 +125,15 @@ public static class EventScheduleRules
                 break;
 
             case EventRecurrencePattern.MonthlyNthWeekday:
+                if (request.RecurrenceInterval < 1)
+                {
+                    errors.Add("Recurring events must use an interval of at least 1.");
+                }
+                else if (!IsSupportedRecurringInterval(request.RecurrencePattern, request.RecurrenceInterval))
+                {
+                    errors.Add(GetRecurrenceIntervalCapError(request.RecurrencePattern));
+                }
+
                 if (request.RecursOnDayOfWeek is null)
                 {
                     errors.Add("Monthly recurring events must include a day of week.");
@@ -239,6 +249,14 @@ public static class EventScheduleRules
             ? $"{cadence} - next on {nextDate:MMM d, yyyy}"
             : cadence;
     }
+
+    public static bool IsSupportedRecurringInterval(EventRecurrencePattern recurrencePattern, int recurrenceInterval) =>
+        recurrencePattern switch
+        {
+            EventRecurrencePattern.Weekly => recurrenceInterval is >= 1 and <= MaxWeeklyRecurrenceInterval,
+            EventRecurrencePattern.MonthlyNthWeekday => recurrenceInterval is >= 1 and <= MaxMonthlyRecurrenceInterval,
+            _ => false
+        };
 
     private static IReadOnlyList<DateOnly> GetWeeklyOccurrences(
         DateOnly startDate,
@@ -360,7 +378,7 @@ public static class EventScheduleRules
             return true;
         }
 
-        if (record.RecurrenceInterval is < 1 or > MaxRecurrenceInterval)
+        if (!IsSupportedRecurringInterval(record.RecurrencePattern, record.RecurrenceInterval))
         {
             return false;
         }
@@ -377,4 +395,11 @@ public static class EventScheduleRules
     }
 
     private static bool IsValidDayOfWeek(DayOfWeek dayOfWeek) => dayOfWeek is >= DayOfWeek.Sunday and <= DayOfWeek.Saturday;
+
+    private static string GetRecurrenceIntervalCapError(EventRecurrencePattern recurrencePattern) => recurrencePattern switch
+    {
+        EventRecurrencePattern.Weekly => $"Weekly recurring events cannot use an interval greater than {MaxWeeklyRecurrenceInterval} weeks.",
+        EventRecurrencePattern.MonthlyNthWeekday => $"Monthly recurring events cannot use an interval greater than {MaxMonthlyRecurrenceInterval} months.",
+        _ => "Recurring events use an unsupported interval."
+    };
 }

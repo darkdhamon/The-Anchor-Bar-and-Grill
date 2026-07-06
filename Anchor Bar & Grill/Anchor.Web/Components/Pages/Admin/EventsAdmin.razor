@@ -22,7 +22,7 @@
             <ul>
                 <li>Create upcoming events from a guided form with title, image, date, time, badge, and description fields.</li>
                 <li>Let Event Managers choose an existing promo badge or type a new one from the same combo box when a fresh badge is needed.</li>
-                <li>Support recurring events with schedules like every week, every other week, or the third Friday of the month.</li>
+                <li>Support recurring events with schedules like every week, every other week, or the third Friday of the month, while keeping recurring gaps to one year or less.</li>
                 <li>Use clear delete confirmations so outdated events are removed intentionally.</li>
             </ul>
         </aside>
@@ -94,7 +94,7 @@
                                 }
                             }
                         </select>
-                        <small>Use cadence to handle schedules like every other Friday without creating duplicate event definitions.</small>
+                        <small>Use cadence to handle schedules like every other Friday without creating duplicate event definitions. Weekly cadences can repeat up to every 52 weeks, and monthly cadences up to every 12 months.</small>
                     </label>
                     <label>
                         Repeats on
@@ -149,7 +149,7 @@
 
                 <p class="admin-field-note">Leave the image field blank when an event does not need artwork. The public events list should still render cleanly without it.</p>
                 <p class="admin-field-note">Recurring events should stay tied to one event definition so editing the title, badge, or description updates every future occurrence.</p>
-                <p class="admin-field-note">This mockup assumes the same scheduling tool can support weekly, every-other-week, and nth-weekday monthly patterns before any backend recurrence engine is built.</p>
+                <p class="admin-field-note">This mockup assumes the same scheduling tool can support weekly, every-other-week, and nth-weekday monthly patterns before any backend recurrence engine is built, while keeping any recurring gap within one year.</p>
             </section>
 
             <section class="admin-card">

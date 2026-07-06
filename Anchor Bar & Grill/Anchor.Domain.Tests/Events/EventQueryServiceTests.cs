@@ -219,21 +219,18 @@ public sealed class EventQueryServiceTests
         {
             if (item.RecurrencePattern == EventRecurrencePattern.Weekly)
             {
-                return IsValidRecurringInterval(item.RecurrenceInterval)
+                return EventScheduleRules.IsSupportedRecurringInterval(EventRecurrencePattern.Weekly, item.RecurrenceInterval)
                     && item.RecursOnDayOfWeek is >= DayOfWeek.Sunday and <= DayOfWeek.Saturday;
             }
 
             if (item.RecurrencePattern == EventRecurrencePattern.MonthlyNthWeekday)
             {
-                return IsValidRecurringInterval(item.RecurrenceInterval)
+                return EventScheduleRules.IsSupportedRecurringInterval(EventRecurrencePattern.MonthlyNthWeekday, item.RecurrenceInterval)
                     && item.RecursOnDayOfWeek is >= DayOfWeek.Sunday and <= DayOfWeek.Saturday
                     && item.RecursOnWeekOfMonth is >= EventRecurrenceWeek.First and <= EventRecurrenceWeek.Last;
             }
 
             return false;
         }
-
-        private static bool IsValidRecurringInterval(int recurrenceInterval) =>
-            recurrenceInterval is >= 1 and <= 1200;
     }
 }

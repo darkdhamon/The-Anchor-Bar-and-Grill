@@ -240,4 +240,47 @@ public sealed class EventRepositoriesTests
 
         Assert.False(await repository.HasUpcomingPublicEventCandidatesAsync(new DateOnly(2026, 5, 18)));
     }
+
+    [Fact]
+    public async Task HasUpcomingPublicEventCandidatesAsync_ignores_recurring_rows_beyond_one_year_interval_cap()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+
+        context.DbContext.Events.AddRange(
+            new EventEntity
+            {
+                EventId = Guid.NewGuid(),
+                Title = "Published Long-Gap Weekly",
+                Summary = "Summary",
+                Description = "Description",
+                StartsOn = new DateOnly(2026, 5, 4),
+                StartsAt = new TimeOnly(18, 0),
+                SortOrder = 1,
+                PublicationState = EventPublicationState.Published,
+                RecurrencePattern = EventRecurrencePattern.Weekly,
+                RecurrenceInterval = EventScheduleRules.MaxWeeklyRecurrenceInterval + 1,
+                RecursOnDayOfWeek = DayOfWeek.Monday
+            },
+            new EventEntity
+            {
+                EventId = Guid.NewGuid(),
+                Title = "Published Long-Gap Monthly",
+                Summary = "Summary",
+                Description = "Description",
+                StartsOn = new DateOnly(2026, 5, 15),
+                StartsAt = new TimeOnly(18, 0),
+                SortOrder = 2,
+                PublicationState = EventPublicationState.Published,
+                RecurrencePattern = EventRecurrencePattern.MonthlyNthWeekday,
+                RecurrenceInterval = EventScheduleRules.MaxMonthlyRecurrenceInterval + 1,
+                RecursOnDayOfWeek = DayOfWeek.Friday,
+                RecursOnWeekOfMonth = EventRecurrenceWeek.Third
+            });
+
+        await context.DbContext.SaveChangesAsync();
+
+        var repository = new EventQueryRepository(context.DbContext);
+
+        Assert.False(await repository.HasUpcomingPublicEventCandidatesAsync(new DateOnly(2026, 5, 18)));
+    }
 }

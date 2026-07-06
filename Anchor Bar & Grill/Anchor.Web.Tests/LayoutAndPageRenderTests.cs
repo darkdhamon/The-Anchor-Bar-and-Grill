@@ -533,6 +533,8 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Week of month", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Recurs until (optional)", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("every other Friday", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("52 weeks", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("12 months", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Third Friday Steak Night", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Choose an existing badge or type a new one to create it on the fly", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(2, cut.FindAll("input[type='date']").Count);
