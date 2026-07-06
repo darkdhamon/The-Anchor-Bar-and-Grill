@@ -16,7 +16,7 @@ public static class SiteMap
 
     public static IReadOnlyList<RouteLink> EventManagementLinks { get; } =
     [
-        new("/admin/events", "Event Editor", "Plan, edit, and retire event listings.")
+        new("/admin/events", "Event Editor", "Create, publish, archive, and retire event listings.")
     ];
 
     public static IReadOnlyList<RouteLink> MenuManagementLinks { get; } =
