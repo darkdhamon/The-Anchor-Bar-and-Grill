@@ -1,41 +1,132 @@
-﻿@page "/Account/Manage"
+@page "/Account/Manage"
 
 @using System.ComponentModel.DataAnnotations
+@using Anchor.Domain.Identity
+@using Anchor.Domain.Identity.Users
+@using Anchor.Infrastructure.Data
 @using Microsoft.AspNetCore.Identity
-@using Anchor.Web.Data
 
+@inject IIdentityAdministrationService IdentityAdministrationService
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IdentityRedirectManager RedirectManager
 
-<PageTitle>Profile</PageTitle>
+<PageTitle>Manage account</PageTitle>
 
-<h3>Profile</h3>
-<StatusMessage />
-
-<div class="row">
-    <div class="col-xl-6">
-        <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <input type="text" value="@username" id="username" class="form-control" placeholder="Choose your username." disabled />
-                <label for="username" class="form-label">Username</label>
-            </div>
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.PhoneNumber" id="Input.PhoneNumber" class="form-control" placeholder="Enter your phone number" />
-                <label for="Input.PhoneNumber" class="form-label">Phone number</label>
-                <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Save</button>
-        </EditForm>
+<section class="account-page">
+    <div class="page-hero page-hero--section account-page__hero">
+        <p class="page-hero__eyebrow">Account Profile</p>
+        <h1>Manage account</h1>
+        <p class="page-hero__lead">
+            Keep your staff name and contact details current here so the admin team and future workflow tools stay in sync.
+        </p>
     </div>
-</div>
+
+    <div class="account-grid">
+        <section class="admin-card account-panel">
+            <div class="admin-card__header">
+                <h2>Update your profile details.</h2>
+                <span class="admin-card__badge">Self-service</span>
+            </div>
+
+            <StatusMessage Message="@message" />
+
+            <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post" class="editor-form account-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="validation-message account-form__validation" role="alert" />
+
+                <div class="editor-form__grid">
+                    <label>
+                        Username
+                        <input type="text" value="@username" id="username" autocomplete="username" placeholder="Username" disabled />
+                    </label>
+                    <label>
+                        First name
+                        <CommitAwareInputText @bind-Value="Input.FirstName" id="Input.FirstName" autocomplete="given-name" placeholder="First name" />
+                        <ValidationMessage For="() => Input.FirstName" class="validation-message" />
+                    </label>
+                    <label>
+                        Last name
+                        <CommitAwareInputText @bind-Value="Input.LastName" id="Input.LastName" autocomplete="family-name" placeholder="Last name" />
+                        <ValidationMessage For="() => Input.LastName" class="validation-message" />
+                    </label>
+                    <label>
+                        Phone number
+                        <CommitAwareInputText @bind-Value="Input.PhoneNumber" id="Input.PhoneNumber" autocomplete="tel" placeholder="Phone number" />
+                        <ValidationMessage For="() => Input.PhoneNumber" class="validation-message" />
+                    </label>
+                </div>
+
+                <p class="admin-field-note">
+                    Use this page for your name and phone details. If your sign-in email address changes, update it from the
+                    <a href="/Account/Manage/Email" data-enhance-nav="false">Email</a> page.
+                </p>
+
+                <div class="account-form__actions">
+                    <button type="submit" class="hero-actions__link hero-actions__link--primary account-form__submit">Save profile</button>
+                </div>
+            </EditForm>
+        </section>
+
+        <section class="admin-card account-panel">
+            <div class="admin-card__header">
+                <h2>What this updates</h2>
+                <span class="admin-card__badge">Guidance</span>
+            </div>
+
+            <div class="account-panel__body">
+                <div>
+                    <h3>Assigned roles</h3>
+
+                    @if (assignedRoles.Count == 0)
+                    {
+                        <p class="admin-field-note">No roles are currently assigned to your account.</p>
+                    }
+                    else
+                    {
+                        <div class="chip-list">
+                            @foreach (var role in assignedRoles)
+                            {
+                                <span class="chip chip--role">@role</span>
+                            }
+                        </div>
+
+                        <ul class="feature-list">
+                            @foreach (var role in assignedRoles)
+                            {
+                                <li>@GetRoleDescription(role)</li>
+                            }
+                        </ul>
+                    }
+
+                    <p class="admin-field-note">
+                        These roles are read only here. Ask an <strong>Admin</strong> if your access needs to change.
+                    </p>
+                </div>
+
+                <ul class="feature-list">
+                    <li>Your first name, last name, and phone number stay aligned with the same profile details admins can manage for your account.</li>
+                    <li>Keeping this information current helps staff coordination and future contact workflows stay accurate.</li>
+                    <li>Your username stays visible here for reference, while sign-in email changes continue through the dedicated Email page.</li>
+                </ul>
+            </div>
+        </section>
+    </div>
+</section>
 
 @code {
+    private static readonly IReadOnlyDictionary<string, string> roleDescriptions = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        [ApplicationRoles.Admin] = "Admin access to help, publicity, contact, user management, and security tools.",
+        [ApplicationRoles.EventManager] = "Event editing access for event listings and schedules.",
+        [ApplicationRoles.MenuManager] = "Menu editing access for menu items, pricing, and recurring specials.",
+        [ApplicationRoles.It] = "Technical access for the IT / System area."
+    };
+
+    private string? message;
     private ApplicationUser? user;
     private string? username;
-    private string? phoneNumber;
+    private IReadOnlyList<string> assignedRoles = [];
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
@@ -55,9 +146,13 @@
         }
 
         username = await UserManager.GetUserNameAsync(user);
-        phoneNumber = await UserManager.GetPhoneNumberAsync(user);
-
-        Input.PhoneNumber ??= phoneNumber;
+        assignedRoles = (await UserManager.GetRolesAsync(user))
+            .OrderBy(GetRoleSortOrder)
+            .ThenBy(role => role, StringComparer.Ordinal)
+            .ToArray();
+        Input.FirstName ??= user.FirstName ?? "";
+        Input.LastName ??= user.LastName ?? "";
+        Input.PhoneNumber ??= user.PhoneNumber ?? "";
     }
 
     private async Task OnValidSubmitAsync()
@@ -68,24 +163,58 @@
             return;
         }
 
-        if (Input.PhoneNumber != phoneNumber)
+        var result = await IdentityAdministrationService.UpdateUserProfileAsync(
+            new UpdateManagedUserProfileRequest(
+                user.Id,
+                Input.FirstName,
+                Input.LastName,
+                Input.PhoneNumber));
+
+        if (!result.Succeeded)
         {
-            var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
-            if (!setPhoneResult.Succeeded)
-            {
-                RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to set phone number.", HttpContext);
-                return;
-            }
+            message = $"Error: {string.Join(" ", result.Errors)}";
+            return;
+        }
+
+        user = await UserManager.FindByIdAsync(user.Id);
+        if (user is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
         }
 
         await SignInManager.RefreshSignInAsync(user);
-        RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
+        RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated.", HttpContext);
     }
 
     private sealed class InputModel
     {
-        [Phone]
-        [Display(Name = "Phone number")]
+        [StringLength(100, ErrorMessage = "First name cannot be longer than 100 characters.")]
+        public string? FirstName { get; set; }
+
+        [StringLength(100, ErrorMessage = "Last name cannot be longer than 100 characters.")]
+        public string? LastName { get; set; }
+
+        [RegularExpression(@"^$|^[0-9()+.\-\s]{7,25}$", ErrorMessage = "Enter a valid phone number.")]
         public string? PhoneNumber { get; set; }
     }
+
+    private static int GetRoleSortOrder(string roleName)
+    {
+        for (var index = 0; index < ApplicationRoles.All.Count; index++)
+        {
+            if (string.Equals(ApplicationRoles.All[index], roleName, StringComparison.Ordinal))
+            {
+                return index;
+            }
+        }
+
+        return int.MaxValue;
+    }
+
+    private static string GetRoleDescription(string roleName) =>
+        roleDescriptions.TryGetValue(roleName, out var description)
+            ? description
+            : "Access provided by this role is managed by an Admin.";
 }
+

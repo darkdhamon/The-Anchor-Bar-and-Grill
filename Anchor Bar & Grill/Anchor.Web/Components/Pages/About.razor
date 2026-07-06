@@ -1,0 +1,47 @@
+@page "/about"
+@attribute [ExcludeFromInteractiveRouting]
+
+<PageTitle>About</PageTitle>
+
+<section class="page-hero page-hero--section">
+    <p class="page-hero__eyebrow">About The Anchor</p>
+    <h1>About mockup</h1>
+    <p class="page-hero__lead">
+        This page should explain the personality of The Anchor and help guests understand what kind of stop it is before they arrive.
+    </p>
+</section>
+
+<section class="split-section">
+    <article class="split-card">
+        <div class="section-heading">
+            <p class="section-heading__eyebrow">Story Direction</p>
+            <h2>Tell the story in a way that feels local, direct, and welcoming.</h2>
+        </div>
+
+        <div class="story-list">
+            @foreach (var point in MockupContent.AboutStory)
+            {
+                <article class="story-item">
+                    <p>@point.Description</p>
+                </article>
+            }
+        </div>
+    </article>
+
+    <article class="split-card">
+        <div class="section-heading">
+            <p class="section-heading__eyebrow">Guest Experience</p>
+            <h2>Show what a visit is supposed to feel like.</h2>
+        </div>
+
+        <div class="feature-grid">
+            @foreach (var item in MockupContent.ExperiencePillars)
+            {
+                <article class="feature-card feature-card--tight">
+                    <h3>@item.Title</h3>
+                    <p>@item.Description</p>
+                </article>
+            }
+        </div>
+    </article>
+</section>

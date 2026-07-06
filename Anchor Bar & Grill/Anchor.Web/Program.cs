@@ -1,19 +1,38 @@
+using Anchor.Infrastructure;
+using Anchor.Infrastructure.Data;
+using Anchor.Domain;
+using Anchor.Domain.Identity;
+using Anchor.Domain.Identity.Bootstrap;
+using Anchor.Domain.Identity.Configuration;
+using Anchor.Domain.Identity.Users;
 using Anchor.Web.Components;
 using Anchor.Web.Components.Account;
+using Anchor.Web.Configuration;
 using Anchor.Web.Data;
+using Anchor.Web.Images;
+using Anchor.Web.Issues;
+using Anchor.Web.Time;
+using Microsoft.AspNetCore.Hosting.StaticWebAssets;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+if (builder.Environment.IsDevelopment())
+{
+    StaticWebAssetsLoader.UseStaticWebAssets(builder.Environment, builder.Configuration);
+}
+
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
+builder.Services.AddScoped<IClaimsTransformation, ApplicationUserClaimsRefreshTransformation>();
 
 builder.Services.AddAuthentication(options =>
     {
@@ -22,16 +41,32 @@ builder.Services.AddAuthentication(options =>
     })
     .AddIdentityCookies();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+builder.Services.AddAuthorizationBuilder()
+    .AddAnchorAuthorizationPolicies();
+
+builder.Services.Configure<RestaurantTimeOptions>(builder.Configuration.GetSection(RestaurantTimeOptions.SectionName));
+var restaurantTimeZoneId = builder.Configuration[$"{RestaurantTimeOptions.SectionName}:{nameof(RestaurantTimeOptions.TimeZoneId)}"];
+builder.Services.AddSingleton<TimeProvider>(_ => RestaurantTimeProvider.CreateSystemClock(restaurantTimeZoneId));
+builder.Services.Configure<AnchorIdentityOptions>(builder.Configuration.GetSection(AnchorIdentityConfigurationKeys.SectionName));
+builder.Services.AddAnchorDomainServices();
+builder.Services.AddGitHubIssueServices(builder.Configuration);
+builder.Services.AddProductionExceptionIssueReporting(builder.Configuration);
+builder.Services.AddScoped<IConfirmedAccountConfigurationStore, JsonConfirmedAccountConfigurationStore>();
+builder.Services.AddScoped<IMenuItemImageStorage, LocalMenuItemImageStorage>();
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+builder.Services.AddAnchorInfrastructure(connectionString);
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
-        options.SignIn.RequireConfirmedAccount = true;
+        options.SignIn.RequireConfirmedAccount = false;
         options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
     })
+    .AddRoles<IdentityRole>()
+    .AddClaimsPrincipalFactory<ApplicationUserClaimsPrincipalFactory>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
@@ -40,7 +75,15 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSe
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await dbContext.Database.MigrateAsync();
+
+    var bootstrapService = scope.ServiceProvider.GetRequiredService<IIdentityBootstrapService>();
+    await bootstrapService.BootstrapAsync();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
@@ -48,9 +91,10 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
+    app.UseMiddleware<ProductionExceptionIssueMiddleware>();
 }
+
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
@@ -60,7 +104,10 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-// Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
 
 app.Run();
+
+public partial class Program
+{
+}

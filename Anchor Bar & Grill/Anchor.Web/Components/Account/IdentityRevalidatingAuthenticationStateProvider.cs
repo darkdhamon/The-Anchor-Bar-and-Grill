@@ -1,4 +1,4 @@
-using Anchor.Web.Data;
+using Anchor.Infrastructure.Data;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server;
 using Microsoft.AspNetCore.Identity;
@@ -46,3 +46,4 @@ namespace Anchor.Web.Components.Account
         }
     }
 }
+

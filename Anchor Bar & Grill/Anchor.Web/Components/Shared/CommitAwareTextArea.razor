@@ -1,0 +1,8 @@
+@inherits CommitAwareTextAreaBase
+
+<textarea @attributes="AdditionalAttributes"
+          name="@NameAttributeValue"
+          class="@CssClass"
+          value="@CurrentValueAsString"
+          @oninput="HandleValueChanged"
+          @onchange="HandleValueChanged"></textarea>

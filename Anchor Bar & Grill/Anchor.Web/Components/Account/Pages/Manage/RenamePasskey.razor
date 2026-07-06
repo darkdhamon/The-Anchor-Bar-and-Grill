@@ -1,6 +1,6 @@
-﻿@page "/Account/Manage/RenamePasskey/{Id}"
+@page "/Account/Manage/RenamePasskey/{Id}"
 
-@using Anchor.Web.Data
+@using Anchor.Infrastructure.Data
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Identity
 @using System.Buffers.Text
@@ -21,7 +21,7 @@
     <hr />
     <ValidationSummary class="text-danger" role="alert" />
     <div class="form-floating mb-3">
-        <InputText @bind-Value="Input.Name" id="Input.Name" class="form-control" aria-required="true" placeholder="My passkey" />
+        <CommitAwareInputText @bind-Value="Input.Name" id="Input.Name" class="form-control" aria-required="true" placeholder="My passkey" />
         <label for="Input.Name" class="form-label">Passkey name</label>
         <ValidationMessage For="() => Input.Name" class="text-danger" />
     </div>
@@ -93,3 +93,4 @@
         public string Name { get; set; } = "";
     }
 }
+

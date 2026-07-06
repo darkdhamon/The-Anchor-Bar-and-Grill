@@ -1,0 +1,222 @@
+@page "/admin/security"
+@rendermode InteractiveServer
+
+@using Anchor.Domain.Identity
+@using Anchor.Domain.Identity.Bootstrap
+@using Anchor.Domain.Identity.Configuration
+@using Anchor.Domain.Identity.Users
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Options
+
+@attribute [Authorize(Policy = ApplicationPolicies.AdminAccess)]
+
+@inject IConfirmedAccountConfigurationService ConfirmedAccountConfigurationService
+@inject IIdentityAdministrationService IdentityAdministrationService
+@inject IOptionsMonitor<AnchorIdentityOptions> AnchorIdentityOptionsMonitor
+
+<PageTitle>Security</PageTitle>
+
+<section class="admin-page">
+    <div class="page-hero page-hero--section">
+        <p class="page-hero__eyebrow">Admin Access</p>
+        <h1>Security</h1>
+        <p class="page-hero__lead">
+            Review live confirmation behavior, see which configuration source currently wins, and verify that the
+            site still has the minimum Admin and IT coverage required for safe handoff.
+        </p>
+    </div>
+
+    <div class="admin-grid">
+        <aside class="admin-help">
+            <h2>How to use this page</h2>
+            <ul class="feature-list">
+                <li>Change the fallback confirmed-account value here when you want the site to become stricter or more open without storing duplicate state in the database.</li>
+                <li>This setting checks whether the account has been approved for sign-in. It does not require the current email address to already be verified.</li>
+                <li>If an environment override is active, the effective setting will keep following that override until the environment changes and the app restarts.</li>
+                <li>Bootstrap coverage is healthy once the system has at least one <strong>Admin</strong> user and one <strong>IT</strong> user.</li>
+            </ul>
+        </aside>
+
+        <div class="admin-stack">
+            <StatusMessage Message="@statusMessage" />
+
+            @if (configurationState is null || bootstrapOverview is null)
+            {
+                <section class="admin-card">
+                    <div class="admin-card__header">
+                        <h2>Security overview</h2>
+                        <span class="admin-card__badge">Loading</span>
+                    </div>
+                    <p class="admin-field-note">Reading the current security configuration and bootstrap coverage now.</p>
+                </section>
+            }
+            else
+            {
+                <section class="admin-card">
+                    <div class="admin-card__header">
+                        <h2>Effective confirmed-account behavior</h2>
+                        <span class="chip @(configurationState.EffectiveRequireConfirmedAccount ? "chip--success" : "chip--neutral")">
+                            @(configurationState.EffectiveRequireConfirmedAccount ? "Required" : "Not required")
+                        </span>
+                    </div>
+
+                    <dl class="detail-list">
+                        <div>
+                            <dt>Effective source</dt>
+                            <dd>@configurationState.EffectiveSource</dd>
+                        </div>
+                        <div>
+                            <dt>Fallback file value</dt>
+                            <dd>@(configurationState.FallbackRequireConfirmedAccount ? "Required" : "Not required")</dd>
+                        </div>
+                    </dl>
+
+                    @if (configurationState.IsEnvironmentOverride)
+                    {
+                        <p class="status-banner status-banner--warning">
+                            The environment variable <code>@AnchorIdentityConfigurationKeys.RequireConfirmedAccountEnvironmentVariable</code>
+                            is overriding the fallback <code>appsettings.json</code> value. Saving below still updates the file,
+                            but live behavior will not change until the override is removed and the app restarts.
+                        </p>
+                    }
+                </section>
+
+                <section class="admin-card">
+                    <div class="admin-card__header">
+                        <h2>Bootstrap coverage</h2>
+                        <span class="chip @(bootstrapOverview.HasMinimumCoverage ? "chip--success" : "chip--warning")">
+                            @(bootstrapOverview.HasMinimumCoverage ? "Coverage satisfied" : "Coverage missing")
+                        </span>
+                    </div>
+
+                    <dl class="detail-list">
+                        <div>
+                            <dt>Admin users</dt>
+                            <dd>@bootstrapOverview.AdminUserCount</dd>
+                        </div>
+                        <div>
+                            <dt>IT users</dt>
+                            <dd>@bootstrapOverview.ItUserCount</dd>
+                        </div>
+                        <div>
+                            <dt>Bootstrap accounts</dt>
+                            <dd>@bootstrapOverview.BootstrapAccountCount</dd>
+                        </div>
+                    </dl>
+                </section>
+
+                <section class="admin-card">
+                    <div class="admin-card__header">
+                        <h2>Bootstrap account source</h2>
+                        <span class="admin-card__badge">Startup seed</span>
+                    </div>
+
+                    <dl class="detail-list">
+                        <div>
+                            <dt>Email in use</dt>
+                            <dd>@BootstrapEmail</dd>
+                        </div>
+                        <div>
+                            <dt>Password source</dt>
+                            <dd>@BootstrapPasswordSource</dd>
+                        </div>
+                        <div>
+                            <dt>Fallback email</dt>
+                            <dd>@IdentityBootstrapService.FallbackBootstrapEmail</dd>
+                        </div>
+                    </dl>
+
+                    <p class="admin-field-note">
+                        The seeded account is confirmed automatically for sign-in, receives <strong>Admin</strong> and <strong>IT</strong>,
+                        and is blocked from the rest of the site until its password is changed after first sign-in.
+                    </p>
+                </section>
+
+                <section class="admin-card">
+                    <div class="admin-card__header">
+                        <h2>Update fallback setting</h2>
+                        <span class="admin-card__badge">appsettings.json</span>
+                    </div>
+
+                    <EditForm Model="input" OnValidSubmit="SaveAsync" class="editor-form">
+                        <div class="editor-form__grid">
+                            <label class="editor-form__toggle">
+                                <span>Require confirmed accounts in the fallback configuration</span>
+                                <div class="editor-form__toggle-row">
+                                    <InputCheckbox id="RequireConfirmedAccount" @bind-Value="input.RequireConfirmedAccount" />
+                                    <small>
+                                        Use this when the live setting should come from <code>appsettings.json</code>.
+                                        If an environment override is active, the file value will be saved but not applied immediately.
+                                    </small>
+                                </div>
+                            </label>
+                        </div>
+
+                        <p class="admin-field-note">
+                            Current fallback value: <strong>@(configurationState.FallbackRequireConfirmedAccount ? "Required" : "Not required")</strong>
+                        </p>
+
+                        <div class="action-row">
+                            <button type="submit" class="action-button action-button--primary" disabled="@isSaving">Save fallback setting</button>
+                            <button type="button" class="action-button action-button--secondary" @onclick="RefreshAsync" disabled="@isSaving">Refresh status</button>
+                        </div>
+                    </EditForm>
+                </section>
+            }
+        </div>
+    </div>
+</section>
+
+@code {
+    private bool isSaving;
+    private string? statusMessage;
+    private SecurityInputModel input = new();
+    private BootstrapSecurityOverview? bootstrapOverview;
+    private ConfirmedAccountConfigurationState? configurationState;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshAsync();
+    }
+
+    private string BootstrapEmail
+    {
+        get
+        {
+            var configuredEmail = AnchorIdentityOptionsMonitor.CurrentValue.BootstrapAdmin.Email;
+            return string.IsNullOrWhiteSpace(configuredEmail)
+                ? IdentityBootstrapService.FallbackBootstrapEmail
+                : configuredEmail.Trim();
+        }
+    }
+
+    private string BootstrapPasswordSource =>
+        string.IsNullOrWhiteSpace(AnchorIdentityOptionsMonitor.CurrentValue.BootstrapAdmin.Password)
+            ? "Built-in fallback password"
+            : "Configuration";
+
+    private async Task RefreshAsync()
+    {
+        configurationState = await ConfirmedAccountConfigurationService.GetStateAsync();
+        bootstrapOverview = await IdentityAdministrationService.GetSecurityOverviewAsync();
+        input.RequireConfirmedAccount = configurationState.FallbackRequireConfirmedAccount;
+    }
+
+    private async Task SaveAsync()
+    {
+        isSaving = true;
+
+        var result = await ConfirmedAccountConfigurationService.SetFallbackRequireConfirmedAccountAsync(input.RequireConfirmedAccount);
+        statusMessage = result.Succeeded
+            ? "The fallback confirmed-account setting was saved to appsettings.json."
+            : $"Error: {string.Join(" ", result.Errors)}";
+
+        await RefreshAsync();
+        isSaving = false;
+    }
+
+    private sealed class SecurityInputModel
+    {
+        public bool RequireConfirmedAccount { get; set; }
+    }
+}

@@ -1,0 +1,69 @@
+@if (ResolvedImagePath is not null)
+{
+    <div class="image-preview">
+        <button type="button"
+                class="image-preview__trigger @(TriggerClass ?? string.Empty)"
+                data-image-preview-open="@PreviewId"
+                aria-controls="@PreviewId"
+                aria-haspopup="dialog"
+                aria-label="@($"Preview larger image for {TitleForLabel}")">
+            <img class="image-preview__image @(ImageClass ?? string.Empty)" src="@ResolvedImagePath" alt="@AltText" />
+        </button>
+
+        @if (!string.IsNullOrWhiteSpace(Caption))
+        {
+            <p class="image-preview__caption">@Caption</p>
+        }
+    </div>
+
+    <div id="@PreviewId"
+         class="image-preview-modal-backdrop"
+         data-image-preview-modal
+         hidden>
+        <div class="image-preview-modal"
+             role="dialog"
+             aria-modal="true"
+             aria-label="@($"Image preview for {TitleForLabel}")"
+             tabindex="-1">
+            <div class="image-preview-modal__header">
+                <h3>@TitleForLabel</h3>
+                <button type="button" class="image-preview-modal__close" data-image-preview-close>
+                    Close
+                </button>
+            </div>
+
+            <div class="image-preview-modal__body">
+                <img class="image-preview-modal__image" src="@ResolvedImagePath" alt="@AltText" />
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private readonly string PreviewId = $"image-preview-{Guid.NewGuid():N}";
+
+    [Parameter]
+    public string? ImagePath { get; set; }
+
+    [Parameter]
+    public string AltText { get; set; } = "Menu item image";
+
+    [Parameter]
+    public string? Title { get; set; }
+
+    [Parameter]
+    public string? Caption { get; set; }
+
+    [Parameter]
+    public string? TriggerClass { get; set; }
+
+    [Parameter]
+    public string? ImageClass { get; set; }
+
+    private string? ResolvedImagePath => MenuImagePathDisplay.Normalize(ImagePath);
+
+    private string TitleForLabel =>
+        string.IsNullOrWhiteSpace(Title)
+            ? "Menu item image"
+            : Title.Trim();
+}

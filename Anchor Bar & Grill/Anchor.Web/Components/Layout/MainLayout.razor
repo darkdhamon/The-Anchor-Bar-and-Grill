@@ -1,23 +1,342 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+@using Anchor.Domain.Identity
+@using System.Globalization
+@using System.Security.Claims
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<div class="site-shell @(isDarkTheme ? "theme-dark" : "theme-light")">
+    <header class="site-header">
+        <div class="site-header__grid shell-container">
+            <a class="brand-lockup" href="/" data-enhance-nav="false">
+                <span class="brand-lockup__logo-frame">
+                    <img class="brand-lockup__logo" src="images/AnchorLogo.png" alt="The Anchor Bar & Grill" />
+                </span>
+                <div class="brand-lockup__text">
+                    <span class="brand-lockup__eyebrow">Madison Lake, Minnesota</span>
+                </div>
+            </a>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            <div id="site-header-nav" class="site-header__nav-stack">
+                <div class="site-header__desktop-nav">
+                    <nav id="site-navigation" class="site-navigation" aria-label="Primary">
+                        @foreach (var link in SiteMap.PublicLinks)
+                        {
+                            <NavLink class="site-navigation__link" href="@link.Href" Match="@(link.Href == "/" ? NavLinkMatch.All : NavLinkMatch.Prefix)" data-enhance-nav="false">
+                                @link.Label
+                            </NavLink>
+                        }
+                    </nav>
+
+                    <div class="site-header__desktop-tools">
+                        <AuthorizeView Context="layoutAuthState">
+                            <Authorized>
+                                @{
+                                    var desktopStaffToolLinks = GetStaffToolLinks(layoutAuthState.User);
+                                }
+                                <div class="account-menu-shell">
+                                    <button class="account-menu-toggle"
+                                            type="button"
+                                            data-anchor-menu-toggle="true"
+                                            data-anchor-menu-target="site-account-menu"
+                                            data-anchor-menu-kind="dropdown"
+                                            aria-expanded="false"
+                                            aria-controls="site-account-menu"
+                                            aria-haspopup="menu">
+                                        <span class="account-menu-toggle__label">Account</span>
+                                    </button>
+
+                                    <div id="site-account-menu" class="account-menu" aria-label="Account and staff tools">
+                                        <div class="account-menu__section">
+                                            <span class="account-menu__eyebrow">Signed in</span>
+                                            <span class="account-menu__greeting">@GetGreeting(layoutAuthState.User)</span>
+                                        </div>
+
+                                        @if (desktopStaffToolLinks.Count > 0)
+                                        {
+                                            <div class="account-menu__section">
+                                                <span class="account-menu__eyebrow">Staff tools</span>
+                                                <div class="account-menu__links">
+                                                    @foreach (var link in desktopStaffToolLinks)
+                                                    {
+                                                        <NavLink class="account-menu__link" href="@link.Href" Match="NavLinkMatch.Prefix" data-enhance-nav="false">
+                                                            @link.Label
+                                                        </NavLink>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+
+                                        <div class="account-menu__section">
+                                            <span class="account-menu__eyebrow">Account</span>
+                                            <div class="account-menu__links">
+                                                <a class="account-menu__link account-menu__link--account"
+                                                   href="/Account/Manage"
+                                                   data-enhance-nav="false">
+                                                    Manage Account
+                                                </a>
+
+                                                <form class="account-menu__logout" action="/Account/Logout" method="post">
+                                                    <AntiforgeryToken />
+                                                    <input type="hidden" name="returnUrl" value="@LogoutReturnUrl" />
+                                                    <button class="account-menu__link account-menu__link--account account-menu__link--button" type="submit">
+                                                        Log Out
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Authorized>
+                            <NotAuthorized>
+                                <a class="account-entry-link"
+                                   href="/Account/Login"
+                                   data-enhance-nav="false">
+                                    Staff Log In
+                                </a>
+                            </NotAuthorized>
+                        </AuthorizeView>
+                    </div>
+                </div>
+
+                <div class="site-drawer" aria-label="Site menu">
+                    <div class="site-drawer__section">
+                        <span class="site-drawer__section-title">Browse</span>
+                        <nav class="site-drawer__links" aria-label="Mobile primary navigation">
+                            @foreach (var link in SiteMap.PublicLinks)
+                            {
+                                <NavLink class="site-drawer__link" href="@link.Href" Match="@(link.Href == "/" ? NavLinkMatch.All : NavLinkMatch.Prefix)" data-enhance-nav="false">
+                                    @link.Label
+                                </NavLink>
+                            }
+                        </nav>
+                    </div>
+
+                    <div class="site-drawer__section">
+                        <AuthorizeView Context="layoutAuthState">
+                            <Authorized>
+                                @{
+                                    var drawerStaffToolLinks = GetStaffToolLinks(layoutAuthState.User);
+                                }
+                                <span class="site-drawer__section-title">@(drawerStaffToolLinks.Count > 0 ? "Account Tools" : "Account")</span>
+                                <span class="site-drawer__greeting">@GetGreeting(layoutAuthState.User)</span>
+
+                                @if (drawerStaffToolLinks.Count > 0)
+                                {
+                                    <div class="site-drawer__links">
+                                        @foreach (var link in drawerStaffToolLinks)
+                                        {
+                                            <NavLink class="site-drawer__link" href="@link.Href" Match="NavLinkMatch.Prefix" data-enhance-nav="false">
+                                                @link.Label
+                                            </NavLink>
+                                        }
+                                    </div>
+                                }
+
+                                <div class="site-drawer__links">
+                                    <a class="site-drawer__link site-drawer__link--account"
+                                       href="/Account/Manage"
+                                       data-enhance-nav="false">
+                                        Manage Account
+                                    </a>
+
+                                    <form class="site-drawer__logout" action="/Account/Logout" method="post">
+                                        <AntiforgeryToken />
+                                        <input type="hidden" name="returnUrl" value="@LogoutReturnUrl" />
+                                        <button class="site-drawer__link site-drawer__link--account site-drawer__link--button" type="submit">
+                                            Log Out
+                                        </button>
+                                    </form>
+                                </div>
+                            </Authorized>
+                            <NotAuthorized>
+                                <span class="site-drawer__section-title">Staff Access</span>
+                                <div class="site-drawer__links">
+                                    <a class="site-drawer__link site-drawer__link--account"
+                                       href="/Account/Login"
+                                       data-enhance-nav="false">
+                                        Log In
+                                    </a>
+                                </div>
+                            </NotAuthorized>
+                        </AuthorizeView>
+                    </div>
+                </div>
+            </div>
+
+            <div class="site-header__actions">
+                <div class="theme-toggle">
+                    <span class="theme-toggle__label">Theme</span>
+                    <label class="switch">
+                        <input type="checkbox"
+                               checked="@isDarkTheme"
+                               data-anchor-theme-toggle="true"
+                               aria-label="Toggle light and dark theme" />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <button class="menu-toggle"
+                        type="button"
+                        data-anchor-menu-toggle="true"
+                        data-anchor-menu-target="site-header-nav"
+                        data-anchor-menu-kind="drawer"
+                        aria-expanded="false"
+                        aria-controls="site-header-nav"
+                        aria-label="Toggle site menu">
+                        <span class="menu-toggle__icon" aria-hidden="true">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </span>
+                    </button>
+                </div>
         </div>
+    </header>
 
-        <article class="content px-4">
+    <main class="site-main">
+        <article class="site-content">
             @Body
         </article>
     </main>
+
+    <footer class="site-footer">
+        <div class="shell-container site-footer__grid">
+            <div>
+                <p class="site-footer__eyebrow">Visit</p>
+                <p class="site-footer__text">@MockupContent.Contact.StreetAddress</p>
+                <p class="site-footer__text">@MockupContent.Contact.CityState</p>
+            </div>
+
+            <div>
+                <p class="site-footer__eyebrow">Call</p>
+                <p class="site-footer__text">@MockupContent.Contact.PhoneNumber</p>
+                <p class="site-footer__meta">Contact details stay easy to spot from every page.</p>
+            </div>
+
+            <div>
+                <p class="site-footer__eyebrow">Browse</p>
+                <div class="site-footer__links">
+                    @foreach (var link in SiteMap.PublicLinks)
+                    {
+                        <NavLink class="site-footer__link" href="@link.Href" Match="@(link.Href == "/" ? NavLinkMatch.All : NavLinkMatch.Prefix)" data-enhance-nav="false">
+                            @link.Label
+                        </NavLink>
+                    }
+                </div>
+            </div>
+        </div>
+    </footer>
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
+    <span class="dismiss">x</span>
 </div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? RequestHttpContext { get; set; }
+
+    private bool isDarkTheme;
+    private bool hasInitializedThemePreference;
+
+    private string LogoutReturnUrl => NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+
+    protected override void OnParametersSet()
+    {
+        if (hasInitializedThemePreference)
+        {
+            return;
+        }
+
+        var themeCookie = RequestHttpContext?.Request.Cookies["anchor-theme"]
+            ?? HttpContextAccessor.HttpContext?.Request.Cookies["anchor-theme"];
+
+        if (!string.IsNullOrWhiteSpace(themeCookie))
+        {
+            isDarkTheme = string.Equals(themeCookie, "dark", StringComparison.OrdinalIgnoreCase);
+        }
+
+        hasInitializedThemePreference = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("anchorTheme.initialize");
+        }
+    }
+
+    private static string GetGreeting(ClaimsPrincipal user)
+    {
+        var givenName = user.FindFirstValue(ClaimTypes.GivenName)?.Trim();
+        var surname = user.FindFirstValue(ClaimTypes.Surname)?.Trim();
+
+        var displayName = string.Join(
+            " ",
+            new[] { givenName, surname }
+                .Where(value => !string.IsNullOrWhiteSpace(value)));
+
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            displayName = ToFriendlyName(user.FindFirstValue(ClaimTypes.Name));
+        }
+
+        return $"Hi, {displayName}";
+    }
+
+    private static string ToFriendlyName(string? rawName)
+    {
+        if (string.IsNullOrWhiteSpace(rawName))
+        {
+            return "there";
+        }
+
+        var baseName = rawName.Split('@', 2, StringSplitOptions.TrimEntries)[0];
+        var normalized = baseName
+            .Replace('.', ' ')
+            .Replace('_', ' ')
+            .Replace('-', ' ')
+            .Trim();
+
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return "there";
+        }
+
+        return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(normalized.ToLowerInvariant());
+    }
+
+    private static List<RouteLink> GetStaffToolLinks(ClaimsPrincipal user)
+    {
+        var links = new List<RouteLink>();
+
+        links.AddRange(SiteMap.AuthenticatedLinks);
+
+        if (user.IsInRole(ApplicationRoles.EventManager))
+        {
+            links.AddRange(SiteMap.EventManagementLinks);
+        }
+
+        if (user.IsInRole(ApplicationRoles.MenuManager))
+        {
+            links.AddRange(SiteMap.MenuManagementLinks);
+        }
+
+        if (user.IsInRole(ApplicationRoles.Admin))
+        {
+            links.AddRange(SiteMap.AdminAccessLinks);
+        }
+
+        if (user.IsInRole(ApplicationRoles.It))
+        {
+            links.AddRange(SiteMap.TechnicalLinks);
+        }
+
+        return links;
+    }
+}

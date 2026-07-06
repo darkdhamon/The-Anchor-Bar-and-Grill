@@ -1,0 +1,9 @@
+@page "/admin/about"
+@inject NavigationManager NavigationManager
+
+@code {
+    protected override void OnInitialized()
+    {
+        NavigationManager.NavigateTo("/admin/publicity", forceLoad: false);
+    }
+}

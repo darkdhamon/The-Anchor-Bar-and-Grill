@@ -1,5 +1,16 @@
-﻿@page "/not-found"
-@layout MainLayout
+@page "/not-found"
 
-<h3>Not Found</h3>
-<p>Sorry, the content you are looking for does not exist.</p>
+<PageTitle>Page Not Found</PageTitle>
+
+<section class="page-hero page-hero--section page-hero--not-found">
+    <p class="page-hero__eyebrow">Not Found</p>
+    <h1>That page drifted off course.</h1>
+    <p class="page-hero__lead">
+        Use the main navigation to get back to the guest pages or the admin mockup previews.
+    </p>
+
+    <div class="hero-actions">
+        <a class="hero-actions__link hero-actions__link--primary" href="/" data-enhance-nav="false">Return Home</a>
+        <a class="hero-actions__link hero-actions__link--secondary" href="/menu" data-enhance-nav="false">Open the Menu</a>
+    </div>
+</section>

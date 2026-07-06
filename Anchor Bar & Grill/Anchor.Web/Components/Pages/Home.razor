@@ -1,7 +1,123 @@
-﻿@page "/"
+@page "/"
+@attribute [ExcludeFromInteractiveRouting]
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<section class="home-shell">
+    <div class="home-main">
+        <article class="page-hero page-hero--home">
+            @if (!string.IsNullOrWhiteSpace(homepageContent.Eyebrow))
+            {
+                <p class="page-hero__eyebrow">@homepageContent.Eyebrow</p>
+            }
 
-Welcome to your new app.
+            <HomepageCarousel Slides="PlaceholderCarouselSlides" Label="Homepage photo highlights" />
+
+            <h1>@homepageContent.Headline</h1>
+
+            @if (homepageSummaryParagraphs.Count > 0)
+            {
+                <p class="page-hero__lead">@homepageSummaryParagraphs[0]</p>
+            }
+
+            @if (homepageSummaryParagraphs.Count > 1)
+            {
+                <div class="page-hero__copy-group">
+                    @for (var i = 1; i < homepageSummaryParagraphs.Count; i++)
+                    {
+                        <p class="page-hero__copy">@homepageSummaryParagraphs[i]</p>
+                    }
+                </div>
+            }
+
+            <div class="hero-actions">
+                @foreach (var action in homeActions)
+                {
+                    <a class="hero-actions__link @(action.IsPrimary ? "hero-actions__link--primary" : "hero-actions__link--secondary")"
+                       href="@action.Href"
+                       data-enhance-nav="false">
+                        @action.Label
+                    </a>
+                }
+            </div>
+
+            <div class="home-main__support">
+                <p class="home-main__support-title">Start with tonight's plan.</p>
+                <p class="home-main__support-copy">
+                    Explore the menu, check what's coming up next, or head straight to contact details before you make the trip.
+                </p>
+            </div>
+        </article>
+    </div>
+
+    <aside class="feature-card feature-card--tight home-rail home-rail--specials" aria-labelledby="home-specials-heading">
+        <div class="home-rail__header">
+            <p class="feature-card__eyebrow">This Week</p>
+            <h2 id="home-specials-heading">Weekly specials</h2>
+            <p>Keep the dinner features and repeat favorites guests usually ask about closest to the top.</p>
+        </div>
+
+        <div class="home-rail__list">
+            @foreach (var special in homeSpecialItems)
+            {
+                <article class="home-rail-card home-rail-card--special">
+                    <div class="home-rail-card__header">
+                        <div class="home-rail-card__copy">
+                            <span class="home-rail-card__badge">@special.BadgeLabel</span>
+                            <h3>@special.Title</h3>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(special.AvailabilityLabel))
+                        {
+                            <span class="@GetHomeSpecialStatusClass(special)">@special.AvailabilityLabel</span>
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(special.TimeSummary))
+                    {
+                        <p class="home-rail-card__meta">@special.TimeSummary</p>
+                    }
+
+                    <p class="home-rail-card__description">@special.Description</p>
+
+                    @if (!string.IsNullOrWhiteSpace(special.Callout))
+                    {
+                        <p class="home-rail-card__callout">@special.Callout</p>
+                    }
+                </article>
+            }
+        </div>
+
+        <a class="home-rail__link" href="/menu" data-enhance-nav="false">Explore the full menu</a>
+    </aside>
+
+    <aside class="feature-card feature-card--tight home-rail home-rail--events" aria-labelledby="home-events-heading">
+        <div class="home-rail__header">
+            <p class="feature-card__eyebrow">Plan Ahead</p>
+            <h2 id="home-events-heading">Upcoming events</h2>
+            <p>Show the next few public dates in one glance so guests can decide whether tonight is a quick stop or a longer stay.</p>
+        </div>
+
+        <div class="home-rail__list">
+            @foreach (var item in homeUpcomingEvents)
+            {
+                <article class="home-rail-card home-rail-card--event">
+                    <div class="home-rail-card__header">
+                        <div class="home-rail-card__copy">
+                            <span class="home-rail-card__badge">@item.PromoBadge</span>
+                            <h3>@item.Title</h3>
+                        </div>
+
+                        <span class="status-pill @(item.IsRecurring ? "status-pill--recurring" : "status-pill--one-time")">@item.ScheduleTypeLabel</span>
+                    </div>
+
+                    <p class="home-rail-card__meta">@item.DateTimeLabel</p>
+                    <p class="home-rail-card__schedule">@item.ScheduleSummary</p>
+                    <p class="home-rail-card__description">@item.Description</p>
+                </article>
+            }
+        </div>
+
+        <a class="home-rail__link" href="/events" data-enhance-nav="false">See all events</a>
+    </aside>
+</section>

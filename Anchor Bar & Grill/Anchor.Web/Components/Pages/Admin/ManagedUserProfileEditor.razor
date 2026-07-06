@@ -1,0 +1,96 @@
+@using System.ComponentModel.DataAnnotations
+@using Anchor.Domain.Identity.Users
+
+<EditForm Model="input" OnValidSubmit="SaveAsync" FormName="@($"UpdateProfile.{User.UserId}")" class="editor-form account-form">
+    <DataAnnotationsValidator />
+
+    <div class="admin-card__header">
+        <h4>Profile details</h4>
+        <span class="admin-card__badge">Admin only</span>
+    </div>
+
+    <div class="editor-form__grid">
+        <label>
+            First name
+            <CommitAwareInputText @bind-Value="input.FirstName" id="@($"Profile.FirstName.{User.UserId}")" autocomplete="off" placeholder="First name" />
+            <ValidationMessage For="@(() => input.FirstName)" class="validation-message" />
+        </label>
+        <label>
+            Last name
+            <CommitAwareInputText @bind-Value="input.LastName" id="@($"Profile.LastName.{User.UserId}")" autocomplete="off" placeholder="Last name" />
+            <ValidationMessage For="@(() => input.LastName)" class="validation-message" />
+        </label>
+        <label>
+            Phone number
+            <CommitAwareInputText Type="tel" @bind-Value="input.PhoneNumber" id="@($"Profile.PhoneNumber.{User.UserId}")" autocomplete="tel" placeholder="Phone number" />
+            <ValidationMessage For="@(() => input.PhoneNumber)" class="validation-message" />
+        </label>
+    </div>
+
+    <p class="admin-field-note">
+        Email sign-in stays on the original account address. This editor is for name and phone details.
+    </p>
+
+    <div class="action-row">
+        <button type="submit" class="action-button action-button--secondary" disabled="@IsBusy">Save profile details</button>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired]
+    public ManagedUserSummary User { get; set; } = default!;
+
+    [Parameter]
+    public bool IsBusy { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<UpdateManagedUserProfileRequest> OnSave { get; set; }
+
+    private UserProfileInputModel input = new();
+    private string? loadedStateKey;
+
+    protected override void OnParametersSet()
+    {
+        var currentStateKey = BuildStateKey(User);
+        if (string.Equals(currentStateKey, loadedStateKey, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        loadedStateKey = currentStateKey;
+        input = new UserProfileInputModel
+        {
+            FirstName = User.FirstName ?? "",
+            LastName = User.LastName ?? "",
+            PhoneNumber = User.PhoneNumber ?? ""
+        };
+    }
+
+    private Task SaveAsync() =>
+        OnSave.InvokeAsync(
+            new UpdateManagedUserProfileRequest(
+                User.UserId,
+                input.FirstName,
+                input.LastName,
+                input.PhoneNumber));
+
+    private static string BuildStateKey(ManagedUserSummary user) =>
+        string.Join(
+            "|",
+            user.UserId,
+            user.FirstName ?? string.Empty,
+            user.LastName ?? string.Empty,
+            user.PhoneNumber ?? string.Empty);
+
+    private sealed class UserProfileInputModel
+    {
+        [StringLength(100, ErrorMessage = "First name cannot be longer than 100 characters.")]
+        public string FirstName { get; set; } = "";
+
+        [StringLength(100, ErrorMessage = "Last name cannot be longer than 100 characters.")]
+        public string LastName { get; set; } = "";
+
+        [RegularExpression(@"^$|^[0-9()+.\-\s]{7,25}$", ErrorMessage = "Enter a valid phone number.")]
+        public string PhoneNumber { get; set; } = "";
+    }
+}

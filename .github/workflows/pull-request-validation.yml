@@ -11,8 +11,128 @@ on:
       - dev
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
+  detect-testable-changes:
+    runs-on: windows-2025
+    outputs:
+      should-run-tests: ${{ steps.detect.outputs.should-run-tests }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect testable changes
+        id: detect
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $changedFiles = [System.Collections.Generic.List[string]]::new()
+
+          switch ("${{ github.event_name }}") {
+            "pull_request" {
+              $headers = @{
+                Authorization = "Bearer $env:GITHUB_TOKEN"
+                Accept = "application/vnd.github+json"
+                "X-GitHub-Api-Version" = "2022-11-28"
+              }
+
+              $page = 1
+
+              do {
+                $uri = "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files?per_page=100&page=$page"
+                $response = Invoke-RestMethod -Uri $uri -Headers $headers
+
+                foreach ($file in $response) {
+                  $changedFiles.Add($file.filename)
+                }
+
+                $page++
+              } while ($response.Count -eq 100)
+            }
+            "push" {
+              $before = "${{ github.event.before }}"
+              $after = "${{ github.sha }}"
+
+              if ($before -eq "0000000000000000000000000000000000000000") {
+                $files = git diff-tree --no-commit-id --name-only -r $after
+              }
+              else {
+                $files = git diff --name-only $before $after
+              }
+
+              if ($LASTEXITCODE -ne 0) {
+                exit $LASTEXITCODE
+              }
+
+              foreach ($file in $files) {
+                if ($file) {
+                  $changedFiles.Add($file)
+                }
+              }
+            }
+            default {
+              Write-Host "Manual workflow dispatch detected; running tests by default."
+              "should-run-tests=true" >> $env:GITHUB_OUTPUT
+              exit 0
+            }
+          }
+
+          if ($changedFiles.Count -eq 0) {
+            Write-Host "No changed files were detected; running tests to fail safe."
+            "should-run-tests=true" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+
+          $testablePatterns = @(
+            '^Anchor Bar & Grill/.+\.cs$',
+            '^Anchor Bar & Grill/.+\.razor$',
+            '^Anchor Bar & Grill/.+\.cshtml$',
+            '^Anchor Bar & Grill/.+\.(js|ts)$',
+            '^Anchor Bar & Grill/.+\.(csproj|props|targets|sln|slnx)$',
+            '^Anchor Bar & Grill/.+/appsettings(\.[^/]+)?\.json$',
+            '^Anchor Bar & Grill/.+/Migrations/.+$',
+            '^Directory\.Build\.(props|targets)$',
+            '^Directory\.Packages\.props$',
+            '^global\.json$',
+            '^NuGet\.config$'
+          )
+
+          $matchedFiles = [System.Collections.Generic.List[string]]::new()
+
+          foreach ($file in $changedFiles) {
+            $normalizedFile = $file.Replace('\', '/')
+
+            foreach ($pattern in $testablePatterns) {
+              if ($normalizedFile -match $pattern) {
+                $matchedFiles.Add($normalizedFile)
+                break
+              }
+            }
+          }
+
+          Write-Host "Changed files:"
+          $changedFiles | ForEach-Object { Write-Host " - $_" }
+
+          if ($matchedFiles.Count -gt 0) {
+            Write-Host "Detected testable changes:"
+            $matchedFiles | ForEach-Object { Write-Host " - $_" }
+            "should-run-tests=true" >> $env:GITHUB_OUTPUT
+          }
+          else {
+            Write-Host "Only non-testable changes were detected; unit tests will be skipped."
+            "should-run-tests=false" >> $env:GITHUB_OUTPUT
+          }
+
   unit-tests:
+    needs: detect-testable-changes
+    if: ${{ needs.detect-testable-changes.outputs.should-run-tests == 'true' }}
     runs-on: windows-2025
 
     steps:

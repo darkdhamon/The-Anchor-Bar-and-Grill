@@ -1,82 +1,92 @@
-﻿@page "/Account/Login"
+@page "/Account/Login"
 
 @using System.ComponentModel.DataAnnotations
-@using Microsoft.AspNetCore.Authentication
+@using Anchor.Domain.Identity.Configuration
 @using Microsoft.AspNetCore.Identity
-@using Anchor.Web.Data
+@using Anchor.Infrastructure.Data
 
+@inject IConfirmedAccountAccessService ConfirmedAccountAccessService
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject ILogger<Login> Logger
-@inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 
 <PageTitle>Log in</PageTitle>
 
-<h1>Log in</h1>
-<div class="row">
-    <div class="col-lg-6">
-        <section>
-            <StatusMessage Message="@errorMessage" />
-            <EditForm EditContext="editContext" method="post" OnSubmit="LoginUser" FormName="login">
-                <DataAnnotationsValidator />
+<section class="account-page">
+    <div class="page-hero page-hero--section account-page__hero">
+        <p class="page-hero__eyebrow">Account Access</p>
+        <h1>Log in</h1>
+        <p class="page-hero__lead">
+            Sign in to manage site content and keep the guest-facing information for The Anchor Bar &amp; Grill up to date.
+        </p>
+    </div>
+
+    <div class="account-grid">
+        <section class="admin-card account-panel">
+            <div class="admin-card__header">
                 <h2>Use a local account to log in.</h2>
-                <hr />
-                <ValidationSummary class="text-danger" role="alert" />
-                <div class="form-floating mb-3">
-                    <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username webauthn" aria-required="true" placeholder="name@example.com" />
-                    <label for="Input.Email" class="form-label">Email</label>
-                    <ValidationMessage For="() => Input.Email" class="text-danger" />
-                </div>
-                <div class="form-floating mb-3">
-                    <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
-                    <label for="Input.Password" class="form-label">Password</label>
-                    <ValidationMessage For="() => Input.Password" class="text-danger" />
-                </div>
-                <div class="checkbox mb-3">
-                    <label class="form-label">
-                        <InputCheckbox @bind-Value="Input.RememberMe" class="darker-border-checkbox form-check-input" />
-                        Remember me
+                <span class="admin-card__badge">Secure Access</span>
+            </div>
+
+            <StatusMessage Message="@errorMessage" />
+
+            <EditForm EditContext="editContext" method="post" OnSubmit="LoginUser" FormName="login" class="editor-form account-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="validation-message account-form__validation" role="alert" />
+
+                <div class="editor-form__grid">
+                    <label>
+                        Email
+                        <CommitAwareInputText @bind-Value="Input.Email" id="Input.Email" class="account-form__input" autocomplete="username webauthn" aria-required="true" placeholder="name@example.com" />
+                        <ValidationMessage For="() => Input.Email" class="validation-message" />
+                    </label>
+                    <label>
+                        Password
+                        <CommitAwareInputText Type="password" @bind-Value="Input.Password" id="Input.Password" class="account-form__input" autocomplete="current-password" aria-required="true" placeholder="Password" />
+                        <ValidationMessage For="() => Input.Password" class="validation-message" />
+                    </label>
+                    <label class="editor-form__toggle">
+                        <span>Remember me</span>
+                        <div class="editor-form__toggle-row">
+                            <InputCheckbox @bind-Value="Input.RememberMe" class="account-form__check" />
+                            <small>Keep the session active on this device for faster admin access later.</small>
+                        </div>
                     </label>
                 </div>
-                <div>
-                    <button type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
+
+                <div class="account-form__actions">
+                    <button type="submit" class="hero-actions__link hero-actions__link--primary account-form__submit">Log in</button>
                 </div>
-                <hr />
-                <div class="d-flex flex-column">
-                    <span class="text-secondary mx-auto mt-2">OR</span>
-                    <PasskeySubmit Operation="PasskeyOperation.Request" Name="Input.Passkey" EmailName="Input.Email" class="btn btn-link mx-auto">Log in with a passkey</PasskeySubmit>
+
+                <div class="account-form__divider">
+                    <span>Or</span>
                 </div>
-                <hr />
-                <div>
+
+                <div class="account-form__actions">
+                    <PasskeySubmit Operation="PasskeyOperation.Request" Name="Input.Passkey" EmailName="Input.Email" class="hero-actions__link hero-actions__link--secondary account-form__passkey">Log in with a passkey</PasskeySubmit>
+                </div>
+
+                <div class="account-links">
                     <p>
-                        <a href="Account/ForgotPassword">Forgot your password?</a>
+                        <a href="/Account/ForgotPassword" data-enhance-nav="false">Forgot your password?</a>
                     </p>
                     <p>
-                        <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Register as a new user</a>
+                        New staff accounts must be created by an <strong>Admin</strong>.
                     </p>
                     <p>
-                        <a href="Account/ResendEmailConfirmation">Resend email confirmation</a>
+                        <a href="/Account/ResendEmailConfirmation" data-enhance-nav="false">Resend email confirmation</a>
                     </p>
                 </div>
             </EditForm>
         </section>
+
     </div>
-    <div class="col-lg-4 col-lg-offset-2">
-        <section>
-            <h3>Use another service to log in.</h3>
-            <hr />
-            <ExternalLoginPicker />
-        </section>
-    </div>
-</div>
+</section>
 
 @code {
     private string? errorMessage;
     private EditContext editContext = default!;
-
-    [CascadingParameter]
-    private HttpContext HttpContext { get; set; } = default!;
 
     [SupplyParameterFromForm]
     private InputModel Input { get; set; } = default!;
@@ -84,17 +94,11 @@
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         Input ??= new();
 
         editContext = new EditContext(Input);
-
-        if (HttpMethods.IsGet(HttpContext.Request.Method))
-        {
-            // Clear the existing external cookie to ensure a clean login process
-            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
-        }
     }
 
     public async Task LoginUser()
@@ -106,27 +110,73 @@
         }
 
         SignInResult result;
+        ApplicationUser? resolvedUser = null;
+
         if (!string.IsNullOrEmpty(Input.Passkey?.CredentialJson))
         {
+            if (!string.IsNullOrWhiteSpace(Input.Email))
+            {
+                resolvedUser = await UserManager.FindByEmailAsync(Input.Email);
+            }
+
+            var accessDecision = await ConfirmedAccountAccessService.EvaluateAsync(resolvedUser?.AccountConfirmed == true);
+            if (accessDecision.IsConfirmationRequired)
+            {
+                if (string.IsNullOrWhiteSpace(Input.Email))
+                {
+                    errorMessage = "Error: Enter your email address before using a passkey while confirmed-account access is enabled.";
+                    return;
+                }
+
+                if (!accessDecision.IsAccessAllowed)
+                {
+                    errorMessage = "Error: Your account must be confirmed by an administrator before you can sign in.";
+                    return;
+                }
+            }
+
             // When performing passkey sign-in, don't perform form validation.
             result = await SignInManager.PasskeySignInAsync(Input.Passkey.CredentialJson);
         }
         else
         {
-            // If doing a password sign-in, validate the form.
             if (!editContext.Validate())
             {
                 return;
             }
 
-            // This doesn't count login failures towards account lockout
-            // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-            result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+            resolvedUser = await UserManager.FindByEmailAsync(Input.Email);
+            if (resolvedUser is null)
+            {
+                errorMessage = "Error: Invalid login attempt.";
+                return;
+            }
+
+            result = await SignInManager.CheckPasswordSignInAsync(resolvedUser, Input.Password, lockoutOnFailure: false);
+
+            if (result.Succeeded)
+            {
+                var accessDecision = await ConfirmedAccountAccessService.EvaluateAsync(resolvedUser.AccountConfirmed);
+                if (!accessDecision.IsAccessAllowed)
+                {
+                    errorMessage = "Error: Your account must be confirmed by an administrator before you can sign in.";
+                    return;
+                }
+
+                await SignInManager.SignInAsync(resolvedUser, isPersistent: Input.RememberMe);
+            }
         }
 
         if (result.Succeeded)
         {
             Logger.LogInformation("User logged in.");
+
+            if (resolvedUser?.MustChangePassword == true)
+            {
+                RedirectManager.RedirectTo("Account/Manage/ChangePassword", new() { ["forced"] = true });
+                return;
+            }
+
             RedirectManager.RedirectTo(ReturnUrl);
         }
         else if (result.RequiresTwoFactor)
@@ -162,3 +212,4 @@
         public PasskeyInputModel? Passkey { get; set; }
     }
 }
+

@@ -1,0 +1,129 @@
+@page "/menu"
+@using Anchor.Domain.Menu
+@using Anchor.Web.Components.Site
+@attribute [ExcludeFromInteractiveRouting]
+
+<PageTitle>Menu</PageTitle>
+
+<div class="menu-page">
+    @if (menuView is null)
+    {
+        <section class="section-shell">
+            <article class="feature-card menu-empty-state">
+                <p class="feature-card__eyebrow">Food &amp; Drink</p>
+                <h2>Loading the latest menu details.</h2>
+                <p>Pulling the latest service hours, sections, and items now.</p>
+            </article>
+        </section>
+    }
+    else
+    {
+        <section class="section-shell">
+            <div class="menu-layout">
+                <aside class="feature-card feature-card--tight menu-sidebar" aria-label="Menu navigation">
+                    <div class="menu-sidebar__header">
+                        <p class="feature-card__eyebrow">Menu</p>
+                        <h2>Browse by service</h2>
+                    </div>
+
+                    <nav class="menu-sidebar__nav" aria-label="Menu tabs">
+                        @foreach (var tab in menuView.Tabs)
+                        {
+                            <a class="menu-tab-link @(tab.IsSelected ? "menu-tab-link--selected" : string.Empty)"
+                               href="@GetTabHref(tab.QueryValue)"
+                               data-enhance-nav="false">
+                                <div class="menu-tab-link__topline">
+                                    <span class="menu-tab-link__label">@tab.Label</span>
+
+                                    @if (!tab.HasVisibleContent)
+                                    {
+                                        <span class="menu-tab-link__hint">Coming soon</span>
+                                    }
+                                </div>
+                            </a>
+                        }
+                    </nav>
+
+                    <section class="menu-hours-card menu-sidebar__hours" aria-label="@($"{GetSelectedTabLabel(menuView.SelectedTab)} hours")">
+                        <div class="menu-hours-card__header">
+                            <p class="feature-card__eyebrow">Weekly availability</p>
+                            <h2>@GetSelectedTabLabel(menuView.SelectedTab) hours</h2>
+                        </div>
+
+                        <div class="hours-list">
+                            @foreach (var row in menuHoursCard.Rows)
+                            {
+                                <div class="hours-row @(row.IncludesToday ? "hours-row--today" : null)">
+                                    <div class="hours-row__copy">
+                                        <span class="hours-row__label">@row.Label</span>
+                                    </div>
+                                    <span class="hours-row__summary">@row.Summary</span>
+                                </div>
+                            }
+                        </div>
+                    </section>
+                </aside>
+
+                <div class="menu-content-stack">
+                    @if (menuView.Sections.Count == 0)
+                    {
+                        <article class="feature-card menu-empty-state">
+                            <p class="feature-card__eyebrow">@GetSelectedTabLabel(menuView.SelectedTab)</p>
+                            <h2>@GetEmptyStateTitle(menuView.SelectedTab)</h2>
+                            <p>@GetEmptyStateDescription(menuView.SelectedTab)</p>
+                        </article>
+                    }
+                    else
+                    {
+                        <div class="menu-accordion">
+                            @foreach (var section in menuView.Sections.Select((value, index) => new { value, index }))
+                            {
+                                <details class="menu-accordion__section menu-section @section.value.AccentClass" open="@(section.index == 0 ? "open" : null)">
+                                    <summary class="menu-section__summary">
+                                        <div class="menu-section__summary-copy">
+                                            <h2>@section.value.Name</h2>
+                                            @if (!string.IsNullOrWhiteSpace(section.value.Callout))
+                                            {
+                                                <p class="menu-section__callout">@section.value.Callout</p>
+                                            }
+                                            <span class="menu-section__count">@(GetSectionItemCount(section.value) == 1 ? "1 item" : $"{GetSectionItemCount(section.value)} items")</span>
+                                        </div>
+                                    </summary>
+
+                                    <div class="menu-section__items">
+                                        @foreach (var entry in section.value.Entries)
+                                        {
+                                            @if (entry.ChildSection is { } childSection)
+                                            {
+                                                <section class="menu-subsection">
+                                                    <div class="menu-subsection__header">
+                                                        <h3>@childSection.Name</h3>
+                                                        @if (!string.IsNullOrWhiteSpace(childSection.Callout))
+                                                        {
+                                                            <p class="menu-subsection__callout">@childSection.Callout</p>
+                                                        }
+                                                    </div>
+
+                                                    <div class="menu-subsection__items">
+                                                        @foreach (var childItem in childSection.Items)
+                                                        {
+                                                            <MenuItemCard Item="childItem" IsNested="true" />
+                                                        }
+                                                    </div>
+                                                </section>
+                                            }
+                                            else if (entry.Item is { } item)
+                                            {
+                                                <MenuItemCard Item="item" />
+                                            }
+                                        }
+                                    </div>
+                                </details>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </section>
+    }
+</div>
