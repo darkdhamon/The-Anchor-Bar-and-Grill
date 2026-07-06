@@ -6,8 +6,6 @@ namespace Anchor.Infrastructure.Data.Events;
 
 public sealed class EventQueryRepository(ApplicationDbContext dbContext) : IEventQueryRepository
 {
-    private const int MaxRecurrenceInterval = 1200;
-
     public async Task<IReadOnlyList<EventRecord>> GetUpcomingPublicEventCandidatesAsync(
         DateOnly fromDate,
         DateOnly throughDate,
@@ -21,7 +19,7 @@ public sealed class EventQueryRepository(ApplicationDbContext dbContext) : IEven
                     && item.StartsOn <= throughDate)
                 || (item.RecurrencePattern == EventRecurrencePattern.Weekly
                     && item.RecurrenceInterval >= 1
-                    && item.RecurrenceInterval <= MaxRecurrenceInterval
+                    && item.RecurrenceInterval <= EventScheduleRules.MaxWeeklyRecurrenceInterval
                     && item.RecursOnDayOfWeek != null
                     && (int)item.RecursOnDayOfWeek >= (int)DayOfWeek.Sunday
                     && (int)item.RecursOnDayOfWeek <= (int)DayOfWeek.Saturday
@@ -29,7 +27,7 @@ public sealed class EventQueryRepository(ApplicationDbContext dbContext) : IEven
                     && (item.RecursUntil == null || item.RecursUntil >= fromDate))
                 || (item.RecurrencePattern == EventRecurrencePattern.MonthlyNthWeekday
                     && item.RecurrenceInterval >= 1
-                    && item.RecurrenceInterval <= MaxRecurrenceInterval
+                    && item.RecurrenceInterval <= EventScheduleRules.MaxMonthlyRecurrenceInterval
                     && item.RecursOnDayOfWeek != null
                     && item.RecursOnWeekOfMonth != null
                     && (int)item.RecursOnDayOfWeek >= (int)DayOfWeek.Sunday
@@ -56,14 +54,14 @@ public sealed class EventQueryRepository(ApplicationDbContext dbContext) : IEven
                         && item.StartsOn >= fromDate)
                     || (item.RecurrencePattern == EventRecurrencePattern.Weekly
                         && item.RecurrenceInterval >= 1
-                        && item.RecurrenceInterval <= MaxRecurrenceInterval
+                        && item.RecurrenceInterval <= EventScheduleRules.MaxWeeklyRecurrenceInterval
                         && item.RecursOnDayOfWeek != null
                         && (int)item.RecursOnDayOfWeek >= (int)DayOfWeek.Sunday
                         && (int)item.RecursOnDayOfWeek <= (int)DayOfWeek.Saturday
                         && (item.RecursUntil == null || item.RecursUntil >= fromDate))
                     || (item.RecurrencePattern == EventRecurrencePattern.MonthlyNthWeekday
                         && item.RecurrenceInterval >= 1
-                        && item.RecurrenceInterval <= MaxRecurrenceInterval
+                        && item.RecurrenceInterval <= EventScheduleRules.MaxMonthlyRecurrenceInterval
                         && item.RecursOnDayOfWeek != null
                         && item.RecursOnWeekOfMonth != null
                         && (int)item.RecursOnDayOfWeek >= (int)DayOfWeek.Sunday
@@ -124,7 +122,7 @@ public sealed class EventQueryRepository(ApplicationDbContext dbContext) : IEven
 
     private static bool IsValidWeeklyCandidate(EventEntity item)
     {
-        if (item.RecurrenceInterval is < 1 or > MaxRecurrenceInterval)
+        if (!EventScheduleRules.IsSupportedRecurringInterval(EventRecurrencePattern.Weekly, item.RecurrenceInterval))
         {
             return false;
         }
@@ -140,7 +138,7 @@ public sealed class EventQueryRepository(ApplicationDbContext dbContext) : IEven
 
     private static bool IsValidMonthlyCandidate(EventEntity item)
     {
-        if (item.RecurrenceInterval is < 1 or > MaxRecurrenceInterval)
+        if (!EventScheduleRules.IsSupportedRecurringInterval(EventRecurrencePattern.MonthlyNthWeekday, item.RecurrenceInterval))
         {
             return false;
         }
