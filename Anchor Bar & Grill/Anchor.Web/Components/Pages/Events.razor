@@ -108,7 +108,7 @@
         </article>
     </template>
 
-    <div class="public-events-feed" data-public-events-feed="true" hidden>
+    <div class="public-events-feed" data-public-events-feed="true" hidden="@(!hasMoreWindows)">
         <p class="public-events-feed__status" data-public-events-status="true" aria-live="polite">
             More published dates load automatically as you reach the end of the list.
         </p>
