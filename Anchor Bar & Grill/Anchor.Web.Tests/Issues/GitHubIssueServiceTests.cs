@@ -41,6 +41,8 @@ public sealed class GitHubIssueServiceTests
 
                 var payload = JsonNode.Parse(await request.Content!.ReadAsStringAsync(cancellationToken))!;
                 Assert.Contains("projectV2", payload["query"]?.GetValue<string>(), StringComparison.Ordinal);
+                Assert.Contains("user(login: $owner)", payload["query"]?.GetValue<string>(), StringComparison.Ordinal);
+                Assert.DoesNotContain("organization(login: $owner)", payload["query"]?.GetValue<string>(), StringComparison.Ordinal);
                 Assert.Equal("darkdhamon", payload["variables"]?["owner"]?.GetValue<string>());
                 Assert.Equal(7, payload["variables"]?["number"]?.GetValue<int>());
 
@@ -63,13 +65,12 @@ public sealed class GitHubIssueServiceTests
                                   ]
                                 }
                               ]
-                            }
-                          }
-                        },
-                        "organization": null
+                        }
                       }
                     }
-                    """);
+                  }
+                }
+                """);
             },
             async (request, cancellationToken) =>
             {
@@ -246,6 +247,136 @@ public sealed class GitHubIssueServiceTests
         Assert.Equal(2, handler.RequestCount);
     }
 
+    [Fact]
+    public async Task CreateIssueAsync_places_issue_in_configured_organization_project()
+    {
+        var handler = new SequenceHttpMessageHandler(
+            (_, _) => Task.FromResult(CreateJsonResponse(
+                HttpStatusCode.Created,
+                """
+                {
+                  "number": 43,
+                  "html_url": "https://github.com/anchor-bar/The-Anchor-Bar-and-Grill/issues/43",
+                  "node_id": "I_kwDOAnchor43"
+                }
+                """)),
+            async (request, cancellationToken) =>
+            {
+                var payload = JsonNode.Parse(await request.Content!.ReadAsStringAsync(cancellationToken))!;
+                Assert.Contains("organization(login: $owner)", payload["query"]?.GetValue<string>(), StringComparison.Ordinal);
+                Assert.DoesNotContain("user(login: $owner)", payload["query"]?.GetValue<string>(), StringComparison.Ordinal);
+                Assert.Equal("anchor-bar", payload["variables"]?["owner"]?.GetValue<string>());
+
+                return CreateJsonResponse(
+                    HttpStatusCode.OK,
+                    """
+                    {
+                      "data": {
+                        "organization": {
+                          "projectV2": {
+                            "id": "PVT_anchor_org",
+                            "fields": {
+                              "nodes": [
+                                {
+                                  "id": "PVTSSF_status",
+                                  "name": "Status",
+                                  "options": [
+                                    { "id": "option_backlog", "name": "Backlog" }
+                                  ]
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                    """);
+            },
+            (_, _) => Task.FromResult(CreateJsonResponse(
+                HttpStatusCode.OK,
+                """
+                {
+                  "data": {
+                    "addProjectV2ItemById": {
+                      "item": {
+                        "id": "PVTI_anchor_org_item"
+                      }
+                    }
+                  }
+                }
+                """)),
+            (_, _) => Task.FromResult(CreateJsonResponse(
+                HttpStatusCode.OK,
+                """
+                {
+                  "data": {
+                    "updateProjectV2ItemFieldValue": {
+                      "projectV2Item": {
+                        "id": "PVTI_anchor_org_item"
+                      }
+                    }
+                  }
+                }
+                """)));
+
+        var service = CreateService(
+            handler,
+            new GitHubIssueOptions
+            {
+                Enabled = true,
+                RepositoryOwner = "darkdhamon",
+                RepositoryName = "The-Anchor-Bar-and-Grill",
+                AccessToken = "ghs_test_token",
+                ProjectOwner = "anchor-bar",
+                ProjectOwnerType = nameof(GitHubProjectOwnerType.Organization),
+                ProjectNumber = 7,
+                ProjectStatusFieldName = "Status",
+                DefaultProjectStatusName = "Backlog"
+            });
+
+        var result = await service.CreateIssueAsync(new CreateGitHubIssueRequest
+        {
+            Title = "Production exception",
+            Body = "Stack trace and request details."
+        });
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(43, result.IssueNumber);
+        Assert.Equal(4, handler.RequestCount);
+    }
+
+    [Fact]
+    public async Task CreateIssueAsync_returns_failure_when_project_owner_type_is_invalid()
+    {
+        var handler = new SequenceHttpMessageHandler();
+        var service = CreateService(
+            handler,
+            new GitHubIssueOptions
+            {
+                Enabled = true,
+                RepositoryOwner = "darkdhamon",
+                RepositoryName = "The-Anchor-Bar-and-Grill",
+                AccessToken = "ghs_test_token",
+                ProjectOwner = "darkdhamon",
+                ProjectOwnerType = "Team",
+                ProjectNumber = 7,
+                ProjectStatusFieldName = "Status",
+                DefaultProjectStatusName = "Backlog"
+            });
+
+        var result = await service.CreateIssueAsync(new CreateGitHubIssueRequest
+        {
+            Title = "Production exception",
+            Body = "Stack trace and request details."
+        });
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(
+            ["GitHub project owner type must be configured as either 'User' or 'Organization' when project placement is enabled."],
+            result.Errors);
+        Assert.Empty(handler.Requests);
+    }
+
     private static GitHubIssueService CreateService(SequenceHttpMessageHandler handler, GitHubIssueOptions? options = null)
     {
         options ??= new GitHubIssueOptions
@@ -255,6 +386,7 @@ public sealed class GitHubIssueServiceTests
             RepositoryName = "The-Anchor-Bar-and-Grill",
             AccessToken = "ghs_test_token",
             ProjectOwner = "darkdhamon",
+            ProjectOwnerType = nameof(GitHubProjectOwnerType.User),
             ProjectNumber = 7,
             ProjectStatusFieldName = "Status",
             DefaultProjectStatusName = "Backlog"

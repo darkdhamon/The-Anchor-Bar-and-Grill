@@ -84,6 +84,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - Homepage publicity content now lives in the application database through the repository layer, with one admin workflow for saving drafts, blank-line paragraph rendering for longer welcome copy, and a separate publish action that updates the live homepage intro
 - A shared server-side GitHub issue service is now registered for future production exception reporting and technical website issue submissions
 - The GitHub issue service can create repository issues and place them into the configured GitHub project status when `GitHubIssues` settings and a secure `GitHubIssues__AccessToken` are supplied
+- GitHub project placement now uses the configured `GitHubIssues:ProjectOwnerType` value (`User` or `Organization`) so personal-account and organization-backed projects both resolve cleanly through the GraphQL API
 - Automated production exception issue creation is gated separately by `ProductionExceptionIssues`, runs only when the ASP.NET Core environment is `Production`, and skips `localhost`, loopback, and `.local` hosts
 - Production exception issue bodies include redacted request context such as route values, query values, form fields, selected headers, trace identifiers, and authenticated user roles to help recreate the failure without leaking secrets
 - Repeated matching production exceptions are temporarily deduplicated in memory so GitHub does not get flooded during a burst
