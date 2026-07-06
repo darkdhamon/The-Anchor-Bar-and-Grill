@@ -18,6 +18,7 @@ public sealed class EventEntityConfiguration : IEntityTypeConfiguration<EventEnt
         builder.Property(item => item.StartsAt).HasColumnType("time").IsRequired();
         builder.Property(item => item.EndsAt).HasColumnType("time");
         builder.Property(item => item.EndsNextDay).IsRequired();
+        builder.Property(item => item.TimingNotes).HasMaxLength(300);
         builder.Property(item => item.SortOrder).IsRequired();
         builder.Property(item => item.PublicationState).IsRequired();
         builder.Property(item => item.RecurrencePattern).IsRequired();

@@ -17,4 +17,5 @@ public sealed record SaveEventRequest(
     int RecurrenceInterval,
     DayOfWeek? RecursOnDayOfWeek,
     EventRecurrenceWeek? RecursOnWeekOfMonth,
-    DateOnly? RecursUntil);
+    DateOnly? RecursUntil,
+    string? TimingNotes = null);

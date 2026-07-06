@@ -1,31 +1,54 @@
 @page "/events"
 @attribute [ExcludeFromInteractiveRouting]
-@inject TimeProvider TimeProvider
 
 <PageTitle>Events</PageTitle>
 
 <section class="page-hero page-hero--section">
     <p class="page-hero__eyebrow">Events</p>
-    <h1>Events mockup</h1>
+    <h1>Upcoming events</h1>
     <p class="page-hero__lead">
-        Events should feel like part of the Anchor identity, not a buried side page. The public schedule should show every upcoming event, including recurring nights that generate more than one date.
+        See the live public event calendar starting with the next @PublicEventsWindowDays days, then keep scrolling to load more published dates automatically.
     </p>
 </section>
 
-<section class="section-shell">
-    <div class="section-heading">
+<section class="section-shell public-events-section"
+         data-public-events-feed-root="true"
+         data-public-events-feed-url="@PublicEventsFeedUrl"
+         data-public-events-next-from="@NextWindowFromDateValue"
+         data-public-events-has-more="@(hasMoreWindows ? "true" : "false")">
+    <div class="section-heading public-events-heading">
         <p class="section-heading__eyebrow">Upcoming Calendar</p>
-        <h2>Show every currently scheduled event in one public-facing list.</h2>
+        <h2>Plan around the real schedule at a glance.</h2>
+        <p>Published one-time events and recurring favorites are listed in chronological order so guests can quickly pick the right night to visit, with later dates loading in as needed.</p>
     </div>
 
-    <div class="event-card-grid">
+    @if (ShowUpcomingWindowEmptyState)
+    {
+        <article class="feature-card feature-card--tight menu-empty-state public-events-empty"
+                 data-public-events-empty-state="true">
+            <p class="feature-card__eyebrow">Nothing In The Next @PublicEventsWindowDays Days Yet</p>
+            <h3>No published events are scheduled in the opening calendar window.</h3>
+            <p>Later published dates can still load below if the event schedule extends farther into the future.</p>
+        </article>
+    }
+    else if (ShowPublishedCalendarEmptyState)
+    {
+        <article class="feature-card feature-card--tight menu-empty-state public-events-empty"
+                 data-public-events-empty-state="true">
+            <p class="feature-card__eyebrow">Nothing Scheduled Yet</p>
+            <h3>No published events are on the calendar right now.</h3>
+            <p>Check back soon for live music, community nights, and one-time specials as they are posted.</p>
+        </article>
+    }
+
+    <div class="event-card-grid" data-public-events-grid="true">
         @foreach (var item in upcomingEvents)
         {
-            <article class="event-card @(item.Image is not null ? "event-card--with-image" : "event-card--text-only")">
-                @if (item.Image is not null)
+            <article class="event-card @(item.ImagePath is not null ? "event-card--with-image" : "event-card--text-only")">
+                @if (item.ImagePath is not null)
                 {
                     <div class="event-card__visual">
-                        <img class="event-card__image" src="@item.Image.Source" alt="@item.Image.AltText" />
+                        <img class="event-card__image" src="@item.ImagePath" alt="@item.ImageAltText" />
                     </div>
                 }
 
@@ -40,32 +63,60 @@
 
                     <h3>@item.Title</h3>
                     <p class="event-card__meta">@item.DateTimeLabel</p>
-                    <p class="event-card__schedule">@item.ScheduleDetail</p>
-                    <p>@item.Description</p>
+                    @if (!string.IsNullOrWhiteSpace(item.TimingNotes))
+                    {
+                        <p class="event-card__timing-note">@item.TimingNotes</p>
+                    }
+                    <p class="event-card__schedule">@item.ScheduleSummary</p>
+
+                    @if (!string.IsNullOrWhiteSpace(item.Summary))
+                    {
+                        <p class="event-card__summary">@item.Summary</p>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(item.Description))
+                    {
+                        <p>@item.Description</p>
+                    }
                 </div>
             </article>
         }
     </div>
-</section>
 
-<section class="section-shell">
-    <div class="section-heading">
-        <p class="section-heading__eyebrow">Planning Notes</p>
-        <h2>Use this page to explain the weekly rhythm, every-other-week cadence, and monthly traditions.</h2>
+    <template data-public-events-template="card">
+        <article class="event-card event-card--text-only">
+            <div class="event-card__visual" data-public-event-image-shell="true" hidden>
+                <img class="event-card__image" data-public-event-image="true" alt="" />
+            </div>
+
+            <div class="event-card__content">
+                <div class="event-card__top">
+                    <div class="event-card__badges">
+                        <span class="event-card__badge" data-public-event-badge="true"></span>
+                        <span class="status-pill status-pill--one-time" data-public-event-schedule-pill="true"></span>
+                    </div>
+                    <p class="event-card__date" data-public-event-date="true"></p>
+                </div>
+
+                <h3 data-public-event-title="true"></h3>
+                <p class="event-card__meta" data-public-event-datetime="true"></p>
+                <p class="event-card__timing-note" data-public-event-timing-notes="true" hidden></p>
+                <p class="event-card__schedule" data-public-event-schedule="true"></p>
+                <p class="event-card__summary" data-public-event-summary="true"></p>
+                <p data-public-event-description="true" hidden></p>
+            </div>
+        </article>
+    </template>
+
+    <div class="public-events-feed" data-public-events-feed="true" hidden="@(!hasMoreWindows)">
+        <p class="public-events-feed__status" data-public-events-status="true" aria-live="polite">
+            More published dates load automatically as you reach the end of the list.
+        </p>
+        <button type="button"
+                class="action-button action-button--secondary public-events-feed__button"
+                data-public-events-load="true">
+            Load more dates
+        </button>
+        <div class="public-events-feed__sentinel" data-public-events-sentinel="true" aria-hidden="true"></div>
     </div>
-
-    <div class="rhythm-list">
-        @foreach (var item in MockupContent.WeeklyRhythms)
-        {
-            <article class="rhythm-item">
-                <h3>@item.Label</h3>
-                <p>@item.Description</p>
-            </article>
-        }
-    </div>
 </section>
-
-@code {
-    private DateOnly today => DateOnly.FromDateTime(TimeProvider.GetLocalNow().DateTime);
-    private IReadOnlyList<UpcomingEventOccurrence> upcomingEvents => MockupContent.GetUpcomingEvents(today);
-}

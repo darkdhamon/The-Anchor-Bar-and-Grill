@@ -20,7 +20,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - Optional menu-item image support in the public menu and menu editor, including direct menu-item uploads into the local gallery folder with click-to-enlarge previews
 - Optional offer start/end dates for menu items, recurring seasonal month/day windows for annually returning items, and guest-facing `Coming Soon`, `Seasonal`, and `Limited Time` labels derived at runtime
 - Database-backed Menu Editor with a left-side workspace rail for dedicated `Food`, `Drinks`, and `Hours` views, plus workspace-specific right-side quick guides, collapsible section-tree browsing with header-click expand/collapse behavior, item-backed special offers, parent/child sections, chip-style visibility and scheduling controls, section callouts, archive-aware filters, content filters, duplicate-name protection, and service-hour management
-- Events mockup page that lists all upcoming events, including recurring schedules, optional event images, and richer cadence examples such as every other week or the third Friday of the month
+- Database-backed public events page that lists live upcoming event dates, expands recurring schedules into their next published occurrences, supports optional event images, loads the first 90 days immediately, and continues loading later published dates as guests scroll
 - About mockup page for the restaurant story and guest experience
 - Contact mockup page for location, phone, hours, dynamic social media links, and guest inquiry layout
 - Role-gated editor pages for managing menus, events, publicity content, and contact details
@@ -80,7 +80,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 
 - The development configuration now includes a LocalDB connection string so the mockup can run locally without additional secret setup
 - The menu catalog now lives in the application database through the repository layer, with seed data for Lunch and Dinner food sections, first-class Dinner special items, and empty-state Breakfast and Drinks tabs that already have service hours configured
-- The event foundation now lives in the application database through the repository layer, with explicit published/draft/archive state plus weekly and monthly nth-weekday recurrence rules that expand upcoming occurrences from the current request time instead of a process-start snapshot
+- The event foundation now lives in the application database through the repository layer, with explicit published/draft/archive state plus weekly and monthly nth-weekday recurrence rules that expand upcoming occurrences from the current request time instead of a process-start snapshot, with recurring gaps capped at one year (`52` weeks for weekly schedules and `12` months for monthly schedules)
 - Date-sensitive guest logic such as menu-tab suggestions, specials, and event previews now follows the restaurant's configured local timezone instead of the host machine timezone, with the current configuration set to Central Time via `RestaurantTime:TimeZoneId`
 - Homepage publicity content now lives in the application database through the repository layer, with one admin workflow for saving drafts, blank-line paragraph rendering for longer welcome copy, and a separate publish action that updates the live homepage intro
 - A shared server-side GitHub issue service is now registered for future production exception reporting and technical website issue submissions
@@ -91,7 +91,7 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 - Repeated matching production exceptions are temporarily deduplicated in memory so GitHub does not get flooded during a burst
 - The shared local development and UAT account credentials are documented in [docs/reference/uat-credentials.local.md](docs/reference/uat-credentials.local.md); if those local passwords or roles change, update that file in the same change
 - The current homepage carousel uses committed placeholder photos from the venue until publicity-gallery wiring is added in a later issue
-- The event mockup data now demonstrates weekly, every-other-week, and nth-weekday monthly recurrence patterns so the UI direction can be reviewed before backend scheduling is built
+- The public events page now reads from the repository-backed event catalog, expands recurring schedules from the current request time, renders the first 90 days immediately, and can continue loading later published dates as guests scroll
 - The shared header now uses a lower-profile brand row with one larger overhanging logo carrying the restaurant name through its image alt text, restored full-size desktop header labels, tighter vertical spacing in the nav/account controls, no duplicate visible site-name text, added top-page clearance so content starts below the logo, and a compact theme toggle
 - Desktop header navigation stays guest-first for everyone, while signed-in staff tools move into one role-filtered `Account` dropdown instead of living in a separate inline link strip
 - Mobile header navigation now opens one drawer that groups guest links first and then either `Staff Access` or authenticated account tools, with the friendly `Hi, ...` greeting moved inside those account surfaces

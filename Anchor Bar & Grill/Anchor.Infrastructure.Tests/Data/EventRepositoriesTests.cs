@@ -102,7 +102,8 @@ public sealed class EventRepositoriesTests
                 2,
                 DayOfWeek.Friday,
                 EventRecurrenceWeek.Third,
-                new DateOnly(2026, 7, 31)));
+                new DateOnly(2026, 7, 31),
+                "  Estimated timing may shift based on parade schedule.  "));
         await repository.SaveChangesAsync();
 
         var saved = await context.DbContext.Events.FindAsync(eventId);
@@ -118,5 +119,168 @@ public sealed class EventRepositoriesTests
         Assert.Equal(DayOfWeek.Friday, saved.RecursOnDayOfWeek);
         Assert.Null(saved.RecursOnWeekOfMonth);
         Assert.Equal(new DateOnly(2026, 7, 31), saved.RecursUntil);
+        Assert.Equal("Estimated timing may shift based on parade schedule.", saved.TimingNotes);
+    }
+
+    [Fact]
+    public async Task UpsertEventAsync_allows_null_ends_time_and_timing_notes()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+        var repository = new EventManagementRepository(context.DbContext);
+
+        var eventId = await repository.UpsertEventAsync(
+            new SaveEventRequest(
+                null,
+                "Paddlefish Day Feature",
+                "Parade-linked set",
+                "Timing will depend on the downtown float route.",
+                "Live Music",
+                null,
+                new DateOnly(2026, 9, 12),
+                new TimeOnly(13, 0),
+                null,
+                false,
+                7,
+                EventPublicationState.Published,
+                EventRecurrencePattern.None,
+                0,
+                null,
+                null,
+                null));
+        await repository.SaveChangesAsync();
+
+        var saved = await context.DbContext.Events.FindAsync(eventId);
+
+        Assert.NotNull(saved);
+        Assert.Equal("Paddlefish Day Feature", saved!.Title);
+        Assert.Null(saved.EndsAt);
+        Assert.Null(saved.TimingNotes);
+    }
+
+    [Fact]
+    public async Task HasUpcomingPublicEventCandidatesAsync_ignores_unpublished_and_expired_records()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+
+        context.DbContext.Events.AddRange(
+            new EventEntity
+            {
+                EventId = Guid.NewGuid(),
+                Title = "Published Tonight",
+                Summary = "Summary",
+                Description = "Description",
+                StartsOn = new DateOnly(2026, 5, 18),
+                StartsAt = new TimeOnly(19, 0),
+                SortOrder = 1,
+                PublicationState = EventPublicationState.Published,
+                RecurrencePattern = EventRecurrencePattern.None,
+                RecurrenceInterval = 1
+            },
+            new EventEntity
+            {
+                EventId = Guid.NewGuid(),
+                Title = "Draft Patio Party",
+                Summary = "Summary",
+                Description = "Description",
+                StartsOn = new DateOnly(2026, 6, 1),
+                StartsAt = new TimeOnly(18, 0),
+                SortOrder = 2,
+                PublicationState = EventPublicationState.Draft,
+                RecurrencePattern = EventRecurrencePattern.None,
+                RecurrenceInterval = 1
+            },
+            new EventEntity
+            {
+                EventId = Guid.NewGuid(),
+                Title = "Published Weekly",
+                Summary = "Summary",
+                Description = "Description",
+                StartsOn = new DateOnly(2026, 5, 4),
+                StartsAt = new TimeOnly(18, 0),
+                SortOrder = 3,
+                PublicationState = EventPublicationState.Published,
+                RecurrencePattern = EventRecurrencePattern.Weekly,
+                RecurrenceInterval = 1,
+                RecursOnDayOfWeek = DayOfWeek.Monday,
+                RecursUntil = new DateOnly(2026, 5, 18)
+            });
+        await context.DbContext.SaveChangesAsync();
+
+        var repository = new EventQueryRepository(context.DbContext);
+
+        Assert.True(await repository.HasUpcomingPublicEventCandidatesAsync(new DateOnly(2026, 5, 18)));
+        Assert.False(await repository.HasUpcomingPublicEventCandidatesAsync(new DateOnly(2026, 5, 19)));
+    }
+
+    [Fact]
+    public async Task HasUpcomingPublicEventCandidatesAsync_ignores_invalid_recurring_rows()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+
+        context.DbContext.Events.AddRange(
+            new EventEntity
+            {
+                EventId = Guid.NewGuid(),
+                Title = "Published Broken Recurring",
+                Summary = "Summary",
+                Description = "Description",
+                StartsOn = new DateOnly(2026, 5, 4),
+                StartsAt = new TimeOnly(18, 0),
+                SortOrder = 1,
+                PublicationState = EventPublicationState.Published,
+                RecurrencePattern = EventRecurrencePattern.MonthlyNthWeekday,
+                RecurrenceInterval = 0,
+                RecursOnDayOfWeek = DayOfWeek.Monday,
+                RecursOnWeekOfMonth = (EventRecurrenceWeek)99
+            });
+
+        await context.DbContext.SaveChangesAsync();
+
+        var repository = new EventQueryRepository(context.DbContext);
+
+        Assert.False(await repository.HasUpcomingPublicEventCandidatesAsync(new DateOnly(2026, 5, 18)));
+    }
+
+    [Fact]
+    public async Task HasUpcomingPublicEventCandidatesAsync_ignores_recurring_rows_beyond_one_year_interval_cap()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+
+        context.DbContext.Events.AddRange(
+            new EventEntity
+            {
+                EventId = Guid.NewGuid(),
+                Title = "Published Long-Gap Weekly",
+                Summary = "Summary",
+                Description = "Description",
+                StartsOn = new DateOnly(2026, 5, 4),
+                StartsAt = new TimeOnly(18, 0),
+                SortOrder = 1,
+                PublicationState = EventPublicationState.Published,
+                RecurrencePattern = EventRecurrencePattern.Weekly,
+                RecurrenceInterval = EventScheduleRules.MaxWeeklyRecurrenceInterval + 1,
+                RecursOnDayOfWeek = DayOfWeek.Monday
+            },
+            new EventEntity
+            {
+                EventId = Guid.NewGuid(),
+                Title = "Published Long-Gap Monthly",
+                Summary = "Summary",
+                Description = "Description",
+                StartsOn = new DateOnly(2026, 5, 15),
+                StartsAt = new TimeOnly(18, 0),
+                SortOrder = 2,
+                PublicationState = EventPublicationState.Published,
+                RecurrencePattern = EventRecurrencePattern.MonthlyNthWeekday,
+                RecurrenceInterval = EventScheduleRules.MaxMonthlyRecurrenceInterval + 1,
+                RecursOnDayOfWeek = DayOfWeek.Friday,
+                RecursOnWeekOfMonth = EventRecurrenceWeek.Third
+            });
+
+        await context.DbContext.SaveChangesAsync();
+
+        var repository = new EventQueryRepository(context.DbContext);
+
+        Assert.False(await repository.HasUpcomingPublicEventCandidatesAsync(new DateOnly(2026, 5, 18)));
     }
 }

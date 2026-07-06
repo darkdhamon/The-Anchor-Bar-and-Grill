@@ -36,6 +36,7 @@ public sealed class EventManagementRepository(ApplicationDbContext dbContext) : 
         entity.Description = request.Description.Trim();
         entity.PromoBadge = string.IsNullOrWhiteSpace(request.PromoBadge) ? null : request.PromoBadge.Trim();
         entity.ImagePath = string.IsNullOrWhiteSpace(request.ImagePath) ? null : request.ImagePath.Trim();
+        entity.TimingNotes = string.IsNullOrWhiteSpace(request.TimingNotes) ? null : request.TimingNotes.Trim();
         entity.StartsOn = request.StartsOn;
         entity.StartsAt = request.StartsAt;
         entity.EndsAt = request.EndsAt;
@@ -84,5 +85,6 @@ public sealed class EventManagementRepository(ApplicationDbContext dbContext) : 
             item.RecurrenceInterval,
             item.RecursOnDayOfWeek,
             item.RecursOnWeekOfMonth,
-            item.RecursUntil);
+            item.RecursUntil,
+            item.TimingNotes);
 }

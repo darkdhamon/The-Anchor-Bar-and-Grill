@@ -441,15 +441,58 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     {
         var cut = Render<Events>();
 
-        Assert.Contains("Events mockup", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Thursday Trivia", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Friday Live Music", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Third Friday Steak Night", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Summer Kickoff Patio Party", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Community Bingo Fundraiser", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.NotEmpty(cut.FindAll(".event-card__image"));
-        Assert.Contains("Show every currently scheduled event in one public-facing list.", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("every other Friday", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Upcoming events", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Events mockup", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Dockside Acoustic Night", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Sunday Community Bingo", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(cut.FindAll(".event-card__image"));
+        Assert.Contains("/images/home-carousel/live-music-stage.jpg", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("See the live public event calendar starting with the next 90 days", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Recurring every Sunday at 11:00 AM - next on May 24, 2026", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Plan Your Visit", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("data-public-events-feed-url=\"/events/feed\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("data-public-events-has-more=\"true\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Load more dates", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.False(cut.Find("[data-public-events-feed='true']").HasAttribute("hidden"));
+        Assert.Equal(timeProvider.GetLocalNow().DateTime, eventQueryService.LastRequestedLocalNow);
+        Assert.Equal(90, eventQueryService.LastRequestedDaysAhead);
+        Assert.Equal(DateOnly.FromDateTime(timeProvider.GetLocalNow().DateTime), eventQueryService.LastRequestedFromDate);
+        Assert.False(eventQueryService.LastRequestedSkipEmptyWindows);
+    }
+
+    [Fact]
+    public void EventsPage_ShowsFriendlyEmptyState_When_No_Live_Events_Are_Published()
+    {
+        Services.AddSingleton<IEventQueryService>(new FakeEventQueryService
+        {
+            UpcomingEvents = [],
+            HasMoreWindow = false
+        });
+
+        var cut = Render<Events>();
+
+        Assert.Contains("No published events are on the calendar right now.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Check back soon for live music, community nights, and one-time specials as they are posted.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(cut.FindAll(".event-card"));
+        Assert.DoesNotContain("Plan Your Visit", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.True(cut.Find("[data-public-events-feed='true']").HasAttribute("hidden"));
+    }
+
+    [Fact]
+    public void EventsPage_ShowsOpeningWindowNotice_When_LaterDatesStillExist()
+    {
+        Services.AddSingleton<IEventQueryService>(new FakeEventQueryService
+        {
+            UpcomingEvents = [],
+            HasMoreWindow = true
+        });
+
+        var cut = Render<Events>();
+
+        Assert.Contains("Nothing In The Next 90 Days Yet", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("No published events are scheduled in the opening calendar window.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("No published events are on the calendar right now.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.False(cut.Find("[data-public-events-feed='true']").HasAttribute("hidden"));
     }
 
     [Fact]
@@ -490,6 +533,8 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("Week of month", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Recurs until (optional)", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("every other Friday", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("52 weeks", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("12 months", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Third Friday Steak Night", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Choose an existing badge or type a new one to create it on the fly", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Central Time (America/Chicago)", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -1274,6 +1319,18 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 
     private sealed class FakeEventQueryService : IEventQueryService
     {
+        public DateTime? LastRequestedLocalNow { get; private set; }
+
+        public int? LastRequestedDaysAhead { get; private set; }
+
+        public DateOnly? LastRequestedFromDate { get; private set; }
+
+        public bool LastRequestedSkipEmptyWindows { get; private set; }
+
+        public bool HasMoreWindow { get; set; } = true;
+
+        public DateOnly? NextWindowFromDate { get; set; }
+
         public IReadOnlyList<EventOccurrenceRecord> UpcomingEvents { get; set; } =
         [
             new(
@@ -1282,7 +1339,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                 "An unplugged evening set that keeps the room lively without overpowering dinner service.",
                 "A stripped-back live set for guests who want music and conversation at the same time.",
                 "Live Music",
-                null,
+                "/images/home-carousel/live-music-stage.jpg",
                 new DateOnly(2026, 5, 23),
                 new TimeOnly(19, 30),
                 null,
@@ -1309,8 +1366,29 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         public Task<IReadOnlyList<EventOccurrenceRecord>> GetUpcomingEventsAsync(
             DateTime localNow,
             int daysAhead = 30,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(UpcomingEvents);
+            CancellationToken cancellationToken = default)
+        {
+            LastRequestedLocalNow = localNow;
+            LastRequestedDaysAhead = daysAhead;
+
+            return Task.FromResult(UpcomingEvents);
+        }
+
+        public Task<UpcomingEventWindowResult> GetUpcomingEventsWindowAsync(
+            DateTime localNow,
+            DateOnly fromDate,
+            int daysAhead = 30,
+            bool skipEmptyWindows = false,
+            CancellationToken cancellationToken = default)
+        {
+            LastRequestedLocalNow = localNow;
+            LastRequestedDaysAhead = daysAhead;
+            LastRequestedFromDate = fromDate;
+            LastRequestedSkipEmptyWindows = skipEmptyWindows;
+
+            var nextFromDate = NextWindowFromDate ?? fromDate.AddDays(daysAhead + 1);
+            return Task.FromResult(new UpcomingEventWindowResult(UpcomingEvents, nextFromDate, HasMoreWindow));
+        }
     }
 
     private sealed class FakeMenuManagementService : IMenuManagementService

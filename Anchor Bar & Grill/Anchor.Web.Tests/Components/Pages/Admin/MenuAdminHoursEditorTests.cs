@@ -35,7 +35,7 @@ public sealed class MenuAdminHoursEditorTests : BunitContext
     public MenuAdminHoursEditorTests()
     {
         var timeComboBoxModule = JSInterop.SetupModule("./Components/Shared/InputTimeComboBox.razor.js");
-        timeComboBoxModule.SetupVoid("scrollRelevantOption", _ => true);
+        timeComboBoxModule.SetupVoid("scrollRelevantOption", _ => true).SetVoidResult();
 
         Services.AddSingleton<IHttpContextAccessor>(new HttpContextAccessor());
         Services.AddLogging();
@@ -464,3 +464,4 @@ public sealed class MenuAdminHoursEditorTests : BunitContext
         }
     }
 }
+

@@ -123,6 +123,51 @@ public sealed class EventQueryServiceTests
         Assert.Contains(results, item => item.Title == "Valid Trivia");
     }
 
+    [Fact]
+    public async Task GetUpcomingEventsWindowAsync_reports_the_next_window_boundary_and_future_availability()
+    {
+        var today = new DateOnly(2026, 5, 18);
+        var repository = new FakeEventQueryRepository
+        {
+            Events =
+            [
+                CreateRecord("Tonight", today, new TimeOnly(20, 0), 1),
+                CreateRecord("Labor Day Patio Party", new DateOnly(2026, 9, 5), new TimeOnly(18, 0), 2)
+            ]
+        };
+
+        var result = await new EventQueryService(repository).GetUpcomingEventsWindowAsync(
+            new DateTime(2026, 5, 18, 12, 0, 0),
+            today,
+            30);
+
+        Assert.Equal(["Tonight"], result.Events.Select(item => item.Title).ToArray());
+        Assert.Equal(new DateOnly(2026, 6, 18), result.NextFromDate);
+        Assert.True(result.HasMore);
+    }
+
+    [Fact]
+    public async Task GetUpcomingEventsWindowAsync_can_skip_empty_windows_for_progressive_loading()
+    {
+        var repository = new FakeEventQueryRepository
+        {
+            Events =
+            [
+                CreateRecord("Labor Day Patio Party", new DateOnly(2026, 9, 5), new TimeOnly(18, 0), 1)
+            ]
+        };
+
+        var result = await new EventQueryService(repository).GetUpcomingEventsWindowAsync(
+            new DateTime(2026, 5, 18, 12, 0, 0),
+            new DateOnly(2026, 8, 1),
+            30,
+            skipEmptyWindows: true);
+
+        Assert.Single(result.Events);
+        Assert.Equal("Labor Day Patio Party", result.Events[0].Title);
+        Assert.Equal(new DateOnly(2026, 10, 2), result.NextFromDate);
+    }
+
     private static EventRecord CreateRecord(
         string title,
         DateOnly startsOn,
@@ -160,5 +205,32 @@ public sealed class EventQueryServiceTests
             DateOnly throughDate,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(Events);
+
+        public Task<bool> HasUpcomingPublicEventCandidatesAsync(
+            DateOnly fromDate,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(
+                Events.Any(item =>
+                    item.RecurrencePattern == EventRecurrencePattern.None
+                        ? item.StartsOn >= fromDate
+                        : IsRenderableRecurringRow(item) && (item.RecursUntil == null || item.RecursUntil >= fromDate)));
+
+        private static bool IsRenderableRecurringRow(EventRecord item)
+        {
+            if (item.RecurrencePattern == EventRecurrencePattern.Weekly)
+            {
+                return EventScheduleRules.IsSupportedRecurringInterval(EventRecurrencePattern.Weekly, item.RecurrenceInterval)
+                    && item.RecursOnDayOfWeek is >= DayOfWeek.Sunday and <= DayOfWeek.Saturday;
+            }
+
+            if (item.RecurrencePattern == EventRecurrencePattern.MonthlyNthWeekday)
+            {
+                return EventScheduleRules.IsSupportedRecurringInterval(EventRecurrencePattern.MonthlyNthWeekday, item.RecurrenceInterval)
+                    && item.RecursOnDayOfWeek is >= DayOfWeek.Sunday and <= DayOfWeek.Saturday
+                    && item.RecursOnWeekOfMonth is >= EventRecurrenceWeek.First and <= EventRecurrenceWeek.Last;
+            }
+
+            return false;
+        }
     }
 }
