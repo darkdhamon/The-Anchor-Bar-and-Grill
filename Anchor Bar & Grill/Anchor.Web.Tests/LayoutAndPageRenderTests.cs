@@ -26,6 +26,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 {
     private readonly TestAuthenticationStateProvider authStateProvider;
     private readonly FakeEventQueryService eventQueryService;
+    private readonly FakeEventManagementService eventManagementService;
     private readonly FakeMenuQueryService menuQueryService;
     private readonly FakeHomepagePublicityService homepagePublicityService;
     private readonly FixedTimeProvider timeProvider;
@@ -47,11 +48,13 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Services.AddSingleton<AuthenticationStateProvider>(authStateProvider);
         Services.AddCascadingAuthenticationState();
         eventQueryService = new FakeEventQueryService();
+        eventManagementService = new FakeEventManagementService();
         menuQueryService = new FakeMenuQueryService();
         homepagePublicityService = new FakeHomepagePublicityService();
         timeProvider = new FixedTimeProvider(new DateTimeOffset(2026, 5, 21, 12, 0, 0, TimeSpan.FromHours(-5)));
         Services.AddSingleton<TimeProvider>(timeProvider);
         Services.AddSingleton<IEventQueryService>(eventQueryService);
+        Services.AddSingleton<IEventManagementService>(eventManagementService);
         Services.AddSingleton<IMenuQueryService>(menuQueryService);
         Services.AddSingleton<IHomepagePublicityService>(homepagePublicityService);
         Services.AddSingleton<IMenuManagementService>(new FakeMenuManagementService());
@@ -525,22 +528,23 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         var cut = Render<EventsAdmin>();
 
         Assert.Contains("Event editor", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("How this page should work", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Event image (optional)", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Recurring event?", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("How to use this page", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Event image path (optional)", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Publication state", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Recurrence pattern", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Repeat cadence", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Week of month", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Recurs until (optional)", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("every other Friday", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Save draft", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Publish now", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("52 weeks", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("12 months", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Third Friday Steak Night", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Choose an existing badge or type a new one to create it on the fly", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Choose an existing badge or type a new one for the same save", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Central Time (America/Chicago)", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(">CT<", cut.Markup, StringComparison.Ordinal);
         Assert.Equal(2, cut.FindAll("input[type='date']").Count);
-        Assert.Single(cut.FindAll("input[type='time']"));
+        Assert.Equal(2, cut.FindAll(".time-combobox__input").Count);
         Assert.Contains("Delete", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -1389,6 +1393,60 @@ public sealed class LayoutAndPageRenderTests : BunitContext
             var nextFromDate = NextWindowFromDate ?? fromDate.AddDays(daysAhead + 1);
             return Task.FromResult(new UpcomingEventWindowResult(UpcomingEvents, nextFromDate, HasMoreWindow));
         }
+    }
+
+    private sealed class FakeEventManagementService : IEventManagementService
+    {
+        private readonly IReadOnlyList<EventRecord> events =
+        [
+            new(
+                Guid.Parse("5EAFEA3A-0551-4C60-839C-8A39EBF9CDB1"),
+                "Third Friday Steak Night",
+                "Monthly steak-night preview copy.",
+                "A recurring steak-night feature that returns on the third Friday of each month.",
+                "Steak Night",
+                "/images/home-carousel/live-music-stage.jpg",
+                new DateOnly(2026, 5, 15),
+                new TimeOnly(18, 30),
+                new TimeOnly(21, 0),
+                false,
+                1,
+                EventPublicationState.Published,
+                EventRecurrencePattern.MonthlyNthWeekday,
+                1,
+                DayOfWeek.Friday,
+                EventRecurrenceWeek.Third,
+                null,
+                "Estimated timing may shift slightly when live entertainment runs long."),
+            new(
+                Guid.Parse("9F050FFB-D4B0-4D8B-8E7D-48CBED7572D7"),
+                "Friday Live Music",
+                "Weekly live music preview copy.",
+                "A standing Friday night event with live local acts and rotating guest musicians.",
+                "Live Music",
+                null,
+                new DateOnly(2026, 5, 22),
+                new TimeOnly(20, 0),
+                null,
+                false,
+                2,
+                EventPublicationState.Draft,
+                EventRecurrencePattern.Weekly,
+                2,
+                DayOfWeek.Friday,
+                null,
+                new DateOnly(2026, 9, 25),
+                null)
+        ];
+
+        public Task<IReadOnlyList<EventRecord>> GetEventsAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(events);
+
+        public Task<EventOperationResult> SaveEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(EventOperationResult.Success(request.EventId ?? Guid.NewGuid()));
+
+        public Task<EventOperationResult> DeleteEventAsync(Guid eventId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(EventOperationResult.Success(eventId));
     }
 
     private sealed class FakeMenuManagementService : IMenuManagementService

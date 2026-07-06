@@ -75,6 +75,18 @@
 
             <article class="feature-card feature-card--tight">
                 <p class="feature-card__eyebrow">Subject</p>
+                <h3>Event publishing workflow</h3>
+                <ul class="feature-list">
+                    <li><strong>Event Editor</strong> now works against the live event catalog instead of a placeholder mockup, so staff can create, revise, publish, archive, and delete real event definitions from <strong>/admin/events</strong>.</li>
+                    <li><strong>Save draft</strong> keeps the event internal, while <strong>Publish now</strong> makes the event eligible for the public <strong>/events</strong> page immediately. <strong>Archive event</strong> hides the event from guests without deleting it.</li>
+                    <li>Event dates and times are entered in <strong>Central Time (America/Chicago)</strong> so the public schedule follows the restaurant's local clock instead of the hosting machine timezone.</li>
+                    <li>Recurring events support weekly schedules and monthly nth-weekday schedules, with repeat gaps capped at one year. Weekly recurrences can repeat up to <strong>52 weeks</strong> apart, and monthly nth-weekday recurrences can repeat up to <strong>12 months</strong> apart.</li>
+                    <li>Deleting an event always requires a second confirmation, while archived events stay visible inside the editor so staff can reuse them later.</li>
+                </ul>
+            </article>
+
+            <article class="feature-card feature-card--tight">
+                <p class="feature-card__eyebrow">Subject</p>
                 <h3>Menu publishing workflow</h3>
                 <ul class="feature-list">
                     <li><strong>Menu Editor</strong> manages four fixed public tabs: <strong>Breakfast</strong>, <strong>Lunch</strong>, <strong>Dinner</strong>, and <strong>Drinks</strong>.</li>
@@ -142,8 +154,10 @@
                 <p class="feature-card__eyebrow">Role Type</p>
                 <h3>EventManager</h3>
                 <ul class="feature-list">
-                    <li>Use <strong>Event Editor</strong> to add, update, and remove event listings.</li>
+                    <li>Use <strong>Event Editor</strong> to add, update, publish, archive, and remove event listings.</li>
+                    <li>Draft events stay internal until you publish them, and archived events stay in the editor without appearing on the public schedule.</li>
                     <li>Enter event dates and times in <strong>Central Time (America/Chicago)</strong> so recurring schedules and guest-facing event timing stay aligned with the restaurant's local timezone.</li>
+                    <li>Recurring events can repeat weekly or by nth weekday each month, but the gap between recurring appearances cannot exceed one year.</li>
                     <li>This role does not automatically grant menu, publicity, contact, security, or user-management access.</li>
                 </ul>
             </article>
