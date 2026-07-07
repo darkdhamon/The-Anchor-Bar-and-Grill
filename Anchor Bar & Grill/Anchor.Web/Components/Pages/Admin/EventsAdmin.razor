@@ -68,12 +68,12 @@
                         </div>
                     }
 
-                    <fieldset class="editor-form__fieldset" disabled="@SaveActionsDisabled">
+                    <fieldset class="editor-form__fieldset" disabled="@EventActionsDisabled">
                         <div class="action-row action-row--wrap">
                             <button id="new-event-button"
                                     type="button"
                                     class="action-button action-button--secondary"
-                                    disabled="@SaveActionsDisabled"
+                                    disabled="@EventActionsDisabled"
                                     @onclick="StartNewEvent">
                                 New event
                             </button>
@@ -83,7 +83,7 @@
                                 <button id="reset-event-button"
                                         type="button"
                                         class="action-button action-button--secondary"
-                                        disabled="@SaveActionsDisabled"
+                                        disabled="@EventActionsDisabled"
                                         @onclick="ResetEditor">
                                     Revert selected event
                                 </button>
@@ -243,7 +243,7 @@
                             <button id="save-event-button"
                                     type="button"
                                     class="action-button action-button--primary"
-                                    disabled="@SaveActionsDisabled"
+                                    disabled="@EventActionsDisabled"
                                     @onclick="SaveAsync">
                                 <span class="action-button__content">
                                     @if (isSaving)
@@ -257,14 +257,14 @@
                             <button id="save-draft-button"
                                     type="button"
                                     class="action-button action-button--secondary"
-                                    disabled="@SaveActionsDisabled"
+                                    disabled="@EventActionsDisabled"
                                     @onclick="SaveDraftAsync">
                                 Save draft
                             </button>
                             <button id="publish-event-button"
                                     type="button"
                                     class="action-button action-button--secondary"
-                                    disabled="@SaveActionsDisabled"
+                                    disabled="@EventActionsDisabled"
                                     @onclick="PublishAsync">
                                 Publish now
                             </button>
@@ -274,7 +274,7 @@
                                 <button id="archive-event-button"
                                         type="button"
                                         class="action-button action-button--secondary"
-                                        disabled="@SaveActionsDisabled"
+                                        disabled="@EventActionsDisabled"
                                         @onclick="ArchiveAsync">
                                     Archive event
                                 </button>
@@ -333,7 +333,7 @@
                                     </div>
 
                                     <div class="admin-list__actions">
-                                        <button id="@($"edit-event-{item.EventId}")" type="button" disabled="@SaveActionsDisabled" @onclick="() => EditEvent(item.EventId)">
+                                        <button id="@($"edit-event-{item.EventId}")" type="button" disabled="@EventActionsDisabled" @onclick="() => EditEvent(item.EventId)">
                                             @(IsEditing(item.EventId) ? "Editing" : "Edit")
                                         </button>
 
@@ -342,11 +342,11 @@
                                             <button id="@($"confirm-delete-event-{item.EventId}")"
                                                     type="button"
                                                     class="admin-list__danger"
-                                                    disabled="@SaveActionsDisabled"
+                                                    disabled="@EventActionsDisabled"
                                                     @onclick="() => ConfirmDeleteAsync(item.EventId)">
                                                 Confirm delete
                                             </button>
-                                            <button id="@($"cancel-delete-event-{item.EventId}")" type="button" disabled="@SaveActionsDisabled" @onclick="CancelDelete">
+                                            <button id="@($"cancel-delete-event-{item.EventId}")" type="button" disabled="@EventActionsDisabled" @onclick="CancelDelete">
                                                 Cancel
                                             </button>
                                         }
@@ -355,7 +355,7 @@
                                             <button id="@($"delete-event-{item.EventId}")"
                                                     type="button"
                                                     class="admin-list__danger"
-                                                    disabled="@SaveActionsDisabled"
+                                                    disabled="@EventActionsDisabled"
                                                     @onclick="() => RequestDelete(item.EventId)">
                                                 Delete
                                             </button>

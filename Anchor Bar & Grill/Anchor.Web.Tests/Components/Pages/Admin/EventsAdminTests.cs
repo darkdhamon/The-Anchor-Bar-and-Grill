@@ -149,6 +149,53 @@ public sealed class EventsAdminTests : BunitContext
     }
 
     [Fact]
+    public void EventsAdmin_Disables_event_actions_while_delete_is_in_progress()
+    {
+        var existingEvent = CreateEventRecord(
+            Guid.Parse("650F52A9-48B3-4DD9-80EB-CCB09B490F1A"),
+            "Delete lock event",
+            EventPublicationState.Published);
+        eventManagementService.Events.Add(existingEvent);
+        eventManagementService.HoldNextDelete();
+
+        var cut = Render<EventsAdmin>();
+        WaitForEventsToLoad(cut);
+
+        cut.Find($"#delete-event-{existingEvent.EventId}").Click();
+        cut.WaitForAssertion(() =>
+        {
+            Assert.NotEmpty(cut.FindAll($"#confirm-delete-event-{existingEvent.EventId}"));
+        });
+
+        cut.Find($"#confirm-delete-event-{existingEvent.EventId}").Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Equal(1, eventManagementService.DeleteCallCount);
+            Assert.True(cut.Find("#save-event-button").HasAttribute("disabled"));
+            Assert.True(cut.Find($"#edit-event-{existingEvent.EventId}").HasAttribute("disabled"));
+            Assert.True(cut.Find($"#delete-event-{existingEvent.EventId}").HasAttribute("disabled"));
+        });
+
+        cut.Find("#save-event-button").TriggerEvent("onclick", new MouseEventArgs());
+        cut.Find($"#delete-event-{existingEvent.EventId}").TriggerEvent("onclick", new MouseEventArgs());
+
+        Assert.Equal(0, eventManagementService.SaveCallCount);
+        Assert.Equal(1, eventManagementService.DeleteCallCount);
+        Assert.Empty(cut.FindAll($"#confirm-delete-event-{existingEvent.EventId}"));
+
+        eventManagementService.ReleaseHeldDelete();
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Equal(1, eventManagementService.DeleteCallCount);
+            Assert.Equal(existingEvent.EventId, eventManagementService.LastDeletedEventId);
+            Assert.DoesNotContain("Delete lock event", cut.Markup, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Event deleted.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        });
+    }
+
+    [Fact]
     public void EventsAdmin_New_event_date_updates_default_monthly_recurrence_values()
     {
         var cut = Render<EventsAdmin>();
@@ -313,6 +360,7 @@ public sealed class EventsAdminTests : BunitContext
     private sealed class FakeEventManagementService : IEventManagementService
     {
         private TaskCompletionSource<bool>? heldSaveCompletionSource;
+        private TaskCompletionSource<bool>? heldDeleteCompletionSource;
 
         public List<EventRecord> Events { get; } = [];
 
@@ -322,6 +370,8 @@ public sealed class EventsAdminTests : BunitContext
 
         public int SaveCallCount { get; private set; }
 
+        public int DeleteCallCount { get; private set; }
+
         public void HoldNextSave() =>
             heldSaveCompletionSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -329,6 +379,15 @@ public sealed class EventsAdminTests : BunitContext
         {
             heldSaveCompletionSource?.TrySetResult(true);
             heldSaveCompletionSource = null;
+        }
+
+        public void HoldNextDelete() =>
+            heldDeleteCompletionSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public void ReleaseHeldDelete()
+        {
+            heldDeleteCompletionSource?.TrySetResult(true);
+            heldDeleteCompletionSource = null;
         }
 
         public Task<IReadOnlyList<EventRecord>> GetEventsAsync(CancellationToken cancellationToken = default) =>
@@ -389,16 +448,23 @@ public sealed class EventsAdminTests : BunitContext
             return EventOperationResult.Success(eventId);
         }
 
-        public Task<EventOperationResult> DeleteEventAsync(Guid eventId, CancellationToken cancellationToken = default)
+        public async Task<EventOperationResult> DeleteEventAsync(Guid eventId, CancellationToken cancellationToken = default)
         {
+            DeleteCallCount++;
+
+            if (heldDeleteCompletionSource is { } pendingDelete)
+            {
+                await pendingDelete.Task;
+            }
+
             var removed = Events.RemoveAll(item => item.EventId == eventId) > 0;
             if (!removed)
             {
-                return Task.FromResult(EventOperationResult.Failure("The requested event was not found."));
+                return EventOperationResult.Failure("The requested event was not found.");
             }
 
             LastDeletedEventId = eventId;
-            return Task.FromResult(EventOperationResult.Success(eventId));
+            return EventOperationResult.Success(eventId);
         }
     }
 
