@@ -46,6 +46,7 @@ public partial class EventsAdmin
     private string? statusMessage;
     private bool isLoading = true;
     private bool isSaving;
+    private bool isDeleting;
     private Guid? pendingDeleteId;
 
     [Inject]
@@ -98,7 +99,9 @@ public partial class EventsAdmin
             ? "New event"
             : GetPublicationLabel(form.PublicationState);
 
-    private bool SaveActionsDisabled => isLoading || isSaving;
+    private bool IsMutating => isSaving || isDeleting;
+
+    private bool EventActionsDisabled => isLoading || IsMutating;
 
     private string SaveButtonText => isSaving ? "Saving" : "Save event";
 
@@ -157,7 +160,7 @@ public partial class EventsAdmin
 
     private void ResetEditor()
     {
-        if (isSaving)
+        if (IsMutating)
         {
             return;
         }
@@ -180,7 +183,7 @@ public partial class EventsAdmin
 
     private void EditEvent(Guid eventId)
     {
-        if (isSaving)
+        if (IsMutating)
         {
             return;
         }
@@ -245,7 +248,7 @@ public partial class EventsAdmin
 
     private async Task SaveEventAsync(EventPublicationState publicationState)
     {
-        if (isSaving)
+        if (IsMutating)
         {
             return;
         }
@@ -324,7 +327,7 @@ public partial class EventsAdmin
 
     private void RequestDelete(Guid eventId)
     {
-        if (isSaving)
+        if (IsMutating)
         {
             return;
         }
@@ -336,7 +339,7 @@ public partial class EventsAdmin
 
     private void CancelDelete()
     {
-        if (isSaving)
+        if (IsMutating)
         {
             return;
         }
@@ -346,26 +349,35 @@ public partial class EventsAdmin
 
     private async Task ConfirmDeleteAsync(Guid eventId)
     {
-        if (isSaving)
+        if (IsMutating)
         {
             return;
         }
 
+        isDeleting = true;
         validationErrors.Clear();
         pendingDeleteId = null;
         statusMessage = null;
+        await InvokeAsync(StateHasChanged);
 
-        var result = await EventManagementService.DeleteEventAsync(eventId);
-        if (!result.Succeeded)
+        try
         {
-            validationErrors.AddRange(result.Errors);
-            statusMessage = "Error: The event could not be deleted.";
-            return;
-        }
+            var result = await EventManagementService.DeleteEventAsync(eventId);
+            if (!result.Succeeded)
+            {
+                validationErrors.AddRange(result.Errors);
+                statusMessage = "Error: The event could not be deleted.";
+                return;
+            }
 
-        var preservedSelection = form.EventId == eventId ? null : form.EventId;
-        statusMessage = "Event deleted.";
-        await LoadEventsAsync(preservedSelection, resetToNewEvent: preservedSelection is null);
+            var preservedSelection = form.EventId == eventId ? null : form.EventId;
+            statusMessage = "Event deleted.";
+            await LoadEventsAsync(preservedSelection, resetToNewEvent: preservedSelection is null);
+        }
+        finally
+        {
+            isDeleting = false;
+        }
     }
 
     private void HandleStartsOnChanged(ChangeEventArgs args)
