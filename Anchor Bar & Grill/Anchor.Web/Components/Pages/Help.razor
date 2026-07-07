@@ -80,7 +80,9 @@
                     <li><strong>Event Editor</strong> now works against the live event catalog instead of a placeholder mockup, so staff can create, revise, publish, archive, and delete real event definitions from <strong>/admin/events</strong>.</li>
                     <li><strong>Save draft</strong> keeps the event internal, while <strong>Publish now</strong> makes the event eligible for the public <strong>/events</strong> page immediately. <strong>Archive event</strong> hides the event from guests without deleting it.</li>
                     <li>Event dates and times are entered in <strong>Central Time (America/Chicago)</strong> so the public schedule follows the restaurant's local clock instead of the hosting machine timezone.</li>
+                    <li>When you change the date on a new event before turning on recurrence, the editor keeps the default recurrence day and week aligned with that new date until you intentionally pick different recurrence values.</li>
                     <li>Recurring events support weekly schedules and monthly nth-weekday schedules, with repeat gaps capped at one year. Weekly recurrences can repeat up to <strong>52 weeks</strong> apart, and monthly nth-weekday recurrences can repeat up to <strong>12 months</strong> apart.</li>
+                    <li>Save actions lock while the current event is being written, and the primary save button switches to <strong>Saving</strong> so staff do not accidentally create duplicate events on a slow save.</li>
                     <li>Deleting an event always requires a second confirmation, while archived events stay visible inside the editor so staff can reuse them later.</li>
                 </ul>
             </article>
@@ -157,7 +159,9 @@
                     <li>Use <strong>Event Editor</strong> to add, update, publish, archive, and remove event listings.</li>
                     <li>Draft events stay internal until you publish them, and archived events stay in the editor without appearing on the public schedule.</li>
                     <li>Enter event dates and times in <strong>Central Time (America/Chicago)</strong> so recurring schedules and guest-facing event timing stay aligned with the restaurant's local timezone.</li>
+                    <li>On new events, changing the event date keeps the default recurring day and week aligned with that date until you intentionally choose different recurrence values.</li>
                     <li>Recurring events can repeat weekly or by nth weekday each month, but the gap between recurring appearances cannot exceed one year.</li>
+                    <li>While an event save is running, the save actions lock and the primary button shows <strong>Saving</strong> to prevent accidental duplicate submissions.</li>
                     <li>This role does not automatically grant menu, publicity, contact, security, or user-management access.</li>
                 </ul>
             </article>

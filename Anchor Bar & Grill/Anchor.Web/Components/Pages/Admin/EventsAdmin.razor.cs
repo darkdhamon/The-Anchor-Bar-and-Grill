@@ -45,6 +45,7 @@ public partial class EventsAdmin
     private EventEditorFormModel form = new();
     private string? statusMessage;
     private bool isLoading = true;
+    private bool isSaving;
     private Guid? pendingDeleteId;
 
     [Inject]
@@ -96,6 +97,10 @@ public partial class EventsAdmin
         form.EventId is null
             ? "New event"
             : GetPublicationLabel(form.PublicationState);
+
+    private bool SaveActionsDisabled => isLoading || isSaving;
+
+    private string SaveButtonText => isSaving ? "Saving" : "Save event";
 
     protected override async Task OnInitializedAsync()
     {
@@ -152,6 +157,11 @@ public partial class EventsAdmin
 
     private void ResetEditor()
     {
+        if (isSaving)
+        {
+            return;
+        }
+
         validationErrors.Clear();
         pendingDeleteId = null;
 
@@ -170,6 +180,11 @@ public partial class EventsAdmin
 
     private void EditEvent(Guid eventId)
     {
+        if (isSaving)
+        {
+            return;
+        }
+
         var selectedEvent = eventRecords.SingleOrDefault(item => item.EventId == eventId);
         if (selectedEvent is null)
         {
@@ -230,27 +245,41 @@ public partial class EventsAdmin
 
     private async Task SaveEventAsync(EventPublicationState publicationState)
     {
+        if (isSaving)
+        {
+            return;
+        }
+
+        isSaving = true;
         validationErrors.Clear();
         pendingDeleteId = null;
         statusMessage = null;
+        await InvokeAsync(StateHasChanged);
 
-        if (!TryBuildSaveRequest(publicationState, out var request))
+        try
         {
-            statusMessage = "Error: Fix the event details below and try again.";
-            return;
-        }
+            if (!TryBuildSaveRequest(publicationState, out var request))
+            {
+                statusMessage = "Error: Fix the event details below and try again.";
+                return;
+            }
 
-        var wasNewRecord = request!.EventId is null;
-        var result = await EventManagementService.SaveEventAsync(request);
-        if (!result.Succeeded)
+            var wasNewRecord = request!.EventId is null;
+            var result = await EventManagementService.SaveEventAsync(request);
+            if (!result.Succeeded)
+            {
+                validationErrors.AddRange(result.Errors);
+                statusMessage = "Error: The event could not be saved.";
+                return;
+            }
+
+            statusMessage = GetSaveStatusMessage(publicationState, wasNewRecord);
+            await LoadEventsAsync(result.EventId, resetToNewEvent: false);
+        }
+        finally
         {
-            validationErrors.AddRange(result.Errors);
-            statusMessage = "Error: The event could not be saved.";
-            return;
+            isSaving = false;
         }
-
-        statusMessage = GetSaveStatusMessage(publicationState, wasNewRecord);
-        await LoadEventsAsync(result.EventId, resetToNewEvent: false);
     }
 
     private bool TryBuildSaveRequest(EventPublicationState publicationState, out SaveEventRequest? request)
@@ -295,15 +324,33 @@ public partial class EventsAdmin
 
     private void RequestDelete(Guid eventId)
     {
+        if (isSaving)
+        {
+            return;
+        }
+
         pendingDeleteId = eventId;
         validationErrors.Clear();
         statusMessage = null;
     }
 
-    private void CancelDelete() => pendingDeleteId = null;
+    private void CancelDelete()
+    {
+        if (isSaving)
+        {
+            return;
+        }
+
+        pendingDeleteId = null;
+    }
 
     private async Task ConfirmDeleteAsync(Guid eventId)
     {
+        if (isSaving)
+        {
+            return;
+        }
+
         validationErrors.Clear();
         pendingDeleteId = null;
         statusMessage = null;
@@ -321,13 +368,42 @@ public partial class EventsAdmin
         await LoadEventsAsync(preservedSelection, resetToNewEvent: preservedSelection is null);
     }
 
-    private void HandleStartsOnChanged(ChangeEventArgs args) =>
+    private void HandleStartsOnChanged(ChangeEventArgs args)
+    {
+        DateOnly? previousDate = TryParseDateText(form.StartsOnText, out var parsedPreviousDate)
+            ? parsedPreviousDate
+            : null;
+
         form.StartsOnText = args.Value?.ToString() ?? string.Empty;
+
+        if (form.EventId is not null
+            || !TryParseDateText(form.StartsOnText, out var selectedDate))
+        {
+            return;
+        }
+
+        var shouldSyncRecurrenceDay = previousDate is null || form.RecursOnDayOfWeek == previousDate.Value.DayOfWeek;
+        var previousWeekOfMonth = previousDate is { } priorDate ? GetDefaultWeekOfMonth(priorDate) : (EventRecurrenceWeek?)null;
+        var shouldSyncRecurrenceWeek = previousWeekOfMonth is null || form.RecursOnWeekOfMonth == previousWeekOfMonth.Value;
+
+        if (shouldSyncRecurrenceDay)
+        {
+            form.RecursOnDayOfWeek = selectedDate.DayOfWeek;
+        }
+
+        if (shouldSyncRecurrenceWeek)
+        {
+            form.RecursOnWeekOfMonth = GetDefaultWeekOfMonth(selectedDate);
+        }
+    }
 
     private void HandleRecursUntilChanged(ChangeEventArgs args) =>
         form.RecursUntilText = args.Value?.ToString();
 
     private bool IsEditing(Guid eventId) => form.EventId == eventId;
+
+    private static string? GetImagePreviewPath(string? imagePath) =>
+        MenuImagePathDisplay.Normalize(imagePath);
 
     private string GetScheduleSummary(EventRecord record) =>
         EventScheduleRules.GetScheduleSummary(record, TimeProvider.GetLocalNow().DateTime);
@@ -468,6 +544,9 @@ public partial class EventsAdmin
 
     private static string? FormatDate(DateOnly? date) =>
         date?.ToString("yyyy-MM-dd", InvariantCulture);
+
+    private static bool TryParseDateText(string? value, out DateOnly date) =>
+        DateOnly.TryParseExact(value, "yyyy-MM-dd", InvariantCulture, DateTimeStyles.None, out date);
 
     private static string FormatTime(TimeOnly time) =>
         FlexibleTimeText.FormatDisplay(time);
