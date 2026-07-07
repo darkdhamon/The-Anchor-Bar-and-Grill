@@ -2438,6 +2438,10 @@ body.image-preview-open {
     line-height: 1.45;
 }
 
+.admin-list__warning {
+    max-width: 20rem;
+}
+
 .admin-field-note code,
 .menu-editor-guide__section p code {
     color: var(--accent-readable);

@@ -285,6 +285,7 @@
                     <p class="admin-field-note">Published events flow to the public <code>/events</code> page. Drafts stay internal while staff are still writing or gathering details.</p>
                     <p class="admin-field-note">Archived events stay in this editor for reference or reuse, but they no longer appear in public event queries.</p>
                     <p class="admin-field-note">All event dates and times on this page use @RestaurantTimeInfo.DisplayLabel so the public schedule stays aligned with the restaurant's local operating time.</p>
+                    <p class="admin-field-note">Deleting an event is a two-step action. Click <strong>Delete</strong> to arm the warning, then use <strong>Confirm delete</strong> only when you are ready to permanently remove that event.</p>
                 </section>
 
                 <section class="admin-card">
@@ -339,15 +340,17 @@
 
                                         @if (pendingDeleteId == item.EventId)
                                         {
+                                            <span id="@($"delete-warning-event-{item.EventId}")"
+                                                  class="admin-field-note admin-list__warning"
+                                                  role="alert">
+                                                Warning: confirming permanently deletes this event.
+                                            </span>
                                             <button id="@($"confirm-delete-event-{item.EventId}")"
                                                     type="button"
                                                     class="admin-list__danger"
                                                     disabled="@EventActionsDisabled"
                                                     @onclick="() => ConfirmDeleteAsync(item.EventId)">
                                                 Confirm delete
-                                            </button>
-                                            <button id="@($"cancel-delete-event-{item.EventId}")" type="button" disabled="@EventActionsDisabled" @onclick="CancelDelete">
-                                                Cancel
                                             </button>
                                         }
                                         else

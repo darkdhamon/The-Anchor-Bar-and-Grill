@@ -337,19 +337,9 @@ public partial class EventsAdmin
         statusMessage = null;
     }
 
-    private void CancelDelete()
-    {
-        if (IsMutating)
-        {
-            return;
-        }
-
-        pendingDeleteId = null;
-    }
-
     private async Task ConfirmDeleteAsync(Guid eventId)
     {
-        if (IsMutating)
+        if (IsMutating || pendingDeleteId != eventId)
         {
             return;
         }

@@ -136,6 +136,8 @@ public sealed class EventsAdminTests : BunitContext
         cut.WaitForAssertion(() =>
         {
             Assert.NotEmpty(cut.FindAll($"#confirm-delete-event-{existingEvent.EventId}"));
+            Assert.NotEmpty(cut.FindAll($"#delete-warning-event-{existingEvent.EventId}"));
+            Assert.Empty(cut.FindAll($"#cancel-delete-event-{existingEvent.EventId}"));
         });
 
         cut.Find($"#confirm-delete-event-{existingEvent.EventId}").Click();
@@ -146,6 +148,46 @@ public sealed class EventsAdminTests : BunitContext
             Assert.DoesNotContain("Third Friday Steak Night", cut.Markup, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("Event deleted.", cut.Markup, StringComparison.OrdinalIgnoreCase);
         });
+    }
+
+    [Fact]
+    public async Task EventsAdmin_Ignores_stale_confirm_delete_click_when_delete_warning_is_no_longer_active()
+    {
+        var existingEvent = CreateEventRecord(
+            Guid.Parse("2F61659D-0FF9-4CC8-9DBB-BC92E3B0E73F"),
+            "Stale confirm event",
+            EventPublicationState.Published);
+        eventManagementService.Events.Add(existingEvent);
+
+        var cut = Render<EventsAdmin>();
+        WaitForEventsToLoad(cut);
+
+        cut.Find($"#delete-event-{existingEvent.EventId}").Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.NotEmpty(cut.FindAll($"#confirm-delete-event-{existingEvent.EventId}"));
+            Assert.NotEmpty(cut.FindAll($"#delete-warning-event-{existingEvent.EventId}"));
+        });
+
+        cut.Find("#new-event-button").Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Empty(cut.FindAll($"#confirm-delete-event-{existingEvent.EventId}"));
+            Assert.Empty(cut.FindAll($"#delete-warning-event-{existingEvent.EventId}"));
+            Assert.NotEmpty(cut.FindAll($"#delete-event-{existingEvent.EventId}"));
+        });
+
+        var confirmDeleteAsync = typeof(EventsAdmin).GetMethod(
+            "ConfirmDeleteAsync",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        var pendingDeleteTask = confirmDeleteAsync!.Invoke(cut.Instance, [existingEvent.EventId]) as Task;
+        await pendingDeleteTask!;
+
+        Assert.Equal(0, eventManagementService.DeleteCallCount);
+        Assert.Null(eventManagementService.LastDeletedEventId);
+        Assert.Contains("Stale confirm event", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
