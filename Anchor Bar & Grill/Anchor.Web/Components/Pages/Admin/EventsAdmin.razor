@@ -68,204 +68,219 @@
                         </div>
                     }
 
-                    <div class="action-row action-row--wrap">
-                        <button id="new-event-button"
-                                type="button"
-                                class="action-button action-button--secondary"
-                                @onclick="StartNewEvent">
-                            New event
-                        </button>
-
-                        @if (form.EventId is not null)
-                        {
-                            <button id="reset-event-button"
+                    <fieldset class="editor-form__fieldset" disabled="@SaveActionsDisabled">
+                        <div class="action-row action-row--wrap">
+                            <button id="new-event-button"
                                     type="button"
                                     class="action-button action-button--secondary"
-                                    @onclick="ResetEditor">
-                                Revert selected event
+                                    disabled="@SaveActionsDisabled"
+                                    @onclick="StartNewEvent">
+                                New event
                             </button>
-                        }
-                    </div>
 
-                    <div class="editor-form__grid">
-                        <label>
-                            <span>Event title</span>
-                            <input id="event-title" type="text" @bind="form.Title" @bind:event="oninput" />
-                            <small>Name the listing exactly how guests should see it.</small>
-                        </label>
-
-                        <label class="editor-form__message">
-                            <span>Guest-facing summary</span>
-                            <textarea id="event-summary" rows="3" @bind="form.Summary" @bind:event="oninput"></textarea>
-                            <small>Use a short summary for previews and compact event cards.</small>
-                        </label>
-
-                        <label>
-                            <span>Event image path (optional)</span>
-                            <input id="event-image-path" type="text" @bind="form.ImagePath" @bind:event="oninput" />
-                            <small>Leave blank when the event does not need artwork.</small>
-                        </label>
-
-                        <label>
-                            <span>Event date</span>
-                            <input id="event-start-date" type="date" value="@form.StartsOnText" @onchange="HandleStartsOnChanged" />
-                            <small>Use the first occurrence date for recurring events and the actual date for one-time events.</small>
-                        </label>
-
-                        <label>
-                            <span class="field-label-with-hint">
-                                <span>Start time</span>
-                                <abbr class="field-hint-badge" title="@RestaurantTimeInfo.EntryTooltip">@RestaurantTimeInfo.ShortLabel</abbr>
-                            </span>
-                            <InputTimeComboBox Id="event-start-time"
-                                               @bind-Value="form.StartsAtText"
-                                               Placeholder="Type 7pm or pick a time"
-                                               ToggleAriaLabel="Show start time options" />
-                            <small>Event times are entered in @RestaurantTimeInfo.DisplayLabel.</small>
-                        </label>
-
-                        <label>
-                            <span class="field-label-with-hint">
-                                <span>End time (optional)</span>
-                                <abbr class="field-hint-badge" title="@RestaurantTimeInfo.EntryTooltip">@RestaurantTimeInfo.ShortLabel</abbr>
-                            </span>
-                            <InputTimeComboBox Id="event-end-time"
-                                               @bind-Value="form.EndsAtText"
-                                               Placeholder="Leave blank if the end time is unknown"
-                                               ToggleAriaLabel="Show end time options" />
-                            <small>Leave blank when the event has no defined end time.</small>
-                        </label>
-
-                        <label class="editor-form__toggle">
-                            <span>Ends next day</span>
-                            <div class="editor-form__toggle-row">
-                                <input id="event-ends-next-day" type="checkbox" @bind="form.EndsNextDay" />
-                                <small>Turn this on when the event crosses midnight.</small>
-                            </div>
-                        </label>
-
-                        <label>
-                            <span>Promo badge (optional)</span>
-                            <input id="event-promo-badge" type="text" list="event-badge-options" @bind="form.PromoBadge" @bind:event="oninput" />
-                            <small>Choose an existing badge or type a new one for the same save.</small>
-                        </label>
-                        <datalist id="event-badge-options">
-                            @foreach (var badge in eventBadgeOptions)
+                            @if (form.EventId is not null)
                             {
-                                <option value="@badge"></option>
+                                <button id="reset-event-button"
+                                        type="button"
+                                        class="action-button action-button--secondary"
+                                        disabled="@SaveActionsDisabled"
+                                        @onclick="ResetEditor">
+                                    Revert selected event
+                                </button>
                             }
-                        </datalist>
+                        </div>
 
-                        <label>
-                            <span>Publication state</span>
-                            <select id="event-publication-state" @bind="form.PublicationState">
-                                @foreach (var state in publicationStates)
+                        <div class="editor-form__grid">
+                            <label>
+                                <span>Event title</span>
+                                <input id="event-title" type="text" @bind="form.Title" @bind:event="oninput" />
+                                <small>Name the listing exactly how guests should see it.</small>
+                            </label>
+
+                            <label class="editor-form__message">
+                                <span>Guest-facing summary</span>
+                                <textarea id="event-summary" rows="3" @bind="form.Summary" @bind:event="oninput"></textarea>
+                                <small>Use a short summary for previews and compact event cards.</small>
+                            </label>
+
+                            <label>
+                                <span>Event image path (optional)</span>
+                                <input id="event-image-path" type="text" @bind="form.ImagePath" @bind:event="oninput" />
+                                <small>Leave blank when the event does not need artwork.</small>
+                            </label>
+
+                            <label>
+                                <span>Event date</span>
+                                <input id="event-start-date" type="date" value="@form.StartsOnText" @onchange="HandleStartsOnChanged" />
+                                <small>Use the first occurrence date for recurring events and the actual date for one-time events.</small>
+                            </label>
+
+                            <label>
+                                <span class="field-label-with-hint">
+                                    <span>Start time</span>
+                                    <abbr class="field-hint-badge" title="@RestaurantTimeInfo.EntryTooltip">@RestaurantTimeInfo.ShortLabel</abbr>
+                                </span>
+                                <InputTimeComboBox Id="event-start-time"
+                                                   @bind-Value="form.StartsAtText"
+                                                   Placeholder="Type 7pm or pick a time"
+                                                   ToggleAriaLabel="Show start time options" />
+                                <small>Event times are entered in @RestaurantTimeInfo.DisplayLabel.</small>
+                            </label>
+
+                            <label>
+                                <span class="field-label-with-hint">
+                                    <span>End time (optional)</span>
+                                    <abbr class="field-hint-badge" title="@RestaurantTimeInfo.EntryTooltip">@RestaurantTimeInfo.ShortLabel</abbr>
+                                </span>
+                                <InputTimeComboBox Id="event-end-time"
+                                                   @bind-Value="form.EndsAtText"
+                                                   Placeholder="Leave blank if the end time is unknown"
+                                                   ToggleAriaLabel="Show end time options" />
+                                <small>Leave blank when the event has no defined end time.</small>
+                            </label>
+
+                            <label class="editor-form__toggle">
+                                <span>Ends next day</span>
+                                <div class="editor-form__toggle-row">
+                                    <input id="event-ends-next-day" type="checkbox" @bind="form.EndsNextDay" />
+                                    <small>Turn this on when the event crosses midnight.</small>
+                                </div>
+                            </label>
+
+                            <label>
+                                <span>Promo badge (optional)</span>
+                                <input id="event-promo-badge" type="text" list="event-badge-options" @bind="form.PromoBadge" @bind:event="oninput" />
+                                <small>Choose an existing badge or type a new one for the same save.</small>
+                            </label>
+                            <datalist id="event-badge-options">
+                                @foreach (var badge in eventBadgeOptions)
                                 {
-                                    <option value="@state">@GetPublicationLabel(state)</option>
+                                    <option value="@badge"></option>
                                 }
-                            </select>
-                            <small>Published events appear publicly. Draft and Archived stay off the guest-facing schedule.</small>
-                        </label>
+                            </datalist>
 
-                        <label>
-                            <span>Sort order</span>
-                            <input id="event-sort-order" type="number" min="1" @bind="form.SortOrder" />
-                            <small>Lower numbers appear earlier when event dates are tied.</small>
-                        </label>
+                            <label>
+                                <span>Publication state</span>
+                                <select id="event-publication-state" @bind="form.PublicationState">
+                                    @foreach (var state in publicationStates)
+                                    {
+                                        <option value="@state">@GetPublicationLabel(state)</option>
+                                    }
+                                </select>
+                                <small>Published events appear publicly. Draft and Archived stay off the guest-facing schedule.</small>
+                            </label>
 
-                        <label>
-                            <span>Recurrence pattern</span>
-                            <select id="event-recurrence-pattern" @bind="form.RecurrencePattern">
-                                @foreach (var pattern in recurrencePatterns)
-                                {
-                                    <option value="@pattern">@GetRecurrencePatternLabel(pattern)</option>
-                                }
-                            </select>
-                            <small>Choose <strong>One-time event</strong> when the listing should not repeat.</small>
-                        </label>
+                            <label>
+                                <span>Sort order</span>
+                                <input id="event-sort-order" type="number" min="1" @bind="form.SortOrder" />
+                                <small>Lower numbers appear earlier when event dates are tied.</small>
+                            </label>
 
-                        <label>
-                            <span>Repeat cadence</span>
-                            <input id="event-recurrence-interval"
-                                   type="number"
-                                   min="1"
-                                   max="@CurrentRecurrenceIntervalLimit"
-                                   disabled="@(!IsRecurring)"
-                                   @bind="form.RecurrenceInterval" />
-                            <small>@RecurrenceIntervalHelpText</small>
-                        </label>
+                            <label>
+                                <span>Recurrence pattern</span>
+                                <select id="event-recurrence-pattern" @bind="form.RecurrencePattern">
+                                    @foreach (var pattern in recurrencePatterns)
+                                    {
+                                        <option value="@pattern">@GetRecurrencePatternLabel(pattern)</option>
+                                    }
+                                </select>
+                                <small>Choose <strong>One-time event</strong> when the listing should not repeat.</small>
+                            </label>
 
-                        <label>
-                            <span>Repeats on</span>
-                            <select id="event-recurs-day" disabled="@(!IsRecurring)" @bind="form.RecursOnDayOfWeek">
-                                @foreach (var day in recurringEventDayOptions)
-                                {
-                                    <option value="@day">@day</option>
-                                }
-                            </select>
-                            <small>Use the day the recurring event should actually occur.</small>
-                        </label>
+                            <label>
+                                <span>Repeat cadence</span>
+                                <input id="event-recurrence-interval"
+                                       type="number"
+                                       min="1"
+                                       max="@CurrentRecurrenceIntervalLimit"
+                                       disabled="@(!IsRecurring)"
+                                       @bind="form.RecurrenceInterval" />
+                                <small>@RecurrenceIntervalHelpText</small>
+                            </label>
 
-                        <label>
-                            <span>Week of month</span>
-                            <select id="event-recurrence-week" disabled="@(!IsMonthlyRecurrence)" @bind="form.RecursOnWeekOfMonth">
-                                @foreach (var week in recurrenceWeekOptions)
-                                {
-                                    <option value="@week">@GetRecurrenceWeekLabel(week)</option>
-                                }
-                            </select>
-                            <small>Use this only for monthly nth-weekday schedules such as a third Friday special.</small>
-                        </label>
+                            <label>
+                                <span>Repeats on</span>
+                                <select id="event-recurs-day" disabled="@(!IsRecurring)" @bind="form.RecursOnDayOfWeek">
+                                    @foreach (var day in recurringEventDayOptions)
+                                    {
+                                        <option value="@day">@day</option>
+                                    }
+                                </select>
+                                <small>Use the day the recurring event should actually occur.</small>
+                            </label>
 
-                        <label>
-                            <span>Recurs until (optional)</span>
-                            <input id="event-recurs-until" type="date" disabled="@(!IsRecurring)" value="@form.RecursUntilText" @onchange="HandleRecursUntilChanged" />
-                            <small>Leave blank for an open-ended schedule, or stop seasonal recurring events automatically here.</small>
-                        </label>
+                            <label>
+                                <span>Week of month</span>
+                                <select id="event-recurrence-week" disabled="@(!IsMonthlyRecurrence)" @bind="form.RecursOnWeekOfMonth">
+                                    @foreach (var week in recurrenceWeekOptions)
+                                    {
+                                        <option value="@week">@GetRecurrenceWeekLabel(week)</option>
+                                    }
+                                </select>
+                                <small>Use this only for monthly nth-weekday schedules such as a third Friday special.</small>
+                            </label>
 
-                        <label class="editor-form__message">
-                            <span>Timing notes (optional)</span>
-                            <textarea id="event-timing-notes" rows="2" @bind="form.TimingNotes" @bind:event="oninput"></textarea>
-                            <small>Use timing notes when guests should know a start time could shift slightly.</small>
-                        </label>
+                            <label>
+                                <span>Recurs until (optional)</span>
+                                <input id="event-recurs-until" type="date" disabled="@(!IsRecurring)" value="@form.RecursUntilText" @onchange="HandleRecursUntilChanged" />
+                                <small>Leave blank for an open-ended schedule, or stop seasonal recurring events automatically here.</small>
+                            </label>
 
-                        <label class="editor-form__message">
-                            <span>Guest-facing description</span>
-                            <textarea id="event-description" rows="5" @bind="form.Description" @bind:event="oninput"></textarea>
-                            <small>This longer description appears on the public event cards.</small>
-                        </label>
-                    </div>
+                            <label class="editor-form__message">
+                                <span>Timing notes (optional)</span>
+                                <textarea id="event-timing-notes" rows="2" @bind="form.TimingNotes" @bind:event="oninput"></textarea>
+                                <small>Use timing notes when guests should know a start time could shift slightly.</small>
+                            </label>
 
-                    <div class="action-row action-row--wrap">
-                        <button id="save-event-button"
-                                type="button"
-                                class="action-button action-button--primary"
-                                @onclick="SaveAsync">
-                            Save event
-                        </button>
-                        <button id="save-draft-button"
-                                type="button"
-                                class="action-button action-button--secondary"
-                                @onclick="SaveDraftAsync">
-                            Save draft
-                        </button>
-                        <button id="publish-event-button"
-                                type="button"
-                                class="action-button action-button--secondary"
-                                @onclick="PublishAsync">
-                            Publish now
-                        </button>
+                            <label class="editor-form__message">
+                                <span>Guest-facing description</span>
+                                <textarea id="event-description" rows="5" @bind="form.Description" @bind:event="oninput"></textarea>
+                                <small>This longer description appears on the public event cards.</small>
+                            </label>
+                        </div>
 
-                        @if (form.EventId is not null)
-                        {
-                            <button id="archive-event-button"
+                        <div class="action-row action-row--wrap">
+                            <button id="save-event-button"
+                                    type="button"
+                                    class="action-button action-button--primary"
+                                    disabled="@SaveActionsDisabled"
+                                    @onclick="SaveAsync">
+                                <span class="action-button__content">
+                                    @if (isSaving)
+                                    {
+                                        <span class="action-button__spinner" aria-hidden="true"></span>
+                                    }
+
+                                    <span>@SaveButtonText</span>
+                                </span>
+                            </button>
+                            <button id="save-draft-button"
                                     type="button"
                                     class="action-button action-button--secondary"
-                                    @onclick="ArchiveAsync">
-                                Archive event
+                                    disabled="@SaveActionsDisabled"
+                                    @onclick="SaveDraftAsync">
+                                Save draft
                             </button>
-                        }
-                    </div>
+                            <button id="publish-event-button"
+                                    type="button"
+                                    class="action-button action-button--secondary"
+                                    disabled="@SaveActionsDisabled"
+                                    @onclick="PublishAsync">
+                                Publish now
+                            </button>
+
+                            @if (form.EventId is not null)
+                            {
+                                <button id="archive-event-button"
+                                        type="button"
+                                        class="action-button action-button--secondary"
+                                        disabled="@SaveActionsDisabled"
+                                        @onclick="ArchiveAsync">
+                                    Archive event
+                                </button>
+                            }
+                        </div>
+                    </fieldset>
 
                     <p class="admin-field-note">Published events flow to the public <code>/events</code> page. Drafts stay internal while staff are still writing or gathering details.</p>
                     <p class="admin-field-note">Archived events stay in this editor for reference or reuse, but they no longer appear in public event queries.</p>
@@ -290,7 +305,7 @@
                                 <article class="admin-list__item admin-list__item--media" data-event-id="@item.EventId">
                                     @if (!string.IsNullOrWhiteSpace(item.ImagePath))
                                     {
-                                        <img class="admin-event-thumb" src="@item.ImagePath" alt="@($"{item.Title} event image")" />
+                                        <img class="admin-event-thumb" src="@GetImagePreviewPath(item.ImagePath)" alt="@($"{item.Title} event image")" />
                                     }
                                     else
                                     {
@@ -318,7 +333,7 @@
                                     </div>
 
                                     <div class="admin-list__actions">
-                                        <button id="@($"edit-event-{item.EventId}")" type="button" @onclick="() => EditEvent(item.EventId)">
+                                        <button id="@($"edit-event-{item.EventId}")" type="button" disabled="@SaveActionsDisabled" @onclick="() => EditEvent(item.EventId)">
                                             @(IsEditing(item.EventId) ? "Editing" : "Edit")
                                         </button>
 
@@ -327,10 +342,11 @@
                                             <button id="@($"confirm-delete-event-{item.EventId}")"
                                                     type="button"
                                                     class="admin-list__danger"
+                                                    disabled="@SaveActionsDisabled"
                                                     @onclick="() => ConfirmDeleteAsync(item.EventId)">
                                                 Confirm delete
                                             </button>
-                                            <button id="@($"cancel-delete-event-{item.EventId}")" type="button" @onclick="CancelDelete">
+                                            <button id="@($"cancel-delete-event-{item.EventId}")" type="button" disabled="@SaveActionsDisabled" @onclick="CancelDelete">
                                                 Cancel
                                             </button>
                                         }
@@ -339,6 +355,7 @@
                                             <button id="@($"delete-event-{item.EventId}")"
                                                     type="button"
                                                     class="admin-list__danger"
+                                                    disabled="@SaveActionsDisabled"
                                                     @onclick="() => RequestDelete(item.EventId)">
                                                 Delete
                                             </button>

@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Generic;
 
@@ -148,6 +149,106 @@ public sealed class EventsAdminTests : BunitContext
     }
 
     [Fact]
+    public void EventsAdmin_New_event_date_updates_default_monthly_recurrence_values()
+    {
+        var cut = Render<EventsAdmin>();
+        WaitForEventsToLoad(cut);
+
+        cut.Find("#event-title").Input("Friday Patio Party");
+        cut.Find("#event-summary").Input("Recurring patio preview");
+        cut.Find("#event-description").Input("Monthly recurring event details.");
+        cut.Find("#event-start-date").Change("2026-07-31");
+        cut.Find("#event-recurrence-pattern").Change("MonthlyNthWeekday");
+        cut.Find("#save-event-button").Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.NotNull(eventManagementService.LastSavedRequest);
+            Assert.Equal(EventRecurrencePattern.MonthlyNthWeekday, eventManagementService.LastSavedRequest!.RecurrencePattern);
+            Assert.Equal(DayOfWeek.Friday, eventManagementService.LastSavedRequest.RecursOnDayOfWeek);
+            Assert.Equal(EventRecurrenceWeek.Last, eventManagementService.LastSavedRequest.RecursOnWeekOfMonth);
+        });
+    }
+
+    [Fact]
+    public void EventsAdmin_Changing_date_preserves_manual_recurrence_overrides()
+    {
+        var cut = Render<EventsAdmin>();
+        WaitForEventsToLoad(cut);
+
+        cut.Find("#event-title").Input("Manual cadence");
+        cut.Find("#event-summary").Input("Summary");
+        cut.Find("#event-description").Input("Description");
+        cut.Find("#event-recurrence-pattern").Change("MonthlyNthWeekday");
+        cut.Find("#event-recurs-day").Change("Wednesday");
+        cut.Find("#event-recurrence-week").Change("Second");
+        cut.Find("#event-start-date").Change("2026-07-31");
+        cut.Find("#save-event-button").Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.NotNull(eventManagementService.LastSavedRequest);
+            Assert.Equal(DayOfWeek.Wednesday, eventManagementService.LastSavedRequest!.RecursOnDayOfWeek);
+            Assert.Equal(EventRecurrenceWeek.Second, eventManagementService.LastSavedRequest.RecursOnWeekOfMonth);
+        });
+    }
+
+    [Fact]
+    public void EventsAdmin_Normalizes_relative_image_paths_for_admin_previews()
+    {
+        var existingEvent = CreateEventRecord(
+            Guid.Parse("88760FAE-208F-416B-BD48-12F77DF8A4B5"),
+            "Live Music Preview",
+            EventPublicationState.Published,
+            imagePath: "images/events/live-music.svg");
+        eventManagementService.Events.Add(existingEvent);
+
+        var cut = Render<EventsAdmin>();
+        WaitForEventsToLoad(cut);
+
+        var image = cut.Find("img.admin-event-thumb");
+
+        Assert.Equal("/images/events/live-music.svg", image.GetAttribute("src"));
+    }
+
+    [Fact]
+    public void EventsAdmin_Disables_save_actions_and_shows_saving_state_while_persisting()
+    {
+        eventManagementService.HoldNextSave();
+
+        var cut = Render<EventsAdmin>();
+        WaitForEventsToLoad(cut);
+
+        cut.Find("#event-title").Input("Slow save event");
+        cut.Find("#event-summary").Input("Summary");
+        cut.Find("#event-description").Input("Description");
+
+        cut.Find("#save-event-button").Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Equal(1, eventManagementService.SaveCallCount);
+            Assert.True(cut.Find("#save-event-button").HasAttribute("disabled"));
+            Assert.True(cut.Find("#save-draft-button").HasAttribute("disabled"));
+            Assert.True(cut.Find("#publish-event-button").HasAttribute("disabled"));
+            Assert.Contains("Saving", cut.Find("#save-event-button").TextContent, StringComparison.OrdinalIgnoreCase);
+            Assert.NotEmpty(cut.FindAll("#save-event-button .action-button__spinner"));
+        });
+
+        cut.Find("#save-draft-button").TriggerEvent("onclick", new MouseEventArgs());
+        Assert.Equal(1, eventManagementService.SaveCallCount);
+
+        eventManagementService.ReleaseHeldSave();
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Equal(1, eventManagementService.SaveCallCount);
+            Assert.Null(cut.Find("#save-event-button").GetAttribute("disabled"));
+            Assert.Contains("Draft event created.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        });
+    }
+
+    [Fact]
     public void EventsAdmin_Requires_event_manager_role_when_routed()
     {
         authStateProvider.SetUser(new ClaimsPrincipal(new ClaimsIdentity(
@@ -188,14 +289,14 @@ public sealed class EventsAdminTests : BunitContext
         });
     }
 
-    private static EventRecord CreateEventRecord(Guid eventId, string title, EventPublicationState publicationState) =>
+    private static EventRecord CreateEventRecord(Guid eventId, string title, EventPublicationState publicationState, string? imagePath = null) =>
         new(
             eventId,
             title,
             "Short summary",
             "Full guest-facing description.",
             "Live Music",
-            null,
+            imagePath,
             new DateOnly(2026, 7, 18),
             new TimeOnly(19, 0),
             new TimeOnly(22, 0),
@@ -211,11 +312,24 @@ public sealed class EventsAdminTests : BunitContext
 
     private sealed class FakeEventManagementService : IEventManagementService
     {
+        private TaskCompletionSource<bool>? heldSaveCompletionSource;
+
         public List<EventRecord> Events { get; } = [];
 
         public SaveEventRequest? LastSavedRequest { get; private set; }
 
         public Guid? LastDeletedEventId { get; private set; }
+
+        public int SaveCallCount { get; private set; }
+
+        public void HoldNextSave() =>
+            heldSaveCompletionSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public void ReleaseHeldSave()
+        {
+            heldSaveCompletionSource?.TrySetResult(true);
+            heldSaveCompletionSource = null;
+        }
 
         public Task<IReadOnlyList<EventRecord>> GetEventsAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<EventRecord>>(
@@ -225,14 +339,20 @@ public sealed class EventsAdminTests : BunitContext
                     .ThenBy(item => item.Title, StringComparer.OrdinalIgnoreCase)
                     .ToArray());
 
-        public Task<EventOperationResult> SaveEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default)
+        public async Task<EventOperationResult> SaveEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default)
         {
+            SaveCallCount++;
             LastSavedRequest = request;
+
+            if (heldSaveCompletionSource is { } pendingSave)
+            {
+                await pendingSave.Task;
+            }
 
             var validationErrors = EventScheduleRules.Validate(request);
             if (validationErrors.Count > 0)
             {
-                return Task.FromResult(EventOperationResult.Failure(validationErrors));
+                return EventOperationResult.Failure(validationErrors);
             }
 
             var eventId = request.EventId ?? Guid.NewGuid();
@@ -266,7 +386,7 @@ public sealed class EventsAdminTests : BunitContext
                 Events.Add(updatedRecord);
             }
 
-            return Task.FromResult(EventOperationResult.Success(eventId));
+            return EventOperationResult.Success(eventId);
         }
 
         public Task<EventOperationResult> DeleteEventAsync(Guid eventId, CancellationToken cancellationToken = default)
