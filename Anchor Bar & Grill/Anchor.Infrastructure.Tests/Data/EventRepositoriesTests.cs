@@ -158,6 +158,65 @@ public sealed class EventRepositoriesTests
     }
 
     [Fact]
+    public async Task UpsertEventAsync_updates_existing_event_and_publication_state()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+        var repository = new EventManagementRepository(context.DbContext);
+        var eventId = Guid.NewGuid();
+
+        context.DbContext.Events.Add(
+            new EventEntity
+            {
+                EventId = eventId,
+                Title = "Friday Live Music",
+                Summary = "Draft summary",
+                Description = "Draft description",
+                PromoBadge = "Live Music",
+                StartsOn = new DateOnly(2026, 5, 22),
+                StartsAt = new TimeOnly(20, 0),
+                SortOrder = 3,
+                PublicationState = EventPublicationState.Draft,
+                RecurrencePattern = EventRecurrencePattern.Weekly,
+                RecurrenceInterval = 1,
+                RecursOnDayOfWeek = DayOfWeek.Friday
+            });
+        await context.DbContext.SaveChangesAsync();
+
+        await repository.UpsertEventAsync(
+            new SaveEventRequest(
+                eventId,
+                "Friday Live Music Updated",
+                "Published summary",
+                "Published description",
+                "Community Night",
+                null,
+                new DateOnly(2026, 5, 22),
+                new TimeOnly(20, 30),
+                null,
+                false,
+                1,
+                EventPublicationState.Published,
+                EventRecurrencePattern.Weekly,
+                2,
+                DayOfWeek.Friday,
+                null,
+                new DateOnly(2026, 9, 25),
+                "Timing may shift slightly."),
+            CancellationToken.None);
+        await repository.SaveChangesAsync();
+
+        var saved = await context.DbContext.Events.FindAsync(eventId);
+
+        Assert.NotNull(saved);
+        Assert.Equal("Friday Live Music Updated", saved!.Title);
+        Assert.Equal("Published summary", saved.Summary);
+        Assert.Equal(EventPublicationState.Published, saved.PublicationState);
+        Assert.Equal(2, saved.RecurrenceInterval);
+        Assert.Equal(new DateOnly(2026, 9, 25), saved.RecursUntil);
+        Assert.Equal("Timing may shift slightly.", saved.TimingNotes);
+    }
+
+    [Fact]
     public async Task HasUpcomingPublicEventCandidatesAsync_ignores_unpublished_and_expired_records()
     {
         await using var context = await SqliteIdentityTestContext.CreateAsync();
