@@ -375,6 +375,10 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Equal(2, accordions.Count);
         Assert.True(accordions[0].HasAttribute("open"));
         Assert.False(accordions[1].HasAttribute("open"));
+        Assert.DoesNotContain("accent-blue", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("accent-green", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("accent-gold", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("accent-magenta", cut.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.NotEmpty(cut.FindAll(".menu-item__image"));
         Assert.NotEmpty(cut.FindAll(".menu-item--text-only"));
         Assert.Contains("Coming Soon", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -1082,7 +1086,6 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                     AppetizersSectionId,
                     "Appetizers",
                     "Shareables for the table.",
-                    "accent-blue",
                     (IReadOnlyList<PublicMenuItemView>)
                     [
                         new(
@@ -1126,7 +1129,6 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                     BurgersSectionId,
                     "Burgers",
                     null,
-                    "accent-magenta",
                     (IReadOnlyList<PublicMenuItemView>)
                     [
                         new(
@@ -1174,7 +1176,6 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                     Guid.Parse("11111111-1111-1111-1111-111111111111"),
                     "Specials",
                     null,
-                    "accent-gold",
                     (IReadOnlyList<PublicMenuItemView>)
                     [
                         new(
@@ -1197,7 +1198,6 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                     BurgersSectionId,
                     "Burgers",
                     null,
-                    "accent-magenta",
                     (IReadOnlyList<PublicMenuItemView>)
                     [
                         new(
@@ -1482,7 +1482,6 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                     Guid.Parse("31CF1B24-8435-4D22-A7C1-C9039F21C37D"),
                     "Soft Drinks",
                     null,
-                    "accent-blue",
                     (IReadOnlyList<PublicMenuItemView>)
                     [
                         new(
@@ -1544,7 +1543,6 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                     Guid.Parse("E8A8A54F-D40D-4A4F-80D0-093311B9C2F2"),
                     "Breakfast",
                     "Includes choice of Bloody Mary or Screwdriver",
-                    "accent-gold",
                     [
                         new PublicMenuSectionEntryView(
                             10,

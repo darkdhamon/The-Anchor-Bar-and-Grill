@@ -63,10 +63,10 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 
 - Uses the printed menu as the primary visual reference for colors, tone, and structure
 - Reuses the existing Anchor logo inside the shared site shell
-- Applies a warm paper-like light theme, a navy-forward dark theme, and bold blue framing elements
+- Applies a July 2026 menu-inspired palette with deep maritime navy, cream rules, washed gray wood surfaces, and muted blue-gray accents
 - Wires the shared header theme toggle as a compact switch so reviewers can flip the live mockup between light and dark themes
 - Persists the chosen light or dark theme so full-page account routes like `Account/Login` apply the saved theme immediately on load, otherwise defaulting from device theme and then time of day
-- Matches the menu typography direction with `Bebas Neue`, `Patrick Hand`, and `Barlow Condensed`
+- Matches the updated printed-menu typography direction with slab-serif display headings and `Barlow Condensed` for readable body and admin UI text
 
 ## Architecture
 
