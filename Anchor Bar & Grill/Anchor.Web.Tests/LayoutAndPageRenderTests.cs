@@ -725,6 +725,9 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("perspective: 1600px;", stylesheet, StringComparison.Ordinal);
         Assert.Contains(".home-carousel__image {", stylesheet, StringComparison.Ordinal);
         Assert.Contains("object-fit: contain;", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("background: transparent;", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("border: 0;", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("box-shadow: none;", stylesheet, StringComparison.Ordinal);
         Assert.Contains(".home-carousel__slide.is-prev-1 {", stylesheet, StringComparison.Ordinal);
         Assert.Contains(".home-carousel__slide.is-next-1 {", stylesheet, StringComparison.Ordinal);
         Assert.Contains(".home-carousel__slide.is-prev-2 {", stylesheet, StringComparison.Ordinal);

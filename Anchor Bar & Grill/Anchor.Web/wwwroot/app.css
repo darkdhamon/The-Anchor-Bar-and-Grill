@@ -935,9 +935,10 @@ html.anchor-theme-dark .site-shell {
     max-width: 100%;
     min-width: 0;
     justify-self: stretch;
-    background:
-        linear-gradient(145deg, rgba(45, 80, 104, 0.18), rgba(31, 36, 58, 0.24)),
-        var(--surface);
+    border-color: transparent;
+    background: transparent;
+    backdrop-filter: none;
+    box-shadow: none;
     display: grid;
     gap: 0.9rem;
     overflow: hidden;
@@ -953,9 +954,7 @@ html.anchor-theme-dark .site-shell {
     border-radius: calc(var(--anchor-border-radius) - 0.45rem);
     overflow: visible;
     display: block;
-    background:
-        radial-gradient(circle at top right, rgba(197, 206, 208, 0.28), transparent 32%),
-        linear-gradient(145deg, rgba(31, 36, 58, 0.98), rgba(40, 44, 68, 0.96));
+    background: transparent;
     perspective: 1600px;
     isolation: isolate;
 }
@@ -968,10 +967,10 @@ html.anchor-theme-dark .site-shell {
     width: min(92%, 54rem);
     aspect-ratio: 4 / 3;
     overflow: hidden;
-    border: 1px solid rgba(247, 247, 244, 0.22);
+    border: 0;
     border-radius: calc(var(--anchor-border-radius) - 0.45rem);
-    background: var(--surface-blue);
-    box-shadow: 0 26px 62px rgba(9, 17, 30, 0.36);
+    background: transparent;
+    box-shadow: none;
     opacity: 0;
     transform: translate(-50%, -50%) scale(0.68);
     transform-origin: center;
