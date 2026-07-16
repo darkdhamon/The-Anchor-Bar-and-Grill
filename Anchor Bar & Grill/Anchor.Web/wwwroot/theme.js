@@ -212,6 +212,14 @@
       let autoAdvanceHandle = null;
       let captionsCollapsed = true;
       let touchStartX = null;
+      const slideStateClasses = [
+        "is-active",
+        "is-prev-1",
+        "is-prev-2",
+        "is-next-1",
+        "is-next-2",
+        "is-hidden"
+      ];
 
       function clearAutoAdvance() {
         if (autoAdvanceHandle !== null) {
@@ -223,7 +231,8 @@
       function syncCarousel() {
         slides.forEach((slide, index) => {
           const isActive = index === activeIndex;
-          slide.classList.toggle("is-active", isActive);
+          slide.classList.remove(...slideStateClasses);
+          slide.classList.add(getSlideState(index));
           slide.setAttribute("aria-hidden", isActive ? "false" : "true");
         });
 
@@ -271,6 +280,30 @@
         activeIndex = (nextIndex + slides.length) % slides.length;
         syncCarousel();
         restartAutoAdvance();
+      }
+
+      function getSlideState(index) {
+        if (index === activeIndex) {
+          return "is-active";
+        }
+
+        if (slides.length > 1 && index === (activeIndex - 1 + slides.length) % slides.length) {
+          return "is-prev-1";
+        }
+
+        if (slides.length > 2 && index === (activeIndex - 2 + slides.length) % slides.length) {
+          return "is-prev-2";
+        }
+
+        if (slides.length > 1 && index === (activeIndex + 1) % slides.length) {
+          return "is-next-1";
+        }
+
+        if (slides.length > 2 && index === (activeIndex + 2) % slides.length) {
+          return "is-next-2";
+        }
+
+        return "is-hidden";
       }
 
       previousButton?.addEventListener("click", () => {
