@@ -729,8 +729,9 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains(".home-carousel__slide.is-next-1 {", stylesheet, StringComparison.Ordinal);
         Assert.Contains(".home-carousel__slide.is-prev-2 {", stylesheet, StringComparison.Ordinal);
         Assert.Contains(".home-carousel__slide.is-next-2 {", stylesheet, StringComparison.Ordinal);
-        Assert.Contains("transform: translate(calc(-50% - 22%), -50%) scale(0.84);", stylesheet, StringComparison.Ordinal);
-        Assert.Contains("transform: translate(calc(-50% + 22%), -50%) scale(0.84);", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("transform: translate(calc(-50% - 18%), -50%) scale(0.82);", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("transform: translate(calc(-50% + 18%), -50%) scale(0.82);", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("z-index: 9;", stylesheet, StringComparison.Ordinal);
         Assert.Contains("max-width: 100%;", stylesheet, StringComparison.Ordinal);
     }
 

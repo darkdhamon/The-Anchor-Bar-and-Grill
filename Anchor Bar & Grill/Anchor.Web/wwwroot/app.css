@@ -640,7 +640,7 @@ html.anchor-theme-dark .site-shell {
 }
 
 .home-carousel-band .home-carousel__slide {
-    width: min(92%, 86rem);
+    width: min(88%, 82rem);
     aspect-ratio: 16 / 6;
 }
 
@@ -993,30 +993,30 @@ html.anchor-theme-dark .site-shell {
 
 .home-carousel__slide.is-prev-1 {
     z-index: 4;
-    opacity: 0.66;
-    filter: saturate(0.78);
-    transform: translate(calc(-50% - 22%), -50%) scale(0.84);
+    opacity: 0.44;
+    filter: saturate(0.72) brightness(0.9);
+    transform: translate(calc(-50% - 18%), -50%) scale(0.82);
 }
 
 .home-carousel__slide.is-next-1 {
     z-index: 4;
-    opacity: 0.66;
-    filter: saturate(0.78);
-    transform: translate(calc(-50% + 22%), -50%) scale(0.84);
+    opacity: 0.44;
+    filter: saturate(0.72) brightness(0.9);
+    transform: translate(calc(-50% + 18%), -50%) scale(0.82);
 }
 
 .home-carousel__slide.is-prev-2 {
     z-index: 3;
-    opacity: 0.28;
-    filter: saturate(0.58);
-    transform: translate(calc(-50% - 34%), -50%) scale(0.76);
+    opacity: 0.16;
+    filter: saturate(0.52) brightness(0.82);
+    transform: translate(calc(-50% - 28%), -50%) scale(0.72);
 }
 
 .home-carousel__slide.is-next-2 {
     z-index: 3;
-    opacity: 0.28;
-    filter: saturate(0.58);
-    transform: translate(calc(-50% + 34%), -50%) scale(0.76);
+    opacity: 0.16;
+    filter: saturate(0.52) brightness(0.82);
+    transform: translate(calc(-50% + 28%), -50%) scale(0.72);
 }
 
 .home-carousel__slide.is-hidden {
@@ -1107,7 +1107,7 @@ html.anchor-theme-dark .site-shell {
     position: absolute;
     left: 50%;
     bottom: 0.9rem;
-    z-index: 2;
+    z-index: 8;
     transform: translateX(-50%);
     justify-content: center;
     padding: 0.5rem 0.8rem;
@@ -1134,7 +1134,7 @@ html.anchor-theme-dark .site-shell {
 .home-carousel__control {
     position: absolute;
     top: 50%;
-    z-index: 2;
+    z-index: 9;
     display: grid;
     place-items: center;
     width: 3rem;
@@ -1173,12 +1173,14 @@ html.anchor-theme-dark .site-shell {
     height: 0.9rem;
     padding: 0;
     border-radius: 50%;
-    background: transparent;
+    border-color: rgba(247, 247, 244, 0.48);
+    background: rgba(247, 247, 244, 0.36);
 }
 
 .home-carousel__indicator:hover,
 .home-carousel__indicator:focus-visible {
     border-color: rgba(197, 206, 208, 0.55);
+    background: rgba(247, 247, 244, 0.58);
     transform: scale(1.04);
 }
 
