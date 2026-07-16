@@ -645,7 +645,7 @@ html.anchor-theme-dark .site-shell {
 }
 
 .home-carousel-band .home-carousel__image {
-    object-fit: cover;
+    object-fit: contain;
 }
 
 .page-hero,
@@ -1030,7 +1030,7 @@ html.anchor-theme-dark .site-shell {
     width: 100%;
     height: 100%;
     min-height: 0;
-    object-fit: cover;
+    object-fit: contain;
     object-position: center;
 }
 

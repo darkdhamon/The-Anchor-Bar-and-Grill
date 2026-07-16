@@ -714,7 +714,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     }
 
     [Fact]
-    public void HomepageCarousel_Styles_UseLayeredCoverPresentation()
+    public void HomepageCarousel_Styles_UseLayeredContainPresentation()
     {
         var repositoryRoot = GetRepositoryRoot();
         var stylesheetFile = Path.Combine(repositoryRoot, "Anchor Bar & Grill", "Anchor.Web", "wwwroot", "app.css");
@@ -724,7 +724,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("aspect-ratio: 4 / 3;", stylesheet, StringComparison.Ordinal);
         Assert.Contains("perspective: 1600px;", stylesheet, StringComparison.Ordinal);
         Assert.Contains(".home-carousel__image {", stylesheet, StringComparison.Ordinal);
-        Assert.Contains("object-fit: cover;", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("object-fit: contain;", stylesheet, StringComparison.Ordinal);
         Assert.Contains(".home-carousel__slide.is-prev-1 {", stylesheet, StringComparison.Ordinal);
         Assert.Contains(".home-carousel__slide.is-next-1 {", stylesheet, StringComparison.Ordinal);
         Assert.Contains(".home-carousel__slide.is-prev-2 {", stylesheet, StringComparison.Ordinal);
@@ -768,7 +768,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains(".home-carousel-band .home-carousel__slide {", stylesheet, StringComparison.Ordinal);
         Assert.Contains("aspect-ratio: 16 / 6;", stylesheet, StringComparison.Ordinal);
         Assert.Contains(".home-carousel-band .home-carousel__image {", stylesheet, StringComparison.Ordinal);
-        Assert.Contains("object-fit: cover;", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("object-fit: contain;", stylesheet, StringComparison.Ordinal);
         Assert.Contains(".page-hero__copy-group {", stylesheet, StringComparison.Ordinal);
         Assert.Contains("display: block;", stylesheet, StringComparison.Ordinal);
         Assert.DoesNotContain(".page-hero--home > .home-carousel", stylesheet, StringComparison.Ordinal);
