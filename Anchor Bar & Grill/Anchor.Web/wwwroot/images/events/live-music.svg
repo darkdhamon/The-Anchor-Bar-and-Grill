@@ -1,14 +1,10 @@
-<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="800" height="600" rx="48" fill="#221F25"/>
-  <rect x="36" y="36" width="728" height="528" rx="34" fill="url(#bg)"/>
-  <circle cx="194" cy="166" r="88" fill="#D25898" fill-opacity="0.24"/>
-  <circle cx="610" cy="206" r="94" fill="#59AFE2" fill-opacity="0.2"/>
-  <rect x="114" y="390" width="572" height="104" rx="24" fill="#1F243A" fill-opacity="0.44" stroke="#F2F2EE" stroke-opacity="0.12"/>
-  <path d="M290 176V360C290 391 264 416 234 416C205 416 180 392 180 362C180 332 205 308 234 308C245 308 256 311 266 317V217L520 168V316C520 347 494 372 464 372C435 372 410 348 410 318C410 288 435 264 464 264C475 264 486 267 496 273V135L290 176Z" fill="#F2F2EE" fill-opacity="0.86"/>
-  <defs>
-    <linearGradient id="bg" x1="110" y1="65" x2="684" y2="547" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#2F6D90"/>
-      <stop offset="1" stop-color="#1F243A"/>
-    </linearGradient>
-  </defs>
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Live music event placeholder</title>
+  <desc id="desc">A navy and cream event placard with a simple music note.</desc>
+  <rect width="800" height="600" rx="10" fill="#d8d8d1"/>
+  <path d="M0 96h800M0 196h800M0 296h800M0 396h800M0 496h800" stroke="#b8b9b4" stroke-width="4" opacity=".4"/>
+  <rect x="54" y="54" width="692" height="492" rx="10" fill="#1b2740"/>
+  <rect x="86" y="86" width="628" height="428" rx="4" stroke="#f3ead7" stroke-width="6"/>
+  <path d="M336 182v184c0 31-26 56-58 56s-58-25-58-56 26-56 58-56c12 0 24 4 34 10V224l210-42v150c0 31-26 56-58 56s-58-25-58-56 26-56 58-56c12 0 24 4 34 10V150l-162 32Z" fill="#f3ead7"/>
+  <rect x="182" y="450" width="436" height="2" fill="#f3ead7" opacity=".65"/>
 </svg>

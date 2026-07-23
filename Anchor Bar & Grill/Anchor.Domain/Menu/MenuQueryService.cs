@@ -71,7 +71,6 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
                 SpecialsSectionId,
                 "Specials",
                 null,
-                "accent-gold",
                 specialsItems
                     .Select((item, index) => new PublicMenuSectionEntryView(index + 1, item, null))
                     .ToArray()));
@@ -303,7 +302,6 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
                 section.SectionId,
                 section.Name,
                 section.Callout,
-                GetAccentClass(index),
                 BuildSectionEntries(section, visibleSections, childSectionsByParent, renderableSectionIds, assignmentsBySection, publicItems)))
             .ToArray();
     }
@@ -422,15 +420,6 @@ public sealed class MenuQueryService(IMenuQueryRepository repository) : IMenuQue
             ? sortOrder
             : 10_000 + sortOrder;
     }
-
-    private static string GetAccentClass(int index) =>
-        (index % 4) switch
-        {
-            0 => "accent-blue",
-            1 => "accent-green",
-            2 => "accent-gold",
-            _ => "accent-magenta"
-        };
 
     private static IReadOnlyList<MenuServiceWindowView> BuildServiceHours(IEnumerable<MenuServiceWindowRecord> windows, DateOnly today) =>
         windows

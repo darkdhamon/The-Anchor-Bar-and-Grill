@@ -100,20 +100,17 @@ public sealed record PublicMenuSectionView(
     Guid SectionId,
     string Name,
     string? Callout,
-    string AccentClass,
     IReadOnlyList<PublicMenuSectionEntryView> Entries)
 {
     public PublicMenuSectionView(
         Guid sectionId,
         string name,
         string? callout,
-        string accentClass,
         IReadOnlyList<PublicMenuItemView> items)
         : this(
             sectionId,
             name,
             callout,
-            accentClass,
             items.Select((item, index) => new PublicMenuSectionEntryView(index + 1, item, null)).ToArray())
     {
     }

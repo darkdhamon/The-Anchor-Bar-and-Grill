@@ -4,9 +4,9 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 
 ## Current Application Scope
 
-- Guest-facing homepage with a three-column landing-page layout on wide screens, stacking as intro, weekly specials, and upcoming events on mobile, with published publicity-copy content centered between the two sidebars
-- Homepage photo carousel using five committed placeholder images in the center column so the public slideshow treatment can be reviewed before gallery-backed wiring lands
-- Homepage photo carousel now keeps a fixed `4:3` frame, uses contained placeholder-image scaling so venue photos stay fully visible without crop, starts with captions hidden behind a simple show/hide link, uses Disney-style side arrows with a bottom slide tracker inside the frame, sits higher beside the welcome copy on larger screens, stacks the carousel first ahead of the content once the screen narrows, auto-rotates every five seconds, and pauses while hovered or touched
+- Guest-facing homepage with a wide photo carousel band above a three-column landing-page layout on wide screens, stacking as photo highlights, intro, weekly specials, and upcoming events on mobile
+- Homepage photo carousel using five committed placeholder images so the public slideshow treatment can be reviewed before gallery-backed wiring lands
+- Homepage photo carousel now uses a ProjectPortfolio2026-inspired layered presentation with a centered active slide, muted side slides, aspect-ratio-preserving image scaling that fits photos within the carousel height, mobile fallback to a simple `4:3` frame, captions hidden behind a simple show/hide link, side arrows, a bottom slide tracker, five-second auto-rotation, and pause behavior while hovered, focused, or touched
 - Homepage weekly specials now preview recurring specials that are active today or will occur within the next six days, while still respecting lifetime dates and recurring seasonal windows, sorting recurring specials by their next actually available occurrence, and only surfacing upcoming dated specials when they have a real valid occurrence in that preview window, with `Today`, `Now available`, and `Limited-time special` wording based on what is actually active right now
 - Homepage weekly-specials sidebar uses the live menu-special feed when it has data and falls back to the site's preview specials when public special data is not ready yet
 - Homepage upcoming-events sidebar now prefers repository-backed upcoming event queries and falls back to the site's preview events when the live public event feed is still empty
@@ -63,10 +63,10 @@ This repository contains The Anchor Bar & Grill website in a Blazor Server appli
 
 - Uses the printed menu as the primary visual reference for colors, tone, and structure
 - Reuses the existing Anchor logo inside the shared site shell
-- Applies a warm paper-like light theme, a navy-forward dark theme, and bold blue framing elements
+- Applies a July 2026 menu-inspired palette with deep maritime navy, cream rules, washed gray wood surfaces, and muted blue-gray accents
 - Wires the shared header theme toggle as a compact switch so reviewers can flip the live mockup between light and dark themes
 - Persists the chosen light or dark theme so full-page account routes like `Account/Login` apply the saved theme immediately on load, otherwise defaulting from device theme and then time of day
-- Matches the menu typography direction with `Bebas Neue`, `Patrick Hand`, and `Barlow Condensed`
+- Matches the updated printed-menu typography direction with slab-serif display headings and `Barlow Condensed` for readable body and admin UI text
 
 ## Architecture
 

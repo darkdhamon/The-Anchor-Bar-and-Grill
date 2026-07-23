@@ -1,18 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-labelledby="title desc">
-  <title id="title">Appetizer mockup image</title>
-  <desc id="desc">A stylized illustration of appetizer items on a serving board.</desc>
-  <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#59afe2" />
-      <stop offset="100%" stop-color="#1f243a" />
-    </linearGradient>
-  </defs>
-  <rect width="640" height="480" rx="36" fill="url(#bg)" />
-  <rect x="60" y="78" width="520" height="324" rx="32" fill="#f2f2ee" opacity="0.94" />
-  <rect x="118" y="130" width="404" height="210" rx="30" fill="#d5ca55" opacity="0.35" />
-  <circle cx="180" cy="198" r="40" fill="#d25898" opacity="0.78" />
-  <circle cx="266" cy="220" r="46" fill="#79c25f" opacity="0.88" />
-  <circle cx="356" cy="192" r="42" fill="#2f6d90" opacity="0.9" />
-  <circle cx="444" cy="228" r="46" fill="#377191" opacity="0.92" />
-  <text x="320" y="390" text-anchor="middle" font-family="Arial, sans-serif" font-size="38" fill="#1f243a">APPETIZER PHOTO SLOT</text>
+  <title id="title">Appetizer menu placeholder</title>
+  <desc id="desc">A restrained navy and cream menu placard placeholder for appetizer items.</desc>
+  <rect width="640" height="480" rx="8" fill="#d8d8d1"/>
+  <path d="M0 76h640M0 156h640M0 236h640M0 316h640M0 396h640" stroke="#b8b9b4" stroke-width="3" opacity=".42"/>
+  <rect x="54" y="54" width="532" height="372" rx="8" fill="#1b2740"/>
+  <rect x="78" y="78" width="484" height="324" rx="4" fill="none" stroke="#f3ead7" stroke-width="5"/>
+  <circle cx="320" cy="188" r="54" fill="none" stroke="#f3ead7" stroke-width="8"/>
+  <path d="M320 122v118M278 190h84M292 230c16 18 40 28 68 0" fill="none" stroke="#f3ead7" stroke-width="8" stroke-linecap="round"/>
+  <text x="320" y="326" text-anchor="middle" font-family="Georgia, serif" font-size="36" font-weight="700" fill="#f3ead7">APPETIZERS</text>
+  <text x="320" y="362" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" letter-spacing="3" fill="#c5ced0">THE ANCHOR MENU</text>
 </svg>

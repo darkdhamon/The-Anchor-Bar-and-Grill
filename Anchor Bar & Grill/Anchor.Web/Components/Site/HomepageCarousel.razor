@@ -2,16 +2,17 @@
          data-anchor-carousel="true"
          data-anchor-carousel-interval="@AutoAdvanceIntervalMs"
          aria-label="@Label"
-         aria-roledescription="carousel">
+         aria-roledescription="carousel"
+         tabindex="0">
     <div class="home-carousel__viewport">
         @for (var index = 0; index < Slides.Count; index++)
         {
             var slide = Slides[index];
-            var isActive = index == 0;
+            var slideState = GetInitialSlideState(index);
 
-            <figure class="home-carousel__slide @(isActive ? "is-active" : null)"
+            <figure class="home-carousel__slide @slideState"
                     data-anchor-carousel-slide
-                    aria-hidden="@(isActive ? "false" : "true")"
+                    aria-hidden="@(index == 0 ? "false" : "true")"
                     aria-label="@(FormattableString.Invariant($"{index + 1} of {Slides.Count}"))"
                     aria-roledescription="slide">
                 <img class="home-carousel__image" src="@slide.ImageSource" alt="@slide.AltText" />
@@ -90,4 +91,34 @@
     public int AutoAdvanceIntervalMs { get; set; } = 5000;
 
     private readonly string captionTrackId = $"home-carousel-caption-{Guid.NewGuid():N}";
+
+    private string GetInitialSlideState(int index)
+    {
+        if (index == 0)
+        {
+            return "is-active";
+        }
+
+        if (Slides.Count > 1 && index == Slides.Count - 1)
+        {
+            return "is-prev-1";
+        }
+
+        if (Slides.Count > 2 && index == Slides.Count - 2)
+        {
+            return "is-prev-2";
+        }
+
+        if (index == 1)
+        {
+            return "is-next-1";
+        }
+
+        if (index == 2)
+        {
+            return "is-next-2";
+        }
+
+        return "is-hidden";
+    }
 }
