@@ -75,6 +75,32 @@ public sealed class MenuManagementServiceTests
     }
 
     [Fact]
+    public async Task SaveItemAsync_rejects_updates_for_missing_items()
+    {
+        var missingItemId = Guid.NewGuid();
+        var repository = new FakeMenuManagementRepository
+        {
+            SectionReferences =
+            {
+                [FoodSectionId] = CreateSectionReference(FoodSectionId, MenuFamily.Food, [MenuTab.Breakfast, MenuTab.Lunch, MenuTab.Dinner])
+            }
+        };
+        var service = CreateService(repository);
+
+        var result = await service.SaveItemAsync(
+            CreateItemRequest(
+                missingItemId,
+                FoodSectionId,
+                "Missing Item",
+                "No item exists in repository for this id.",
+                [MenuTab.Lunch],
+                [new SaveMenuItemPriceVariantRequest(null, "Regular", 9m, 1)]));
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("selected menu item could not be found", result.Errors[0], StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task SaveItemAsync_allows_blank_description()
     {
         var repository = CreateRepositoryWithFoodSection();
@@ -170,6 +196,29 @@ public sealed class MenuManagementServiceTests
 
         Assert.False(result.Succeeded);
         Assert.Contains("already exists", result.Errors[0], StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task SaveSectionAsync_rejects_updates_for_missing_sections()
+    {
+        var repository = new FakeMenuManagementRepository();
+        var service = CreateService(repository);
+        var missingSectionId = Guid.NewGuid();
+
+        var result = await service.SaveSectionAsync(
+            new SaveMenuSectionRequest(
+                missingSectionId,
+                "Missing Section",
+                null,
+                MenuFamily.Food,
+                null,
+                [MenuTab.Breakfast],
+                1,
+                true,
+                false));
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("selected section could not be found", result.Errors[0], StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
