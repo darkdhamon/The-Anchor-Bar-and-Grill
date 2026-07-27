@@ -438,6 +438,46 @@ public sealed class EventScheduleRulesTests
         Assert.Contains(errors, error => error.Contains("description is required", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public void GetScheduleSummary_renders_one_time_summary_text()
+    {
+        var record = CreateRecord(
+            EventRecurrencePattern.None,
+            startsOn: new DateOnly(2026, 6, 20),
+            startsAt: new TimeOnly(19, 15));
+
+        var summary = EventScheduleRules.GetScheduleSummary(record, new DateTime(2026, 6, 19, 8, 30, 0));
+
+        Assert.Equal("One-time event on Jun 20, 2026 at 7:15 PM", summary);
+    }
+
+    [Fact]
+    public void GetScheduleSummary_recurring_event_omits_next_date_when_no_future_occurrence()
+    {
+        var record = new EventRecord(
+            Guid.NewGuid(),
+            "Expired Happy Hour",
+            "Summer recurring event",
+            "No longer running.",
+            null,
+            null,
+            new DateOnly(2026, 1, 5),
+            new TimeOnly(18, 0),
+            null,
+            false,
+            1,
+            EventPublicationState.Published,
+            EventRecurrencePattern.Weekly,
+            1,
+            DayOfWeek.Monday,
+            null,
+            new DateOnly(2026, 2, 1));
+
+        var summary = EventScheduleRules.GetScheduleSummary(record, new DateTime(2026, 3, 1, 9, 0, 0));
+
+        Assert.Equal("Recurring every Monday at 6:00 PM", summary);
+    }
+
     private static EventRecord CreateRecord(
         EventRecurrencePattern recurrencePattern,
         DateOnly startsOn,
