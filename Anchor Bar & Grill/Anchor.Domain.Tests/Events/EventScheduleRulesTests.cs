@@ -107,6 +107,30 @@ public sealed class EventScheduleRulesTests
     }
 
     [Fact]
+    public void GetOccurrences_limits_monthly_schedule_to_recurs_until()
+    {
+        var record = CreateRecord(
+            EventRecurrencePattern.MonthlyNthWeekday,
+            startsOn: new DateOnly(2026, 1, 15),
+            recursOnDayOfWeek: DayOfWeek.Friday,
+            recursOnWeekOfMonth: EventRecurrenceWeek.Third,
+            recurrenceInterval: 1,
+            recursUntil: new DateOnly(2026, 2, 28));
+
+        var inRange = EventScheduleRules.GetOccurrences(
+            record,
+            new DateOnly(2026, 1, 1),
+            new DateOnly(2026, 1, 31));
+        var afterRecursUntil = EventScheduleRules.GetOccurrences(
+            record,
+            new DateOnly(2026, 3, 1),
+            new DateOnly(2026, 12, 31));
+
+        Assert.Equal([new DateOnly(2026, 1, 16)], inRange);
+        Assert.Empty(afterRecursUntil);
+    }
+
+    [Fact]
     public void GetNextOccurrence_skips_event_times_that_already_passed_today()
     {
         var record = CreateRecord(
@@ -484,7 +508,8 @@ public sealed class EventScheduleRulesTests
         TimeOnly? startsAt = null,
         DayOfWeek? recursOnDayOfWeek = null,
         EventRecurrenceWeek? recursOnWeekOfMonth = null,
-        int recurrenceInterval = 1) =>
+        int recurrenceInterval = 1,
+        DateOnly? recursUntil = null) =>
         new(
             Guid.NewGuid(),
             "Test Event",
@@ -502,5 +527,5 @@ public sealed class EventScheduleRulesTests
             recurrenceInterval,
             recursOnDayOfWeek,
             recursOnWeekOfMonth,
-            null);
+            recursUntil);
 }
