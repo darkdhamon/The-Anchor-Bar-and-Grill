@@ -68,6 +68,15 @@ public sealed class EventQueryServiceTests
     }
 
     [Fact]
+    public async Task GetUpcomingEventsAsync_rejects_negative_daysAhead()
+    {
+        var service = new EventQueryService(new FakeEventQueryRepository());
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => service.GetUpcomingEventsAsync(new DateTime(2026, 5, 10, 10, 0, 0), -1));
+    }
+
+    [Fact]
     public async Task GetUpcomingEventsAsync_computes_schedule_summary_from_each_emitted_occurrence()
     {
         var repository = new FakeEventQueryRepository
