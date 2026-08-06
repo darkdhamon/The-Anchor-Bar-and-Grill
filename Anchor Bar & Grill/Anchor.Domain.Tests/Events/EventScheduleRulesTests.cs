@@ -320,6 +320,36 @@ public sealed class EventScheduleRulesTests
     }
 
     [Fact]
+    public void Validate_rejects_overnight_end_time_without_next_day_flag()
+    {
+        var request = CreateValidOneTimeRequest(
+            startsAt: new TimeOnly(20, 0),
+            endsAt: new TimeOnly(19, 0),
+            endsNextDay: false);
+
+        var errors = EventScheduleRules.Validate(request);
+
+        Assert.Contains(
+            errors,
+            error => error.Contains("End time must be later than the start time unless the event ends the next day.", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Validate_allows_overnight_end_time_when_next_day_is_set()
+    {
+        var request = CreateValidOneTimeRequest(
+            startsAt: new TimeOnly(20, 0),
+            endsAt: new TimeOnly(2, 0),
+            endsNextDay: true);
+
+        var errors = EventScheduleRules.Validate(request);
+
+        Assert.DoesNotContain(
+            errors,
+            error => error.Contains("End time must be later than the start time unless the event ends the next day.", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void Validate_rejects_invalid_publication_state()
     {
         var request = new SaveEventRequest(
@@ -461,6 +491,29 @@ public sealed class EventScheduleRulesTests
         Assert.Contains(errors, error => error.Contains("summary is required", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(errors, error => error.Contains("description is required", StringComparison.OrdinalIgnoreCase));
     }
+
+    private static SaveEventRequest CreateValidOneTimeRequest(
+        TimeOnly? startsAt = null,
+        TimeOnly? endsAt = null,
+        bool endsNextDay = false) =>
+        new(
+            null,
+            "Patio Party",
+            "Season opener",
+            "Kick off patio season.",
+            null,
+            null,
+            new DateOnly(2026, 6, 1),
+            startsAt ?? new TimeOnly(18, 0),
+            endsAt,
+            endsNextDay,
+            1,
+            EventPublicationState.Published,
+            EventRecurrencePattern.None,
+            0,
+            null,
+            null,
+            null);
 
     [Fact]
     public void GetScheduleSummary_renders_one_time_summary_text()
