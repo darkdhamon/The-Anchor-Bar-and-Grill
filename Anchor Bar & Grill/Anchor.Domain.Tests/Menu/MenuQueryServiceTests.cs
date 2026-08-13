@@ -918,4 +918,42 @@ public sealed class MenuQueryServiceTests
         public Task<MenuManagementSnapshot> GetMenuManagementSnapshotAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(new MenuManagementSnapshot([], [], []));
     }
+    [Fact]
+    public async Task GetSuggestedPublicTabAsync_prefers_priority_tab_when_next_openings_tie()
+    {
+        var repository = new FakeMenuQueryRepository
+        {
+            ServiceWindows =
+            [
+                CreateWindow(MenuTab.Lunch, DayOfWeek.Monday, true, new TimeOnly(8, 0), new TimeOnly(10, 0), false),
+                CreateWindow(MenuTab.Breakfast, DayOfWeek.Monday, true, new TimeOnly(8, 0), new TimeOnly(9, 0), false),
+                CreateWindow(MenuTab.Dinner, DayOfWeek.Monday, true, new TimeOnly(9, 0), new TimeOnly(11, 0), false)
+            ]
+        };
+
+        var service = new MenuQueryService(repository);
+
+        var result = await service.GetSuggestedPublicTabAsync(new DateOnly(2026, 5, 18), new TimeOnly(7, 30));
+
+        Assert.Equal(MenuTab.Breakfast, result);
+    }
+
+    [Fact]
+    public async Task GetSuggestedPublicTabAsync_ignores_invalid_windows_and_falls_back_to_default_when_no_opening()
+    {
+        var repository = new FakeMenuQueryRepository
+        {
+            ServiceWindows =
+            [
+                CreateWindow(MenuTab.Lunch, DayOfWeek.Monday, true, new TimeOnly(11, 0), new TimeOnly(10, 0), false),
+                CreateWindow(MenuTab.Dinner, DayOfWeek.Monday, false, new TimeOnly(18, 0), new TimeOnly(21, 0), false),
+            ]
+        };
+
+        var service = new MenuQueryService(repository);
+
+        var result = await service.GetSuggestedPublicTabAsync(new DateOnly(2026, 5, 18), new TimeOnly(12, 0));
+
+        Assert.Equal(MenuTab.Lunch, result);
+    }
 }
