@@ -47,9 +47,26 @@ public sealed class EventManagementServiceTests
         Assert.Contains(result.Errors, error => error.Contains("not found", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public async Task DeleteEventAsync_successfully_deletes_event_and_saves()
+    {
+        var eventId = Guid.NewGuid();
+        var repository = new FakeEventManagementRepository();
+        var service = new EventManagementService(repository);
+
+        var result = await service.DeleteEventAsync(eventId);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(eventId, result.EventId);
+        Assert.Empty(result.Errors);
+        Assert.True(repository.WasSaved);
+        Assert.Equal(eventId, repository.LastDeletedEventId);
+    }
+
     private sealed class FakeEventManagementRepository : IEventManagementRepository
     {
         public bool DeleteResult { get; init; } = true;
+        public Guid LastDeletedEventId { get; private set; }
 
         public bool WasSaved { get; private set; }
 
@@ -59,8 +76,11 @@ public sealed class EventManagementServiceTests
         public Task<Guid> UpsertEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(request.EventId ?? Guid.NewGuid());
 
-        public Task<bool> DeleteEventAsync(Guid eventId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(DeleteResult);
+        public Task<bool> DeleteEventAsync(Guid eventId, CancellationToken cancellationToken = default)
+        {
+            LastDeletedEventId = eventId;
+            return Task.FromResult(DeleteResult);
+        }
 
         public Task SaveChangesAsync(CancellationToken cancellationToken = default)
         {
