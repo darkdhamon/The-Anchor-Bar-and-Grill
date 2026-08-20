@@ -69,6 +69,42 @@ public sealed class HomepagePublicityServiceTests
         Assert.False(repository.WasSaved);
     }
 
+    [Fact]
+    public async Task SaveDraftAsync_rejects_headline_that_exceeds_the_supported_length()
+    {
+        var repository = new FakeHomepagePublicityRepository();
+        var service = new HomepagePublicityService(repository, new FixedTimeProvider(new DateTimeOffset(2026, 5, 25, 14, 30, 0, TimeSpan.Zero)));
+
+        var result = await service.SaveDraftAsync(
+            new SaveHomepagePublicityRequest(
+                "Eyebrow",
+                new string('x', HomepagePublicityConstraints.HeadlineMaxLength + 1),
+                "Welcome summary"));
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Errors, error => error.Contains("120", StringComparison.Ordinal));
+        Assert.False(repository.WasSaved);
+    }
+
+    [Fact]
+    public async Task PublishAsync_trims_optional_eyebrow_before_persisting()
+    {
+        var repository = new FakeHomepagePublicityRepository();
+        var now = new DateTimeOffset(2026, 5, 25, 14, 30, 0, TimeSpan.Zero);
+        var service = new HomepagePublicityService(repository, new FixedTimeProvider(now));
+
+        var result = await service.PublishAsync(new SaveHomepagePublicityRequest("   ", "Live now", "Published summary"));
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(string.Empty, repository.DraftContent?.Eyebrow);
+        Assert.Equal("Live now", repository.DraftContent?.Headline);
+        Assert.Equal("Published summary", repository.DraftContent?.Summary);
+        Assert.Equal(now, repository.DraftUpdatedAtUtc);
+        Assert.Equal(repository.DraftContent, repository.PublishedContent);
+        Assert.Equal(now, repository.PublishedUpdatedAtUtc);
+        Assert.True(repository.WasSaved);
+    }
+
     private sealed class FakeHomepagePublicityRepository : IHomepagePublicityRepository
     {
         public HomepagePublicityContent? DraftContent { get; private set; }

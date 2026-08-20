@@ -24,6 +24,8 @@ public sealed class EventEntity
 
     public bool EndsNextDay { get; set; }
 
+    public string? TimingNotes { get; set; }
+
     public int SortOrder { get; set; }
 
     public EventPublicationState PublicationState { get; set; }

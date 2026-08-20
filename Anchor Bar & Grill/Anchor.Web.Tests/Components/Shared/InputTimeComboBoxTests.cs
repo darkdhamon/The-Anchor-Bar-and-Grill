@@ -13,7 +13,7 @@ public sealed class InputTimeComboBoxTests : BunitContext
     public InputTimeComboBoxTests()
     {
         var timeComboBoxModule = JSInterop.SetupModule("./Components/Shared/InputTimeComboBox.razor.js");
-        timeComboBoxModule.SetupVoid("scrollRelevantOption", _ => true);
+        timeComboBoxModule.SetupVoid("scrollRelevantOption", _ => true).SetVoidResult();
     }
 
     [Fact]
@@ -183,3 +183,4 @@ public sealed class InputTimeComboBoxTests : BunitContext
         public string? Value { get; set; }
     }
 }
+
