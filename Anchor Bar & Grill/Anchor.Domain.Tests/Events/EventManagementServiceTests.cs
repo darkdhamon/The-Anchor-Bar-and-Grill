@@ -60,7 +60,10 @@ public sealed class EventManagementServiceTests
                 1,
                 DayOfWeek.Friday,
                 null,
-                null));
+                null)
+            {
+                SaveAction = EventSaveAction.SaveDraft
+            });
 
         Assert.True(result.Succeeded);
         Assert.NotNull(result.EventId);
@@ -84,6 +87,41 @@ public sealed class EventManagementServiceTests
         Assert.False(result.Succeeded);
         Assert.Contains(result.Errors, error => error.Contains("deleted", StringComparison.OrdinalIgnoreCase));
         Assert.False(repository.WasSaved);
+    }
+
+    [Fact]
+    public async Task SaveEventAsync_translates_a_commit_time_concurrency_conflict()
+    {
+        var repository = new FakeEventManagementRepository { ThrowConcurrencyOnSave = true };
+        var service = new EventManagementService(repository, new FakeEventOperationLogSink());
+
+        var result = await service.SaveEventAsync(new SaveEventRequest(
+            Guid.NewGuid(), "Concurrent event", "Summary", "Description", null, null,
+            new DateOnly(2026, 5, 22), new TimeOnly(20, 0), null, false, 1,
+            EventPublicationState.Published, EventRecurrencePattern.None, 1, null, null, null));
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Errors, error => error.Contains("another session", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task SaveEventAsync_logs_the_invoked_action_instead_of_the_resulting_state()
+    {
+        var logSink = new FakeEventOperationLogSink();
+        var service = new EventManagementService(new FakeEventManagementRepository(), logSink);
+        var request = new SaveEventRequest(
+            Guid.NewGuid(), "Published edit", "Summary", "Description", null, null,
+            new DateOnly(2026, 5, 22), new TimeOnly(20, 0), null, false, 1,
+            EventPublicationState.Published, EventRecurrencePattern.None, 1, null, null, null)
+        {
+            SaveAction = EventSaveAction.Save
+        };
+
+        var result = await service.SaveEventAsync(request);
+
+        Assert.True(result.Succeeded);
+        Assert.Contains(logSink.Entries, entry => entry.Operation == "save");
+        Assert.DoesNotContain(logSink.Entries, entry => entry.Operation == "publish");
     }
 
     [Fact]
@@ -120,6 +158,7 @@ public sealed class EventManagementServiceTests
     {
         public bool DeleteResult { get; init; } = true;
         public bool RejectUpsert { get; init; }
+        public bool ThrowConcurrencyOnSave { get; init; }
         public bool WasSaved { get; private set; }
 
         public SaveEventRequest? LastSavedRequest { get; private set; }
@@ -150,6 +189,10 @@ public sealed class EventManagementServiceTests
         public Task SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             WasSaved = true;
+            if (ThrowConcurrencyOnSave)
+            {
+                throw new EventConcurrencyException(new InvalidOperationException("Concurrent update"));
+            }
             return Task.CompletedTask;
         }
     }

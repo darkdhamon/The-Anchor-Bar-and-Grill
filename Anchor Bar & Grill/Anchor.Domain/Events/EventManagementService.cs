@@ -35,7 +35,14 @@ public sealed class EventManagementService(
             return EventOperationResult.Failure("The requested event changed in another session, was deleted, or could not be found. Reload the editor before saving again.");
         }
 
-        await repository.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await repository.SaveChangesAsync(cancellationToken);
+        }
+        catch (EventConcurrencyException)
+        {
+            return EventOperationResult.Failure("The requested event changed in another session. Reload the editor before saving again.");
+        }
         await logSink.WriteAsync(
             new EventOperationLogEntry(GetSaveOperation(request), eventId.Value, request.Title.Trim()),
             cancellationToken);
@@ -58,10 +65,11 @@ public sealed class EventManagementService(
     }
 
     private static string GetSaveOperation(SaveEventRequest request) =>
-        request.PublicationState switch
+        request.SaveAction switch
         {
-            EventPublicationState.Published => "publish",
-            EventPublicationState.Archived => "archive",
-            _ => "save-draft"
+            EventSaveAction.Publish => "publish",
+            EventSaveAction.Archive => "archive",
+            EventSaveAction.SaveDraft => "save-draft",
+            _ => "save"
         };
 }

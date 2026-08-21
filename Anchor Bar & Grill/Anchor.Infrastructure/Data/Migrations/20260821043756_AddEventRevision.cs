@@ -17,6 +17,8 @@ namespace Anchor.Infrastructure.Data.Migrations
                 type: "uniqueidentifier",
                 nullable: false,
                 defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
+
+            migrationBuilder.Sql("UPDATE [Events] SET [Revision] = NEWID() WHERE [Revision] = '00000000-0000-0000-0000-000000000000';");
         }
 
         /// <inheritdoc />

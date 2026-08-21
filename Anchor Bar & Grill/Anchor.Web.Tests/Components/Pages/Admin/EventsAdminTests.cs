@@ -61,6 +61,7 @@ public sealed class EventsAdminTests : BunitContext
         {
             Assert.NotNull(eventManagementService.LastSavedRequest);
             Assert.Equal(EventPublicationState.Draft, eventManagementService.LastSavedRequest!.PublicationState);
+            Assert.Equal(EventSaveAction.SaveDraft, eventManagementService.LastSavedRequest.SaveAction);
             Assert.Contains("Draft event created.", cut.Markup, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("Dock Party", cut.Markup, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("Draft", cut.Markup, StringComparison.OrdinalIgnoreCase);
@@ -116,6 +117,7 @@ public sealed class EventsAdminTests : BunitContext
         {
             Assert.NotNull(eventManagementService.LastSavedRequest);
             Assert.Equal(EventPublicationState.Published, eventManagementService.LastSavedRequest!.PublicationState);
+            Assert.Equal(EventSaveAction.Publish, eventManagementService.LastSavedRequest.SaveAction);
             Assert.Contains("Event saved and published.", cut.Markup, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("Published", cut.Markup, StringComparison.OrdinalIgnoreCase);
         });
@@ -126,6 +128,7 @@ public sealed class EventsAdminTests : BunitContext
         {
             Assert.NotNull(eventManagementService.LastSavedRequest);
             Assert.Equal(EventPublicationState.Archived, eventManagementService.LastSavedRequest!.PublicationState);
+            Assert.Equal(EventSaveAction.Archive, eventManagementService.LastSavedRequest.SaveAction);
             Assert.Contains("Event archived.", cut.Markup, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("Archived", cut.Markup, StringComparison.OrdinalIgnoreCase);
         });
@@ -541,6 +544,33 @@ public sealed class EventsAdminTests : BunitContext
         {
             Assert.Contains("Event activity", cut.Markup, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("Published patio party", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        });
+    }
+
+    [Fact]
+    public void EventActivity_Denies_event_manager_users_without_admin_role()
+    {
+        var routeData = new RouteData(typeof(EventActivity), new Dictionary<string, object?>());
+        var cut = Render(builder =>
+        {
+            builder.OpenComponent<CascadingAuthenticationState>(0);
+            builder.AddAttribute(1, "ChildContent", (RenderFragment)(childBuilder =>
+            {
+                childBuilder.OpenComponent<AuthorizeRouteView>(0);
+                childBuilder.AddAttribute(1, "RouteData", routeData);
+                childBuilder.AddAttribute(2, "NotAuthorized", (RenderFragment<AuthenticationState>)(_ => notAuthorizedBuilder =>
+                {
+                    notAuthorizedBuilder.AddMarkupContent(0, "<p>Not authorized.</p>");
+                }));
+                childBuilder.CloseComponent();
+            }));
+            builder.CloseComponent();
+        });
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains("Not authorized.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Recent event operations", cut.Markup, StringComparison.OrdinalIgnoreCase);
         });
     }
 

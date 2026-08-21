@@ -48,6 +48,33 @@ public sealed class EventRepositoriesTests
     }
 
     [Fact]
+    public async Task EventOperationLogSink_merges_fallback_activity_into_admin_results()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+        var fallbackPath = Path.Combine(Path.GetTempPath(), $"anchor-event-log-{Guid.NewGuid():N}.log");
+        var eventId = Guid.NewGuid();
+        await File.WriteAllTextAsync(
+            fallbackPath,
+            $"2026-08-21T04:00:00.0000000+00:00\tdelete\t{eventId}\tDeleted during database outage{Environment.NewLine}");
+
+        try
+        {
+            var sink = new EventOperationLogSink(context.DbContext, NullLogger<EventOperationLogSink>.Instance, fallbackPath);
+
+            var records = await sink.GetRecentAsync(25);
+
+            var record = Assert.Single(records);
+            Assert.Equal("delete", record.Operation);
+            Assert.Equal(eventId, record.EventId);
+            Assert.Equal("Deleted during database outage", record.Summary);
+        }
+        finally
+        {
+            File.Delete(fallbackPath);
+        }
+    }
+
+    [Fact]
     public async Task GetUpcomingPublicEventCandidatesAsync_returns_only_publishable_future_candidates()
     {
         await using var context = await SqliteIdentityTestContext.CreateAsync();

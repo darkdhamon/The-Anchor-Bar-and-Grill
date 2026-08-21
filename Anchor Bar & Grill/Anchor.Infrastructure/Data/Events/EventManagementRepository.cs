@@ -125,8 +125,18 @@ public sealed class EventManagementRepository(ApplicationDbContext dbContext) : 
         return true;
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
-        dbContext.SaveChangesAsync(cancellationToken);
+    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            dbContext.ChangeTracker.Clear();
+            throw new EventConcurrencyException(exception);
+        }
+    }
 
     private static readonly Expression<Func<EventEntity, EventRecord>> Projection = item =>
         new EventRecord(

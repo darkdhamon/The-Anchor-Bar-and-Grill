@@ -14,3 +14,11 @@ public interface IEventManagementRepository
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }
+
+public sealed class EventConcurrencyException : Exception
+{
+    public EventConcurrencyException(Exception innerException)
+        : base("The event changed before the update could be committed.", innerException)
+    {
+    }
+}
