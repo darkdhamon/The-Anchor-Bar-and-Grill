@@ -1,6 +1,8 @@
 namespace Anchor.Domain.Events;
 
-public sealed class EventManagementService(IEventManagementRepository repository) : IEventManagementService
+public sealed class EventManagementService(
+    IEventManagementRepository repository,
+    IEventOperationLogSink logSink) : IEventManagementService
 {
     public Task<EventManagementPage> GetEventsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken = default)
     {
@@ -34,6 +36,9 @@ public sealed class EventManagementService(IEventManagementRepository repository
         }
 
         await repository.SaveChangesAsync(cancellationToken);
+        await logSink.WriteAsync(
+            new EventOperationLogEntry(GetSaveOperation(request), eventId.Value, request.Title.Trim()),
+            cancellationToken);
 
         return EventOperationResult.Success(eventId.Value);
     }
@@ -46,6 +51,17 @@ public sealed class EventManagementService(IEventManagementRepository repository
         }
 
         await repository.SaveChangesAsync(cancellationToken);
+        await logSink.WriteAsync(
+            new EventOperationLogEntry("delete", eventId, $"Permanently deleted event {eventId}."),
+            cancellationToken);
         return EventOperationResult.Success(eventId);
     }
+
+    private static string GetSaveOperation(SaveEventRequest request) =>
+        request.PublicationState switch
+        {
+            EventPublicationState.Published => "publish",
+            EventPublicationState.Archived => "archive",
+            _ => "save-draft"
+        };
 }

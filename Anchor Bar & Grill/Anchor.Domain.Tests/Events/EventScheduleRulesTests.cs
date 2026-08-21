@@ -350,6 +350,19 @@ public sealed class EventScheduleRulesTests
     }
 
     [Fact]
+    public void Validate_rejects_next_day_without_an_end_time()
+    {
+        var request = CreateValidOneTimeRequest(
+            startsAt: new TimeOnly(20, 0),
+            endsAt: null,
+            endsNextDay: true);
+
+        var errors = EventScheduleRules.Validate(request);
+
+        Assert.Contains(errors, error => error.Contains("end time is required", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void Validate_rejects_invalid_publication_state()
     {
         var request = new SaveEventRequest(
