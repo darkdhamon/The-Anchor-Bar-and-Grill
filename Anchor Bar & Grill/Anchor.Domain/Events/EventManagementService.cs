@@ -32,7 +32,7 @@ public sealed class EventManagementService(
         var eventId = await repository.UpsertEventAsync(request, cancellationToken);
         if (eventId is null)
         {
-            return EventOperationResult.Failure("The requested event was deleted or could not be found. Reload the editor before saving again.");
+            return EventOperationResult.Failure("The requested event changed in another session, was deleted, or could not be found. Reload the editor before saving again.");
         }
 
         await repository.SaveChangesAsync(cancellationToken);

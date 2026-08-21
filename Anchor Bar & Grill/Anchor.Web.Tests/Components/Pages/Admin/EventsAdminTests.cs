@@ -26,6 +26,7 @@ public sealed class EventsAdminTests : BunitContext
         Services.AddAuthorizationCore(options =>
         {
             options.AddPolicy(ApplicationPolicies.EventManagement, policy => policy.RequireRole(ApplicationRoles.EventManager));
+            options.AddPolicy(ApplicationPolicies.AdminAccess, policy => policy.RequireRole(ApplicationRoles.Admin));
         });
         Services.AddSingleton<IAuthorizationService, TestAuthorizationService>();
         authStateProvider = new TestAuthenticationStateProvider();
@@ -492,12 +493,15 @@ public sealed class EventsAdminTests : BunitContext
             Assert.True(cut.Find("#save-event-button").HasAttribute("disabled"));
             Assert.True(cut.Find("#save-draft-button").HasAttribute("disabled"));
             Assert.True(cut.Find("#publish-event-button").HasAttribute("disabled"));
+            Assert.True(cut.Find("#new-event-button").HasAttribute("disabled"));
             Assert.Contains("Saving", cut.Find("#save-event-button").TextContent, StringComparison.OrdinalIgnoreCase);
             Assert.NotEmpty(cut.FindAll("#save-event-button .action-button__spinner"));
         });
 
         cut.Find("#save-draft-button").TriggerEvent("onclick", new MouseEventArgs());
+        cut.Find("#new-event-button").TriggerEvent("onclick", new MouseEventArgs());
         Assert.Equal(1, eventManagementService.SaveCallCount);
+        Assert.Equal("Slow save event", cut.Find("#event-title").GetAttribute("value"));
 
         eventManagementService.ReleaseHeldSave();
 
@@ -506,6 +510,37 @@ public sealed class EventsAdminTests : BunitContext
             Assert.Equal(1, eventManagementService.SaveCallCount);
             Assert.Null(cut.Find("#save-event-button").GetAttribute("disabled"));
             Assert.Contains("Draft event created.", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        });
+    }
+
+    [Fact]
+    public void EventActivity_Allows_admin_users_to_review_database_audit_activity()
+    {
+        eventManagementService.OperationLogs.Add(new EventOperationLogRecord(
+            new DateTimeOffset(2026, 8, 21, 4, 0, 0, TimeSpan.Zero), "publish", Guid.NewGuid(), "Published patio party"));
+        authStateProvider.SetUser(new ClaimsPrincipal(new ClaimsIdentity(
+        [
+            new Claim(ClaimTypes.Name, "admin@anchor.test"),
+            new Claim(ClaimTypes.Role, ApplicationRoles.Admin)
+        ], "TestAuth")));
+
+        var routeData = new RouteData(typeof(EventActivity), new Dictionary<string, object?>());
+        var cut = Render(builder =>
+        {
+            builder.OpenComponent<CascadingAuthenticationState>(0);
+            builder.AddAttribute(1, "ChildContent", (RenderFragment)(childBuilder =>
+            {
+                childBuilder.OpenComponent<AuthorizeRouteView>(0);
+                childBuilder.AddAttribute(1, "RouteData", routeData);
+                childBuilder.CloseComponent();
+            }));
+            builder.CloseComponent();
+        });
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains("Event activity", cut.Markup, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Published patio party", cut.Markup, StringComparison.OrdinalIgnoreCase);
         });
     }
 
