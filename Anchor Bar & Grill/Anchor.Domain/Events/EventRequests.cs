@@ -21,4 +21,14 @@ public sealed record SaveEventRequest(
     string? TimingNotes = null)
 {
     public Guid? ExpectedRevision { get; init; }
+
+    public EventSaveAction SaveAction { get; init; } = EventSaveAction.Save;
+}
+
+public enum EventSaveAction
+{
+    Save,
+    SaveDraft,
+    Publish,
+    Archive
 }

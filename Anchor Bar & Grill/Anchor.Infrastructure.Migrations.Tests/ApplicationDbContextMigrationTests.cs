@@ -204,6 +204,49 @@ public sealed class ApplicationDbContextMigrationTests
     }
 
     [Fact]
+    public async Task AddEventRevision_upgrades_existing_events_with_nonempty_revisions()
+    {
+        const string precedingMigration = "20260821042241_AddEventOperationLogs";
+        var databaseName = $"AnchorEventRevision_{Guid.NewGuid():N}";
+        var connectionString = new SqlConnectionStringBuilder
+        {
+            DataSource = @"(localdb)\MSSQLLocalDB",
+            InitialCatalog = databaseName,
+            IntegratedSecurity = true,
+            TrustServerCertificate = true,
+            ConnectTimeout = 30
+        }.ConnectionString;
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseSqlServer(connectionString)
+            .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning))
+            .Options;
+        var eventId = Guid.NewGuid();
+
+        await using var context = new ApplicationDbContext(options);
+        await context.Database.EnsureDeletedAsync();
+        try
+        {
+            await context.Database.MigrateAsync(precedingMigration);
+            await context.Database.ExecuteSqlInterpolatedAsync($@"
+                INSERT INTO [Events]
+                    ([EventId], [Title], [Summary], [Description], [StartsOn], [StartsAt], [EndsNextDay], [SortOrder], [PublicationState], [RecurrencePattern], [RecurrenceInterval])
+                VALUES
+                    ({eventId}, {"Legacy event"}, {"Legacy summary"}, {"Legacy description"}, {new DateTime(2026, 5, 22)}, {new TimeSpan(20, 0, 0)}, {false}, {1}, {(int)EventPublicationState.Published}, {(int)EventRecurrencePattern.None}, {1});");
+
+            await context.Database.MigrateAsync();
+            context.ChangeTracker.Clear();
+
+            var upgradedEvent = await context.Events.SingleAsync(item => item.EventId == eventId);
+            Assert.Equal("Legacy event", upgradedEvent.Title);
+            Assert.NotEqual(Guid.Empty, upgradedEvent.Revision);
+        }
+        finally
+        {
+            await context.Database.EnsureDeletedAsync();
+        }
+    }
+
+    [Fact]
     public async Task AddAccountConfirmedFlag_copies_existing_email_confirmation_state()
     {
         var databaseName = $"AnchorWebIdentity_{Guid.NewGuid():N}";

@@ -82,11 +82,50 @@ public sealed class EventOperationLogSink : IEventOperationLogSink
     }
 
 
-    public async Task<IReadOnlyList<EventOperationLogRecord>> GetRecentAsync(int count, CancellationToken cancellationToken = default) =>
-        await dbContext.EventOperationLogs
+    public async Task<IReadOnlyList<EventOperationLogRecord>> GetRecentAsync(int count, CancellationToken cancellationToken = default)
+    {
+        var databaseRecords = await dbContext.EventOperationLogs
             .AsNoTracking()
             .OrderByDescending(item => item.EventOperationLogId)
             .Take(count)
             .Select(item => new EventOperationLogRecord(item.OccurredAtUtc, item.Operation, item.EventId, item.Summary))
             .ToListAsync(cancellationToken);
+
+        var fallbackRecords = await ReadFallbackRecordsAsync(cancellationToken);
+        return databaseRecords
+            .Concat(fallbackRecords)
+            .OrderByDescending(item => item.OccurredAtUtc)
+            .Take(count)
+            .ToArray();
+    }
+
+    private async Task<IReadOnlyList<EventOperationLogRecord>> ReadFallbackRecordsAsync(CancellationToken cancellationToken)
+    {
+        if (!File.Exists(fallbackLogPath))
+        {
+            return [];
+        }
+
+        try
+        {
+            var records = new List<EventOperationLogRecord>();
+            foreach (var line in await File.ReadAllLinesAsync(fallbackLogPath, cancellationToken))
+            {
+                var parts = line.Split('\t', 4);
+                if (parts.Length == 4
+                    && DateTimeOffset.TryParse(parts[0], out var occurredAtUtc)
+                    && Guid.TryParse(parts[2], out var eventId))
+                {
+                    records.Add(new EventOperationLogRecord(occurredAtUtc, parts[1], eventId, parts[3]));
+                }
+            }
+
+            return records;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            logger.LogError(exception, "Could not read the event operation fallback log at {LogPath}.", fallbackLogPath);
+            return [];
+        }
+    }
 }

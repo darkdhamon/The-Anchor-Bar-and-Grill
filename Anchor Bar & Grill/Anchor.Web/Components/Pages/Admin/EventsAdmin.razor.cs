@@ -277,13 +277,13 @@ public partial class EventsAdmin
     }
 
     private async Task SaveAsync() =>
-        await SaveEventAsync(form.PublicationState);
+        await SaveEventAsync(form.PublicationState, EventSaveAction.Save);
 
     private async Task SaveDraftAsync() =>
-        await SaveEventAsync(EventPublicationState.Draft);
+        await SaveEventAsync(EventPublicationState.Draft, EventSaveAction.SaveDraft);
 
     private async Task PublishAsync() =>
-        await SaveEventAsync(EventPublicationState.Published);
+        await SaveEventAsync(EventPublicationState.Published, EventSaveAction.Publish);
 
     private async Task ArchiveAsync()
     {
@@ -292,10 +292,10 @@ public partial class EventsAdmin
             return;
         }
 
-        await SaveEventAsync(EventPublicationState.Archived);
+        await SaveEventAsync(EventPublicationState.Archived, EventSaveAction.Archive);
     }
 
-    private async Task SaveEventAsync(EventPublicationState publicationState)
+    private async Task SaveEventAsync(EventPublicationState publicationState, EventSaveAction saveAction)
     {
         if (isLoading || IsMutating)
         {
@@ -316,7 +316,9 @@ public partial class EventsAdmin
                 return;
             }
 
-            var wasNewRecord = request!.EventId is null;
+            request = request! with { SaveAction = saveAction };
+
+            var wasNewRecord = request.EventId is null;
             var result = await EventManagementService.SaveEventAsync(request);
             if (!result.Succeeded)
             {
