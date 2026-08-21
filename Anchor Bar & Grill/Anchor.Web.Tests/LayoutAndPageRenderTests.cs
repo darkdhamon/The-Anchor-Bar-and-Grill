@@ -702,6 +702,22 @@ public sealed class LayoutAndPageRenderTests : BunitContext
     }
 
     [Fact]
+    public void HomepageCarousel_UsesOneAccessibleLandmarkAndLoadsStateBehaviorBeforeTheme()
+    {
+        var cut = Render<Home>();
+        var carousel = cut.Find("[data-anchor-carousel='true']");
+        var repositoryRoot = GetRepositoryRoot();
+        var appMarkup = File.ReadAllText(Path.Combine(repositoryRoot, "Anchor Bar & Grill", "Anchor.Web", "Components", "App.razor"));
+
+        Assert.Equal("section", carousel.TagName, ignoreCase: true);
+        Assert.Single(cut.FindAll("section[aria-label='Homepage photo highlights']"));
+        Assert.DoesNotContain("<section class=\"home-carousel-band\"", cut.Markup, StringComparison.Ordinal);
+        Assert.True(
+            appMarkup.IndexOf("carousel-state.js", StringComparison.Ordinal) < appMarkup.IndexOf("theme.js", StringComparison.Ordinal),
+            "Carousel state behavior must load before the theme script initializes the carousel.");
+    }
+
+    [Fact]
     public void HomepageCarousel_Styles_DoNotForceFullHeightInTheHeroColumn()
     {
         var repositoryRoot = GetRepositoryRoot();
@@ -749,6 +765,8 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.Contains("display: none;", stylesheet, StringComparison.Ordinal);
         Assert.Contains(".home-carousel__caption-panel.is-active {", stylesheet, StringComparison.Ordinal);
         Assert.Contains(".home-carousel__caption-toggle {", stylesheet, StringComparison.Ordinal);
+        Assert.Contains(".home-carousel:focus-visible {", stylesheet, StringComparison.Ordinal);
+        Assert.Contains("color: var(--text-primary);", stylesheet, StringComparison.Ordinal);
         Assert.Contains(".home-carousel__control--prev {", stylesheet, StringComparison.Ordinal);
         Assert.Contains(".home-carousel__control--next {", stylesheet, StringComparison.Ordinal);
         Assert.Contains("left: 0.85rem;", stylesheet, StringComparison.Ordinal);

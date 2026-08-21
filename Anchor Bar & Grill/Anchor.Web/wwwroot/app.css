@@ -23,7 +23,7 @@
     --anchor-border-radius: 0.55rem;
     --anchor-woodgrain:
         linear-gradient(180deg, rgba(247, 244, 235, 0.72), rgba(216, 216, 209, 0.66)),
-        url("images/theme/tileable-woodgrain.png");
+        url("images/theme/tileable-woodgrain.webp");
 }
 
 .publicity-shell {
@@ -116,7 +116,7 @@ p {
 html.anchor-theme-light .site-shell {
     --page-bg:
         linear-gradient(180deg, rgba(241, 239, 232, 0.62), rgba(216, 216, 209, 0.72)),
-        url("images/theme/tileable-woodgrain.png");
+        url("images/theme/tileable-woodgrain.webp");
     --surface: rgba(255, 255, 250, 0.44);
     --surface-strong: rgba(255, 255, 252, 0.58);
     --surface-muted: rgba(45, 80, 104, 0.08);
@@ -134,9 +134,11 @@ html.anchor-theme-light .site-shell {
 
 .theme-dark,
 html.anchor-theme-dark .site-shell {
+    --anchor-green: #a9c5a5;
+    --anchor-magenta: #d8a5af;
     --page-bg:
         linear-gradient(180deg, rgba(38, 38, 38, 0.9), rgba(16, 16, 16, 0.94)),
-        url("images/theme/tileable-woodgrain.png");
+        url("images/theme/tileable-woodgrain.webp");
     --surface: rgba(42, 42, 42, 0.52);
     --surface-strong: rgba(58, 58, 58, 0.66);
     --surface-muted: rgba(230, 230, 230, 0.1);
@@ -945,6 +947,11 @@ html.anchor-theme-dark .site-shell {
     outline: none;
 }
 
+.home-carousel:focus-visible {
+    outline: 3px solid var(--accent-readable);
+    outline-offset: -3px;
+}
+
 .home-carousel__viewport {
     position: relative;
     width: 100%;
@@ -1092,7 +1099,7 @@ html.anchor-theme-dark .site-shell {
 
 .home-carousel__caption-toggle:hover,
 .home-carousel__caption-toggle:focus-visible {
-    color: var(--anchor-white);
+    color: var(--text-primary);
     transform: translateY(-1px);
 }
 

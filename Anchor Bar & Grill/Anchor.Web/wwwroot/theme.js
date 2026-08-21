@@ -277,33 +277,13 @@
       }
 
       function moveTo(nextIndex) {
-        activeIndex = (nextIndex + slides.length) % slides.length;
+        activeIndex = window.anchorCarouselState.moveTo(nextIndex, slides.length);
         syncCarousel();
         restartAutoAdvance();
       }
 
       function getSlideState(index) {
-        if (index === activeIndex) {
-          return "is-active";
-        }
-
-        if (slides.length > 1 && index === (activeIndex - 1 + slides.length) % slides.length) {
-          return "is-prev-1";
-        }
-
-        if (slides.length > 2 && index === (activeIndex - 2 + slides.length) % slides.length) {
-          return "is-prev-2";
-        }
-
-        if (slides.length > 1 && index === (activeIndex + 1) % slides.length) {
-          return "is-next-1";
-        }
-
-        if (slides.length > 2 && index === (activeIndex + 2) % slides.length) {
-          return "is-next-2";
-        }
-
-        return "is-hidden";
+        return window.anchorCarouselState.getSlideState(index, activeIndex, slides.length);
       }
 
       previousButton?.addEventListener("click", () => {
