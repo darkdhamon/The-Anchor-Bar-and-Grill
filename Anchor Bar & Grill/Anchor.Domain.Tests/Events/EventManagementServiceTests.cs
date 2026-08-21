@@ -8,7 +8,7 @@ public sealed class EventManagementServiceTests
     public async Task SaveEventAsync_returns_validation_errors_without_writing()
     {
         var repository = new FakeEventManagementRepository();
-        var service = new EventManagementService(repository);
+        var service = new EventManagementService(repository, new FakeEventOperationLogSink());
 
         var result = await service.SaveEventAsync(
             new SaveEventRequest(
@@ -39,7 +39,8 @@ public sealed class EventManagementServiceTests
     public async Task SaveEventAsync_persists_valid_requests_and_saves_changes()
     {
         var repository = new FakeEventManagementRepository();
-        var service = new EventManagementService(repository);
+        var logSink = new FakeEventOperationLogSink();
+        var service = new EventManagementService(repository, logSink);
 
         var result = await service.SaveEventAsync(
             new SaveEventRequest(
@@ -66,13 +67,14 @@ public sealed class EventManagementServiceTests
         Assert.True(repository.WasSaved);
         Assert.NotNull(repository.LastSavedRequest);
         Assert.Equal(EventPublicationState.Draft, repository.LastSavedRequest!.PublicationState);
+        Assert.Contains(logSink.Entries, entry => entry.Operation == "save-draft" && entry.EventId == result.EventId);
     }
 
     [Fact]
     public async Task SaveEventAsync_rejects_an_update_when_the_event_no_longer_exists()
     {
         var repository = new FakeEventManagementRepository { RejectUpsert = true };
-        var service = new EventManagementService(repository);
+        var service = new EventManagementService(repository, new FakeEventOperationLogSink());
 
         var result = await service.SaveEventAsync(new SaveEventRequest(
             Guid.NewGuid(), "Deleted event", "Summary", "Description", null, null,
@@ -88,7 +90,7 @@ public sealed class EventManagementServiceTests
     public async Task DeleteEventAsync_reports_missing_event()
     {
         var repository = new FakeEventManagementRepository { DeleteResult = false };
-        var service = new EventManagementService(repository);
+        var service = new EventManagementService(repository, new FakeEventOperationLogSink());
 
         var result = await service.DeleteEventAsync(Guid.NewGuid());
 
@@ -101,7 +103,8 @@ public sealed class EventManagementServiceTests
     {
         var eventId = Guid.NewGuid();
         var repository = new FakeEventManagementRepository();
-        var service = new EventManagementService(repository);
+        var logSink = new FakeEventOperationLogSink();
+        var service = new EventManagementService(repository, logSink);
 
         var result = await service.DeleteEventAsync(eventId);
 
@@ -110,6 +113,7 @@ public sealed class EventManagementServiceTests
         Assert.Empty(result.Errors);
         Assert.True(repository.WasSaved);
         Assert.Equal(eventId, repository.LastDeletedEventId);
+        Assert.Contains(logSink.Entries, entry => entry.Operation == "delete" && entry.EventId == eventId);
     }
 
     private sealed class FakeEventManagementRepository : IEventManagementRepository
@@ -146,6 +150,17 @@ public sealed class EventManagementServiceTests
         public Task SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             WasSaved = true;
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeEventOperationLogSink : IEventOperationLogSink
+    {
+        public List<EventOperationLogEntry> Entries { get; } = [];
+
+        public Task WriteAsync(EventOperationLogEntry entry, CancellationToken cancellationToken = default)
+        {
+            Entries.Add(entry);
             return Task.CompletedTask;
         }
     }

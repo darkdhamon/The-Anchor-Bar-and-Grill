@@ -179,7 +179,7 @@ public partial class EventsAdmin
 
     private async Task ResetEditorAsync()
     {
-        if (IsMutating)
+        if (isLoading || IsMutating)
         {
             return;
         }
@@ -189,8 +189,20 @@ public partial class EventsAdmin
 
         if (form.EventId is Guid eventId)
         {
-            var selectedEvent = eventRecords.SingleOrDefault(item => item.EventId == eventId)
-                ?? await EventManagementService.GetEventAsync(eventId);
+            var selectedEvent = eventRecords.SingleOrDefault(item => item.EventId == eventId);
+            if (selectedEvent is null)
+            {
+                isLoading = true;
+                await InvokeAsync(StateHasChanged);
+                try
+                {
+                    selectedEvent = await EventManagementService.GetEventAsync(eventId);
+                }
+                finally
+                {
+                    isLoading = false;
+                }
+            }
             if (selectedEvent is not null)
             {
                 LoadEditor(selectedEvent);
@@ -203,7 +215,7 @@ public partial class EventsAdmin
 
     private void EditEvent(Guid eventId)
     {
-        if (IsMutating)
+        if (isLoading || IsMutating)
         {
             return;
         }
@@ -268,7 +280,7 @@ public partial class EventsAdmin
 
     private async Task SaveEventAsync(EventPublicationState publicationState)
     {
-        if (IsMutating)
+        if (isLoading || IsMutating)
         {
             return;
         }

@@ -39,16 +39,27 @@ public sealed class EventManagementRepository(ApplicationDbContext dbContext) : 
 
     public async Task<int?> GetEventIndexAsync(Guid eventId, CancellationToken cancellationToken = default)
     {
-        var orderedIds = await dbContext.Events
+        var target = await dbContext.Events
             .AsNoTracking()
-            .OrderBy(item => item.SortOrder)
-            .ThenBy(item => item.StartsOn)
-            .ThenBy(item => item.Title)
-            .ThenBy(item => item.EventId)
+            .Where(item => item.EventId == eventId)
+            .Select(item => new { item.SortOrder, item.StartsOn, item.Title })
+            .SingleOrDefaultAsync(cancellationToken);
+        if (target is null)
+        {
+            return null;
+        }
+
+        var precedingCount = await dbContext.Events.CountAsync(item =>
+            item.SortOrder < target.SortOrder
+            || (item.SortOrder == target.SortOrder && item.StartsOn < target.StartsOn)
+            || (item.SortOrder == target.SortOrder && item.StartsOn == target.StartsOn && string.Compare(item.Title, target.Title) < 0), cancellationToken);
+        var tiedIds = await dbContext.Events
+            .Where(item => item.SortOrder == target.SortOrder && item.StartsOn == target.StartsOn && item.Title == target.Title)
+            .OrderBy(item => item.EventId)
             .Select(item => item.EventId)
             .ToListAsync(cancellationToken);
-        var index = orderedIds.IndexOf(eventId);
-        return index < 0 ? null : index;
+        var tiedIndex = tiedIds.IndexOf(eventId);
+        return tiedIndex < 0 ? null : precedingCount + tiedIndex;
     }
 
     public async Task<Guid?> UpsertEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default)

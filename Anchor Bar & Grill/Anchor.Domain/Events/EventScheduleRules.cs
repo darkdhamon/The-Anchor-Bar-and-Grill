@@ -73,6 +73,11 @@ public static class EventScheduleRules
             errors.Add("End time must be later than the start time unless the event ends the next day.");
         }
 
+        if (request.EndsNextDay && !request.EndsAt.HasValue)
+        {
+            errors.Add("An end time is required when the event ends the next day.");
+        }
+
         if (!Enum.IsDefined(request.PublicationState))
         {
             errors.Add("Event publication state is invalid.");
