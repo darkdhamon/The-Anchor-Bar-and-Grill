@@ -16,24 +16,26 @@
   }
 
   function getSlideState(index, activeIndex, slideCount) {
-    if (index === activeIndex) {
+    const offset = normalizeIndex(index - activeIndex, slideCount);
+
+    if (offset === 0) {
       return "is-active";
     }
 
-    if (slideCount > 1 && index === normalizeIndex(activeIndex - 1, slideCount)) {
-      return "is-prev-1";
-    }
-
-    if (slideCount > 2 && index === normalizeIndex(activeIndex - 2, slideCount)) {
-      return "is-prev-2";
-    }
-
-    if (slideCount > 1 && index === normalizeIndex(activeIndex + 1, slideCount)) {
+    if (slideCount > 1 && offset === 1) {
       return "is-next-1";
     }
 
-    if (slideCount > 2 && index === normalizeIndex(activeIndex + 2, slideCount)) {
+    if (slideCount > 1 && offset === slideCount - 1) {
+      return "is-prev-1";
+    }
+
+    if (slideCount > 3 && offset === 2) {
       return "is-next-2";
+    }
+
+    if (slideCount > 4 && offset === slideCount - 2) {
+      return "is-prev-2";
     }
 
     return "is-hidden";
@@ -43,5 +45,9 @@
     return normalizeIndex(nextIndex, slideCount);
   }
 
-  return { getSlideState, moveTo };
+  function shouldAutoAdvance(slideCount, documentHidden, containsFocus) {
+    return slideCount > 1 && !documentHidden && !containsFocus;
+  }
+
+  return { getSlideState, moveTo, shouldAutoAdvance };
 });

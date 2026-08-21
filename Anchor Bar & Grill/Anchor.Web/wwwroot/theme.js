@@ -267,7 +267,10 @@
       function restartAutoAdvance() {
         clearAutoAdvance();
 
-        if (slides.length < 2 || document.hidden) {
+        if (!window.anchorCarouselState.shouldAutoAdvance(
+          slides.length,
+          document.hidden,
+          carousel.contains(document.activeElement))) {
           return;
         }
 
