@@ -197,6 +197,20 @@ public sealed class EventManagementServiceTests
         }
     }
 
+    [Fact]
+    public async Task DeleteEventAsync_translates_a_commit_time_concurrency_conflict_without_logging()
+    {
+        var repository = new FakeEventManagementRepository { ThrowConcurrencyOnSave = true };
+        var logSink = new FakeEventOperationLogSink();
+        var service = new EventManagementService(repository, logSink);
+
+        var result = await service.DeleteEventAsync(Guid.NewGuid());
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Errors, error => error.Contains("another session", StringComparison.OrdinalIgnoreCase));
+        Assert.Empty(logSink.Entries);
+    }
+
     private sealed class FakeEventOperationLogSink : IEventOperationLogSink
     {
         public List<EventOperationLogEntry> Entries { get; } = [];
