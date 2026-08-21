@@ -57,7 +57,14 @@ public sealed class EventManagementService(
             return EventOperationResult.Failure("The requested event was not found.");
         }
 
-        await repository.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await repository.SaveChangesAsync(cancellationToken);
+        }
+        catch (EventConcurrencyException)
+        {
+            return EventOperationResult.Failure("The requested event changed in another session or was already deleted. Reload the editor before trying again.");
+        }
         await logSink.WriteAsync(
             new EventOperationLogEntry("delete", eventId, $"Permanently deleted event {eventId}."),
             cancellationToken);
