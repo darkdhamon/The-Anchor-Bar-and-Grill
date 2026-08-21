@@ -283,6 +283,70 @@ public sealed class EventsAdminTests : BunitContext
     }
 
     [Fact]
+    public void EventsAdmin_Existing_one_time_event_date_updates_default_recurrence_values()
+    {
+        var existingEvent = CreateEventRecord(Guid.NewGuid(), "One-time patio party", EventPublicationState.Draft);
+        eventManagementService.Events.Add(existingEvent);
+        var cut = Render<EventsAdmin>();
+        WaitForEventsToLoad(cut);
+
+        cut.Find($"#edit-event-{existingEvent.EventId}").Click();
+        cut.Find("#event-start-date").Change("2026-07-31");
+        cut.Find("#event-recurrence-pattern").Change("MonthlyNthWeekday");
+        cut.Find("#save-event-button").Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Equal(DayOfWeek.Friday, eventManagementService.LastSavedRequest!.RecursOnDayOfWeek);
+            Assert.Equal(EventRecurrenceWeek.Last, eventManagementService.LastSavedRequest.RecursOnWeekOfMonth);
+        });
+    }
+
+    [Fact]
+    public void EventsAdmin_Deleting_an_unrelated_event_preserves_unsaved_editor_changes()
+    {
+        var editedEvent = CreateEventRecord(Guid.NewGuid(), "Edited event", EventPublicationState.Draft, sortOrder: 1);
+        var deletedEvent = CreateEventRecord(Guid.NewGuid(), "Deleted event", EventPublicationState.Draft, sortOrder: 2);
+        eventManagementService.Events.AddRange([editedEvent, deletedEvent]);
+        var cut = Render<EventsAdmin>();
+        WaitForEventsToLoad(cut);
+
+        cut.Find($"#edit-event-{editedEvent.EventId}").Click();
+        cut.Find("#event-title").Input("Unsaved title");
+        cut.Find($"#delete-event-{deletedEvent.EventId}").Click();
+        cut.Find($"#confirm-delete-event-{deletedEvent.EventId}").Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Equal("Unsaved title", cut.Find("#event-title").GetAttribute("value"));
+            Assert.DoesNotContain("Deleted event", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        });
+    }
+
+    [Fact]
+    public void EventsAdmin_Pages_the_event_catalog()
+    {
+        for (var index = 1; index <= 11; index++)
+        {
+            eventManagementService.Events.Add(CreateEventRecord(Guid.NewGuid(), $"Paged event {index:D2}", EventPublicationState.Draft, sortOrder: index));
+        }
+
+        var cut = Render<EventsAdmin>();
+        WaitForEventsToLoad(cut);
+
+        Assert.Contains("Page 1 of 2", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Paged event 11", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        cut.Find("#next-events-page").Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains("Page 2 of 2", cut.Markup, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Paged event 11", cut.Markup, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Paged event 01", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        });
+    }
+
+    [Fact]
     public void EventsAdmin_Normalizes_relative_image_paths_for_admin_previews()
     {
         var existingEvent = CreateEventRecord(
@@ -378,7 +442,7 @@ public sealed class EventsAdminTests : BunitContext
         });
     }
 
-    private static EventRecord CreateEventRecord(Guid eventId, string title, EventPublicationState publicationState, string? imagePath = null) =>
+    private static EventRecord CreateEventRecord(Guid eventId, string title, EventPublicationState publicationState, string? imagePath = null, int sortOrder = 1) =>
         new(
             eventId,
             title,
@@ -390,7 +454,7 @@ public sealed class EventsAdminTests : BunitContext
             new TimeOnly(19, 0),
             new TimeOnly(22, 0),
             false,
-            1,
+            sortOrder,
             publicationState,
             EventRecurrencePattern.None,
             1,
@@ -432,13 +496,18 @@ public sealed class EventsAdminTests : BunitContext
             heldDeleteCompletionSource = null;
         }
 
-        public Task<IReadOnlyList<EventRecord>> GetEventsAsync(CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<EventRecord>>(
-                Events
+        public Task<EventManagementPage> GetEventsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken = default)
+        {
+            var orderedEvents = Events
                     .OrderBy(item => item.SortOrder)
                     .ThenBy(item => item.StartsOn)
                     .ThenBy(item => item.Title, StringComparer.OrdinalIgnoreCase)
-                    .ToArray());
+                    .ToArray();
+            return Task.FromResult(new EventManagementPage(
+                orderedEvents.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToArray(),
+                orderedEvents.Length,
+                orderedEvents.Select(item => item.SortOrder).DefaultIfEmpty(0).Max()));
+        }
 
         public async Task<EventOperationResult> SaveEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default)
         {

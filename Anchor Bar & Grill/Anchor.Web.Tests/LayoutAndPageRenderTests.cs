@@ -1439,8 +1439,11 @@ public sealed class LayoutAndPageRenderTests : BunitContext
                 null)
         ];
 
-        public Task<IReadOnlyList<EventRecord>> GetEventsAsync(CancellationToken cancellationToken = default) =>
-            Task.FromResult(events);
+        public Task<EventManagementPage> GetEventsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new EventManagementPage(
+                events.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToArray(),
+                events.Count,
+                events.Select(item => item.SortOrder).DefaultIfEmpty(0).Max()));
 
         public Task<EventOperationResult> SaveEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(EventOperationResult.Success(request.EventId ?? Guid.NewGuid()));

@@ -367,6 +367,14 @@
                                 </article>
                             }
                         </div>
+                        @if (TotalPages > 1)
+                        {
+                            <nav class="admin-pagination" aria-label="Event catalog pages">
+                                <button id="previous-events-page" type="button" disabled="@(EventActionsDisabled || currentPage == 1)" @onclick="() => ChangePageAsync(currentPage - 1)">Previous</button>
+                                <span>Page @currentPage of @TotalPages (@totalEventCount events)</span>
+                                <button id="next-events-page" type="button" disabled="@(EventActionsDisabled || currentPage == TotalPages)" @onclick="() => ChangePageAsync(currentPage + 1)">Next</button>
+                            </nav>
+                        }
                     }
                 </section>
             </div>
