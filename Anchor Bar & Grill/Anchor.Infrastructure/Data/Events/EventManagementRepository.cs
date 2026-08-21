@@ -11,16 +11,44 @@ public sealed class EventManagementRepository(ApplicationDbContext dbContext) : 
         var query = dbContext.Events.AsNoTracking();
         var totalCount = await query.CountAsync(cancellationToken);
         var maxSortOrder = await query.Select(item => (int?)item.SortOrder).MaxAsync(cancellationToken) ?? 0;
+        var promoBadges = await query
+            .Where(item => item.PromoBadge != null && item.PromoBadge != "")
+            .Select(item => item.PromoBadge!)
+            .Distinct()
+            .OrderBy(item => item)
+            .ToListAsync(cancellationToken);
         var items = await query
             .OrderBy(item => item.SortOrder)
             .ThenBy(item => item.StartsOn)
             .ThenBy(item => item.Title)
+            .ThenBy(item => item.EventId)
             .Skip(skip)
             .Take(take)
             .Select(Projection)
             .ToListAsync(cancellationToken);
 
-        return new EventManagementPage(items, totalCount, maxSortOrder);
+        return new EventManagementPage(items, totalCount, maxSortOrder, promoBadges);
+    }
+
+    public Task<EventRecord?> GetEventAsync(Guid eventId, CancellationToken cancellationToken = default) =>
+        dbContext.Events
+            .AsNoTracking()
+            .Where(item => item.EventId == eventId)
+            .Select(Projection)
+            .SingleOrDefaultAsync(cancellationToken);
+
+    public async Task<int?> GetEventIndexAsync(Guid eventId, CancellationToken cancellationToken = default)
+    {
+        var orderedIds = await dbContext.Events
+            .AsNoTracking()
+            .OrderBy(item => item.SortOrder)
+            .ThenBy(item => item.StartsOn)
+            .ThenBy(item => item.Title)
+            .ThenBy(item => item.EventId)
+            .Select(item => item.EventId)
+            .ToListAsync(cancellationToken);
+        var index = orderedIds.IndexOf(eventId);
+        return index < 0 ? null : index;
     }
 
     public async Task<Guid?> UpsertEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default)

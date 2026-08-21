@@ -5,7 +5,8 @@ namespace Anchor.Domain.Events;
 public sealed record EventManagementPage(
     IReadOnlyList<EventRecord> Items,
     int TotalCount,
-    int MaxSortOrder);
+    int MaxSortOrder,
+    IReadOnlyList<string> PromoBadges);
 
 public sealed record EventRecord(
     Guid EventId,

@@ -1443,7 +1443,17 @@ public sealed class LayoutAndPageRenderTests : BunitContext
             Task.FromResult(new EventManagementPage(
                 events.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToArray(),
                 events.Count,
-                events.Select(item => item.SortOrder).DefaultIfEmpty(0).Max()));
+                events.Select(item => item.SortOrder).DefaultIfEmpty(0).Max(),
+                events.Select(item => item.PromoBadge).OfType<string>().Distinct().ToArray()));
+
+        public Task<EventRecord?> GetEventAsync(Guid eventId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(events.SingleOrDefault(item => item.EventId == eventId));
+
+        public Task<int?> GetEventPageNumberAsync(Guid eventId, int pageSize, CancellationToken cancellationToken = default)
+        {
+            var index = events.Select(item => item.EventId).ToList().IndexOf(eventId);
+            return Task.FromResult<int?>(index < 0 ? null : (index / pageSize) + 1);
+        }
 
         public Task<EventOperationResult> SaveEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(EventOperationResult.Success(request.EventId ?? Guid.NewGuid()));

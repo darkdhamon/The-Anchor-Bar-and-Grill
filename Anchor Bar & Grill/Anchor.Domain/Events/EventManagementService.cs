@@ -9,6 +9,16 @@ public sealed class EventManagementService(IEventManagementRepository repository
         return repository.GetEventsAsync((pageNumber - 1) * pageSize, pageSize, cancellationToken);
     }
 
+    public Task<EventRecord?> GetEventAsync(Guid eventId, CancellationToken cancellationToken = default) =>
+        repository.GetEventAsync(eventId, cancellationToken);
+
+    public async Task<int?> GetEventPageNumberAsync(Guid eventId, int pageSize, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
+        var index = await repository.GetEventIndexAsync(eventId, cancellationToken);
+        return index is null ? null : (index.Value / pageSize) + 1;
+    }
+
     public async Task<EventOperationResult> SaveEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default)
     {
         var validationErrors = EventScheduleRules.Validate(request);

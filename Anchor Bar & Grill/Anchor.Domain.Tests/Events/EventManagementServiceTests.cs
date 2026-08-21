@@ -123,7 +123,13 @@ public sealed class EventManagementServiceTests
         public Guid? LastDeletedEventId { get; private set; }
 
         public Task<EventManagementPage> GetEventsAsync(int skip, int take, CancellationToken cancellationToken = default) =>
-            Task.FromResult(new EventManagementPage([], 0, 0));
+            Task.FromResult(new EventManagementPage([], 0, 0, []));
+
+        public Task<EventRecord?> GetEventAsync(Guid eventId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<EventRecord?>(null);
+
+        public Task<int?> GetEventIndexAsync(Guid eventId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<int?>(null);
 
         public Task<Guid?> UpsertEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default)
         {
