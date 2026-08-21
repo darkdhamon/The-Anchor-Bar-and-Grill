@@ -49,6 +49,7 @@ public partial class EventsAdmin
     private bool isSaving;
     private bool isDeleting;
     private Guid? pendingDeleteId;
+    private Guid? pendingDeleteRevision;
     private int currentPage = 1;
     private int totalEventCount;
     private int maxSortOrder;
@@ -180,6 +181,7 @@ public partial class EventsAdmin
             SortOrder = maxSortOrder + 1,
             PublicationState = EventPublicationState.Draft,
             RecurrencePattern = EventRecurrencePattern.None,
+            OriginalRecurrencePattern = EventRecurrencePattern.None,
             RecurrenceInterval = 1,
             RecursOnDayOfWeek = today.DayOfWeek,
             RecursOnWeekOfMonth = GetDefaultWeekOfMonth(today)
@@ -187,6 +189,7 @@ public partial class EventsAdmin
 
         validationErrors.Clear();
         pendingDeleteId = null;
+        pendingDeleteRevision = null;
         if (!internalReset)
         {
             statusMessage = null;
@@ -202,6 +205,7 @@ public partial class EventsAdmin
 
         validationErrors.Clear();
         pendingDeleteId = null;
+        pendingDeleteRevision = null;
 
         if (form.EventId is Guid eventId)
         {
@@ -264,6 +268,7 @@ public partial class EventsAdmin
             SortOrder = record.SortOrder,
             PublicationState = record.PublicationState,
             RecurrencePattern = record.RecurrencePattern,
+            OriginalRecurrencePattern = record.RecurrencePattern,
             RecurrenceInterval = record.RecurrencePattern == EventRecurrencePattern.None ? 1 : record.RecurrenceInterval,
             RecursOnDayOfWeek = record.RecursOnDayOfWeek ?? record.StartsOn.DayOfWeek,
             RecursOnWeekOfMonth = record.RecursOnWeekOfMonth ?? GetDefaultWeekOfMonth(record.StartsOn),
@@ -274,6 +279,7 @@ public partial class EventsAdmin
 
         validationErrors.Clear();
         pendingDeleteId = null;
+        pendingDeleteRevision = null;
     }
 
     private async Task SaveAsync() =>
@@ -305,6 +311,7 @@ public partial class EventsAdmin
         isSaving = true;
         validationErrors.Clear();
         pendingDeleteId = null;
+        pendingDeleteRevision = null;
         statusMessage = null;
         await InvokeAsync(StateHasChanged);
 
@@ -386,7 +393,7 @@ public partial class EventsAdmin
         return true;
     }
 
-    private void RequestDelete(Guid eventId)
+    private void RequestDelete(Guid eventId, Guid revision)
     {
         if (IsMutating)
         {
@@ -394,13 +401,14 @@ public partial class EventsAdmin
         }
 
         pendingDeleteId = eventId;
+        pendingDeleteRevision = revision;
         validationErrors.Clear();
         statusMessage = null;
     }
 
     private async Task ConfirmDeleteAsync(Guid eventId)
     {
-        if (IsMutating || pendingDeleteId != eventId)
+        if (IsMutating || pendingDeleteId != eventId || pendingDeleteRevision is not { } expectedRevision)
         {
             return;
         }
@@ -408,12 +416,13 @@ public partial class EventsAdmin
         isDeleting = true;
         validationErrors.Clear();
         pendingDeleteId = null;
+        pendingDeleteRevision = null;
         statusMessage = null;
         await InvokeAsync(StateHasChanged);
 
         try
         {
-            var result = await EventManagementService.DeleteEventAsync(eventId);
+            var result = await EventManagementService.DeleteEventAsync(eventId, expectedRevision);
             if (!result.Succeeded)
             {
                 validationErrors.AddRange(result.Errors);
@@ -441,7 +450,7 @@ public partial class EventsAdmin
 
         form.StartsOnText = args.Value?.ToString() ?? string.Empty;
 
-        if ((form.EventId is not null && form.RecurrencePattern != EventRecurrencePattern.None)
+        if ((form.EventId is not null && form.OriginalRecurrencePattern != EventRecurrencePattern.None)
             || !TryParseDateText(form.StartsOnText, out var selectedDate))
         {
             return;
@@ -475,6 +484,7 @@ public partial class EventsAdmin
         isLoading = true;
         currentPage = pageNumber;
         pendingDeleteId = null;
+        pendingDeleteRevision = null;
         statusMessage = null;
         await LoadEventsAsync(preserveEditor: true);
     }
@@ -665,6 +675,8 @@ public partial class EventsAdmin
         public EventPublicationState PublicationState { get; set; } = EventPublicationState.Draft;
 
         public EventRecurrencePattern RecurrencePattern { get; set; }
+
+        public EventRecurrencePattern OriginalRecurrencePattern { get; set; }
 
         public int RecurrenceInterval { get; set; } = 1;
 

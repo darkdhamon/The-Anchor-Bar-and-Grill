@@ -338,6 +338,35 @@ public sealed class EventRepositoriesTests
     }
 
     [Fact]
+    public async Task DeleteEventAsync_rejects_a_stale_displayed_revision()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+        var eventId = Guid.NewGuid();
+        var currentRevision = Guid.NewGuid();
+        context.DbContext.Events.Add(new EventEntity
+        {
+            EventId = eventId,
+            Revision = currentRevision,
+            Title = "Updated event",
+            Summary = "Summary",
+            Description = "Description",
+            StartsOn = new DateOnly(2026, 5, 22),
+            StartsAt = new TimeOnly(20, 0),
+            SortOrder = 1,
+            PublicationState = EventPublicationState.Draft,
+            RecurrencePattern = EventRecurrencePattern.None,
+            RecurrenceInterval = 1
+        });
+        await context.DbContext.SaveChangesAsync();
+        var repository = new EventManagementRepository(context.DbContext);
+
+        var result = await repository.DeleteEventAsync(eventId, Guid.NewGuid());
+
+        Assert.False(result);
+        Assert.Contains(context.DbContext.Events, item => item.EventId == eventId);
+    }
+
+    [Fact]
     public async Task GetEventsAsync_returns_only_the_requested_page_and_catalog_totals()
     {
         await using var context = await SqliteIdentityTestContext.CreateAsync();

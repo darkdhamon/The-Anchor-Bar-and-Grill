@@ -10,5 +10,5 @@ public interface IEventManagementService
 
     Task<EventOperationResult> SaveEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default);
 
-    Task<EventOperationResult> DeleteEventAsync(Guid eventId, CancellationToken cancellationToken = default);
+    Task<EventOperationResult> DeleteEventAsync(Guid eventId, Guid expectedRevision, CancellationToken cancellationToken = default);
 }

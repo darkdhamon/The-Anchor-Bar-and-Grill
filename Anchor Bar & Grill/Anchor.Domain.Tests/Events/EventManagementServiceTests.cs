@@ -130,7 +130,7 @@ public sealed class EventManagementServiceTests
         var repository = new FakeEventManagementRepository { DeleteResult = false };
         var service = new EventManagementService(repository, new FakeEventOperationLogSink());
 
-        var result = await service.DeleteEventAsync(Guid.NewGuid());
+        var result = await service.DeleteEventAsync(Guid.NewGuid(), Guid.NewGuid());
 
         Assert.False(result.Succeeded);
         Assert.Contains(result.Errors, error => error.Contains("not found", StringComparison.OrdinalIgnoreCase));
@@ -144,7 +144,7 @@ public sealed class EventManagementServiceTests
         var logSink = new FakeEventOperationLogSink();
         var service = new EventManagementService(repository, logSink);
 
-        var result = await service.DeleteEventAsync(eventId);
+        var result = await service.DeleteEventAsync(eventId, Guid.NewGuid());
 
         Assert.True(result.Succeeded);
         Assert.Equal(eventId, result.EventId);
@@ -180,7 +180,7 @@ public sealed class EventManagementServiceTests
             return Task.FromResult<Guid?>(RejectUpsert ? null : request.EventId ?? Guid.NewGuid());
         }
 
-        public Task<bool> DeleteEventAsync(Guid eventId, CancellationToken cancellationToken = default)
+        public Task<bool> DeleteEventAsync(Guid eventId, Guid expectedRevision, CancellationToken cancellationToken = default)
         {
             LastDeletedEventId = eventId;
             return Task.FromResult(DeleteResult);
@@ -204,7 +204,7 @@ public sealed class EventManagementServiceTests
         var logSink = new FakeEventOperationLogSink();
         var service = new EventManagementService(repository, logSink);
 
-        var result = await service.DeleteEventAsync(Guid.NewGuid());
+        var result = await service.DeleteEventAsync(Guid.NewGuid(), Guid.NewGuid());
 
         Assert.False(result.Succeeded);
         Assert.Contains(result.Errors, error => error.Contains("another session", StringComparison.OrdinalIgnoreCase));

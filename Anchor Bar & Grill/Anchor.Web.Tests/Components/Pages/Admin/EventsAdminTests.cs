@@ -267,6 +267,7 @@ public sealed class EventsAdminTests : BunitContext
         {
             Assert.Equal(1, eventManagementService.DeleteCallCount);
             Assert.Equal(existingEvent.EventId, eventManagementService.LastDeletedEventId);
+            Assert.Equal(existingEvent.Revision, eventManagementService.LastDeletedRevision);
             Assert.DoesNotContain("Delete lock event", cut.Markup, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("Event deleted.", cut.Markup, StringComparison.OrdinalIgnoreCase);
         });
@@ -328,6 +329,26 @@ public sealed class EventsAdminTests : BunitContext
         cut.Find($"#edit-event-{existingEvent.EventId}").Click();
         cut.Find("#event-start-date").Change("2026-07-31");
         cut.Find("#event-recurrence-pattern").Change("MonthlyNthWeekday");
+        cut.Find("#save-event-button").Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Equal(DayOfWeek.Friday, eventManagementService.LastSavedRequest!.RecursOnDayOfWeek);
+            Assert.Equal(EventRecurrenceWeek.Last, eventManagementService.LastSavedRequest.RecursOnWeekOfMonth);
+        });
+    }
+
+    [Fact]
+    public void EventsAdmin_Existing_one_time_event_syncs_date_after_recurrence_is_selected()
+    {
+        var existingEvent = CreateEventRecord(Guid.NewGuid(), "One-time patio party", EventPublicationState.Draft);
+        eventManagementService.Events.Add(existingEvent);
+        var cut = Render<EventsAdmin>();
+        WaitForEventsToLoad(cut);
+
+        cut.Find($"#edit-event-{existingEvent.EventId}").Click();
+        cut.Find("#event-recurrence-pattern").Change("MonthlyNthWeekday");
+        cut.Find("#event-start-date").Change("2026-07-31");
         cut.Find("#save-event-button").Click();
 
         cut.WaitForAssertion(() =>
@@ -634,7 +655,10 @@ public sealed class EventsAdminTests : BunitContext
             null,
             null,
             null,
-            null);
+            null)
+        {
+            Revision = eventId
+        };
 
     private sealed class FakeEventManagementService : IEventManagementService, IEventOperationLogSink
     {
@@ -646,6 +670,8 @@ public sealed class EventsAdminTests : BunitContext
         public SaveEventRequest? LastSavedRequest { get; private set; }
 
         public Guid? LastDeletedEventId { get; private set; }
+
+        public Guid? LastDeletedRevision { get; private set; }
 
         public int SaveCallCount { get; private set; }
 
@@ -736,7 +762,10 @@ public sealed class EventsAdminTests : BunitContext
                 request.RecurrencePattern == EventRecurrencePattern.None ? null : request.RecursOnDayOfWeek,
                 request.RecurrencePattern == EventRecurrencePattern.MonthlyNthWeekday ? request.RecursOnWeekOfMonth : null,
                 request.RecurrencePattern == EventRecurrencePattern.None ? null : request.RecursUntil,
-                string.IsNullOrWhiteSpace(request.TimingNotes) ? null : request.TimingNotes.Trim());
+                string.IsNullOrWhiteSpace(request.TimingNotes) ? null : request.TimingNotes.Trim())
+            {
+                Revision = request.ExpectedRevision ?? Guid.NewGuid()
+            };
 
             var index = Events.FindIndex(item => item.EventId == eventId);
             if (index >= 0)
@@ -756,7 +785,7 @@ public sealed class EventsAdminTests : BunitContext
         public Task<IReadOnlyList<EventOperationLogRecord>> GetRecentAsync(int count, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<EventOperationLogRecord>>(OperationLogs.Take(count).ToArray());
 
-        public async Task<EventOperationResult> DeleteEventAsync(Guid eventId, CancellationToken cancellationToken = default)
+        public async Task<EventOperationResult> DeleteEventAsync(Guid eventId, Guid expectedRevision, CancellationToken cancellationToken = default)
         {
             DeleteCallCount++;
 
@@ -772,6 +801,7 @@ public sealed class EventsAdminTests : BunitContext
             }
 
             LastDeletedEventId = eventId;
+            LastDeletedRevision = expectedRevision;
             return EventOperationResult.Success(eventId);
         }
     }
