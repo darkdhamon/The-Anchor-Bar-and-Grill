@@ -107,6 +107,30 @@ public sealed class EventScheduleRulesTests
     }
 
     [Fact]
+    public void GetOccurrences_limits_monthly_schedule_to_recurs_until()
+    {
+        var record = CreateRecord(
+            EventRecurrencePattern.MonthlyNthWeekday,
+            startsOn: new DateOnly(2026, 1, 15),
+            recursOnDayOfWeek: DayOfWeek.Friday,
+            recursOnWeekOfMonth: EventRecurrenceWeek.Third,
+            recurrenceInterval: 1,
+            recursUntil: new DateOnly(2026, 2, 28));
+
+        var inRange = EventScheduleRules.GetOccurrences(
+            record,
+            new DateOnly(2026, 1, 1),
+            new DateOnly(2026, 1, 31));
+        var afterRecursUntil = EventScheduleRules.GetOccurrences(
+            record,
+            new DateOnly(2026, 3, 1),
+            new DateOnly(2026, 12, 31));
+
+        Assert.Equal([new DateOnly(2026, 1, 16)], inRange);
+        Assert.Empty(afterRecursUntil);
+    }
+
+    [Fact]
     public void GetNextOccurrence_skips_event_times_that_already_passed_today()
     {
         var record = CreateRecord(
@@ -296,6 +320,36 @@ public sealed class EventScheduleRulesTests
     }
 
     [Fact]
+    public void Validate_rejects_overnight_end_time_without_next_day_flag()
+    {
+        var request = CreateValidOneTimeRequest(
+            startsAt: new TimeOnly(20, 0),
+            endsAt: new TimeOnly(19, 0),
+            endsNextDay: false);
+
+        var errors = EventScheduleRules.Validate(request);
+
+        Assert.Contains(
+            errors,
+            error => error.Contains("End time must be later than the start time unless the event ends the next day.", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Validate_allows_overnight_end_time_when_next_day_is_set()
+    {
+        var request = CreateValidOneTimeRequest(
+            startsAt: new TimeOnly(20, 0),
+            endsAt: new TimeOnly(2, 0),
+            endsNextDay: true);
+
+        var errors = EventScheduleRules.Validate(request);
+
+        Assert.DoesNotContain(
+            errors,
+            error => error.Contains("End time must be later than the start time unless the event ends the next day.", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void Validate_rejects_invalid_publication_state()
     {
         var request = new SaveEventRequest(
@@ -438,13 +492,77 @@ public sealed class EventScheduleRulesTests
         Assert.Contains(errors, error => error.Contains("description is required", StringComparison.OrdinalIgnoreCase));
     }
 
+    private static SaveEventRequest CreateValidOneTimeRequest(
+        TimeOnly? startsAt = null,
+        TimeOnly? endsAt = null,
+        bool endsNextDay = false) =>
+        new(
+            null,
+            "Patio Party",
+            "Season opener",
+            "Kick off patio season.",
+            null,
+            null,
+            new DateOnly(2026, 6, 1),
+            startsAt ?? new TimeOnly(18, 0),
+            endsAt,
+            endsNextDay,
+            1,
+            EventPublicationState.Published,
+            EventRecurrencePattern.None,
+            0,
+            null,
+            null,
+            null);
+
+    [Fact]
+    public void GetScheduleSummary_renders_one_time_summary_text()
+    {
+        var record = CreateRecord(
+            EventRecurrencePattern.None,
+            startsOn: new DateOnly(2026, 6, 20),
+            startsAt: new TimeOnly(19, 15));
+
+        var summary = EventScheduleRules.GetScheduleSummary(record, new DateTime(2026, 6, 19, 8, 30, 0));
+
+        Assert.Equal("One-time event on Jun 20, 2026 at 7:15 PM", summary);
+    }
+
+    [Fact]
+    public void GetScheduleSummary_recurring_event_omits_next_date_when_no_future_occurrence()
+    {
+        var record = new EventRecord(
+            Guid.NewGuid(),
+            "Expired Happy Hour",
+            "Summer recurring event",
+            "No longer running.",
+            null,
+            null,
+            new DateOnly(2026, 1, 5),
+            new TimeOnly(18, 0),
+            null,
+            false,
+            1,
+            EventPublicationState.Published,
+            EventRecurrencePattern.Weekly,
+            1,
+            DayOfWeek.Monday,
+            null,
+            new DateOnly(2026, 2, 1));
+
+        var summary = EventScheduleRules.GetScheduleSummary(record, new DateTime(2026, 3, 1, 9, 0, 0));
+
+        Assert.Equal("Recurring every Monday at 6:00 PM", summary);
+    }
+
     private static EventRecord CreateRecord(
         EventRecurrencePattern recurrencePattern,
         DateOnly startsOn,
         TimeOnly? startsAt = null,
         DayOfWeek? recursOnDayOfWeek = null,
         EventRecurrenceWeek? recursOnWeekOfMonth = null,
-        int recurrenceInterval = 1) =>
+        int recurrenceInterval = 1,
+        DateOnly? recursUntil = null) =>
         new(
             Guid.NewGuid(),
             "Test Event",
@@ -462,5 +580,5 @@ public sealed class EventScheduleRulesTests
             recurrenceInterval,
             recursOnDayOfWeek,
             recursOnWeekOfMonth,
-            null);
+            recursUntil);
 }

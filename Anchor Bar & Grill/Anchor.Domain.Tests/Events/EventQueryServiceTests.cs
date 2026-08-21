@@ -68,6 +68,24 @@ public sealed class EventQueryServiceTests
     }
 
     [Fact]
+    public async Task GetUpcomingEventsAsync_rejects_negative_daysAhead()
+    {
+        var service = new EventQueryService(new FakeEventQueryRepository());
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => service.GetUpcomingEventsAsync(new DateTime(2026, 5, 10, 10, 0, 0), -1));
+    }
+
+    [Fact]
+    public async Task GetUpcomingEventsWindowAsync_rejects_daysAhead_above_maximum_window()
+    {
+        var service = new EventQueryService(new FakeEventQueryRepository());
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => service.GetUpcomingEventsWindowAsync(new DateTime(2026, 5, 10, 10, 0, 0), new DateOnly(2026, 5, 10), 3651));
+    }
+
+    [Fact]
     public async Task GetUpcomingEventsAsync_computes_schedule_summary_from_each_emitted_occurrence()
     {
         var repository = new FakeEventQueryRepository
@@ -144,6 +162,32 @@ public sealed class EventQueryServiceTests
         Assert.Equal(["Tonight"], result.Events.Select(item => item.Title).ToArray());
         Assert.Equal(new DateOnly(2026, 6, 18), result.NextFromDate);
         Assert.True(result.HasMore);
+    }
+
+    [Fact]
+    public async Task GetUpcomingEventsWindowAsync_accepts_maximum_daysAhead_window()
+    {
+        var repository = new FakeEventQueryRepository
+        {
+            Events =
+            [
+                CreateRecord(
+                    "Long Horizon Event",
+                    new DateOnly(2027, 5, 9),
+                    new TimeOnly(18, 30),
+                    1)
+            ]
+        };
+
+        var result = await new EventQueryService(repository).GetUpcomingEventsWindowAsync(
+            new DateTime(2026, 5, 10, 10, 0, 0),
+            new DateOnly(2026, 5, 10),
+            3650);
+
+        Assert.Single(result.Events);
+        Assert.Equal("Long Horizon Event", result.Events[0].Title);
+        Assert.Equal(new DateOnly(2026, 5, 10).AddDays(3650 + 1), result.NextFromDate);
+        Assert.False(result.HasMore);
     }
 
     [Fact]

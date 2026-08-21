@@ -81,16 +81,17 @@ public sealed class EventManagementServiceTests
     }
 
     [Fact]
-    public async Task DeleteEventAsync_deletes_existing_event_and_saves_changes()
+    public async Task DeleteEventAsync_successfully_deletes_event_and_saves()
     {
+        var eventId = Guid.NewGuid();
         var repository = new FakeEventManagementRepository();
         var service = new EventManagementService(repository);
-        var eventId = Guid.NewGuid();
 
         var result = await service.DeleteEventAsync(eventId);
 
         Assert.True(result.Succeeded);
         Assert.Equal(eventId, result.EventId);
+        Assert.Empty(result.Errors);
         Assert.True(repository.WasSaved);
         Assert.Equal(eventId, repository.LastDeletedEventId);
     }
@@ -98,7 +99,6 @@ public sealed class EventManagementServiceTests
     private sealed class FakeEventManagementRepository : IEventManagementRepository
     {
         public bool DeleteResult { get; init; } = true;
-
         public bool WasSaved { get; private set; }
 
         public SaveEventRequest? LastSavedRequest { get; private set; }
