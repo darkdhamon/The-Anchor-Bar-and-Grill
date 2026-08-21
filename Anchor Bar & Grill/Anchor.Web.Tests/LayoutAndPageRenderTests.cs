@@ -7,6 +7,7 @@ using Anchor.Domain.Publicity;
 using Anchor.Web.Components.Layout;
 using Anchor.Web.Components.Pages;
 using Anchor.Web.Components.Pages.Admin;
+using Anchor.Web.Components.Site;
 using Anchor.Web.Images;
 using Anchor.Web.Tests.Support;
 using Bunit;
@@ -715,6 +716,28 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Assert.True(
             appMarkup.IndexOf("carousel-state.js", StringComparison.Ordinal) < appMarkup.IndexOf("theme.js", StringComparison.Ordinal),
             "Carousel state behavior must load before the theme script initializes the carousel.");
+    }
+
+    [Theory]
+    [InlineData(2, "is-active,is-next-1")]
+    [InlineData(3, "is-active,is-next-1,is-prev-1")]
+    [InlineData(4, "is-active,is-next-1,is-next-2,is-prev-1")]
+    public void HomepageCarousel_InitialStates_MatchClientBehaviorForSmallCollections(int slideCount, string expectedStates)
+    {
+        var slides = Enumerable.Range(1, slideCount)
+            .Select(index => new HomepageCarouselSlide(
+                $"/images/slide-{index}.jpg",
+                $"Slide {index}",
+                "Highlights",
+                $"Slide {index}",
+                $"Description {index}"))
+            .ToArray();
+        var cut = Render<HomepageCarousel>(parameters => parameters.Add(component => component.Slides, slides));
+        var actualStates = cut.FindAll("[data-anchor-carousel-slide]")
+            .Select(slide => slide.ClassList.Single(className => className.StartsWith("is-", StringComparison.Ordinal)))
+            .ToArray();
+
+        Assert.Equal(expectedStates.Split(','), actualStates);
     }
 
     [Fact]

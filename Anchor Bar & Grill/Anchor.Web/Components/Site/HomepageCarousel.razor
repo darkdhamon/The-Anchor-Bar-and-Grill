@@ -99,24 +99,24 @@
             return "is-active";
         }
 
+        if (Slides.Count > 1 && index == 1)
+        {
+            return "is-next-1";
+        }
+
         if (Slides.Count > 1 && index == Slides.Count - 1)
         {
             return "is-prev-1";
         }
 
-        if (Slides.Count > 2 && index == Slides.Count - 2)
-        {
-            return "is-prev-2";
-        }
-
-        if (index == 1)
-        {
-            return "is-next-1";
-        }
-
-        if (index == 2)
+        if (Slides.Count > 3 && index == 2)
         {
             return "is-next-2";
+        }
+
+        if (Slides.Count > 4 && index == Slides.Count - 2)
+        {
+            return "is-prev-2";
         }
 
         return "is-hidden";
