@@ -217,6 +217,48 @@ public sealed class EventRepositoriesTests
     }
 
     [Fact]
+    public async Task UpsertEventAsync_rejects_an_update_for_a_missing_event()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+        var repository = new EventManagementRepository(context.DbContext);
+
+        var result = await repository.UpsertEventAsync(new SaveEventRequest(
+            Guid.NewGuid(), "Deleted event", "Summary", "Description", null, null,
+            new DateOnly(2026, 5, 22), new TimeOnly(20, 0), null, false, 1,
+            EventPublicationState.Draft, EventRecurrencePattern.None, 1, null, null, null));
+
+        Assert.Null(result);
+        Assert.Empty(context.DbContext.Events);
+    }
+
+    [Fact]
+    public async Task GetEventsAsync_returns_only_the_requested_page_and_catalog_totals()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+        context.DbContext.Events.AddRange(Enumerable.Range(1, 12).Select(index => new EventEntity
+        {
+            EventId = Guid.NewGuid(),
+            Title = $"Event {index:D2}",
+            Summary = "Summary",
+            Description = "Description",
+            StartsOn = new DateOnly(2026, 5, 18),
+            StartsAt = new TimeOnly(18, 0),
+            SortOrder = index,
+            PublicationState = EventPublicationState.Draft,
+            RecurrencePattern = EventRecurrencePattern.None,
+            RecurrenceInterval = 1
+        }));
+        await context.DbContext.SaveChangesAsync();
+        var repository = new EventManagementRepository(context.DbContext);
+
+        var page = await repository.GetEventsAsync(10, 10);
+
+        Assert.Equal(12, page.TotalCount);
+        Assert.Equal(12, page.MaxSortOrder);
+        Assert.Equal(["Event 11", "Event 12"], page.Items.Select(item => item.Title).ToArray());
+    }
+
+    [Fact]
     public async Task HasUpcomingPublicEventCandidatesAsync_ignores_unpublished_and_expired_records()
     {
         await using var context = await SqliteIdentityTestContext.CreateAsync();

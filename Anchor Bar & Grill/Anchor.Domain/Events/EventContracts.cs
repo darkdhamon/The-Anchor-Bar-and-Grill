@@ -2,6 +2,11 @@ using System.Globalization;
 
 namespace Anchor.Domain.Events;
 
+public sealed record EventManagementPage(
+    IReadOnlyList<EventRecord> Items,
+    int TotalCount,
+    int MaxSortOrder);
+
 public sealed record EventRecord(
     Guid EventId,
     string Title,

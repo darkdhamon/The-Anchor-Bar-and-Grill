@@ -6,20 +6,33 @@ namespace Anchor.Infrastructure.Data.Events;
 
 public sealed class EventManagementRepository(ApplicationDbContext dbContext) : IEventManagementRepository
 {
-    public async Task<IReadOnlyList<EventRecord>> GetEventsAsync(CancellationToken cancellationToken = default) =>
-        await dbContext.Events
-            .AsNoTracking()
+    public async Task<EventManagementPage> GetEventsAsync(int skip, int take, CancellationToken cancellationToken = default)
+    {
+        var query = dbContext.Events.AsNoTracking();
+        var totalCount = await query.CountAsync(cancellationToken);
+        var maxSortOrder = await query.Select(item => (int?)item.SortOrder).MaxAsync(cancellationToken) ?? 0;
+        var items = await query
             .OrderBy(item => item.SortOrder)
             .ThenBy(item => item.StartsOn)
             .ThenBy(item => item.Title)
+            .Skip(skip)
+            .Take(take)
             .Select(Projection)
             .ToListAsync(cancellationToken);
 
-    public async Task<Guid> UpsertEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default)
+        return new EventManagementPage(items, totalCount, maxSortOrder);
+    }
+
+    public async Task<Guid?> UpsertEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default)
     {
         var entity = request.EventId.HasValue
             ? await dbContext.Events.SingleOrDefaultAsync(item => item.EventId == request.EventId.Value, cancellationToken)
             : null;
+
+        if (entity is null && request.EventId.HasValue)
+        {
+            return null;
+        }
 
         if (entity is null)
         {

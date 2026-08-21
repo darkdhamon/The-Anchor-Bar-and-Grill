@@ -2,7 +2,7 @@ namespace Anchor.Domain.Events;
 
 public interface IEventManagementService
 {
-    Task<IReadOnlyList<EventRecord>> GetEventsAsync(CancellationToken cancellationToken = default);
+    Task<EventManagementPage> GetEventsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken = default);
 
     Task<EventOperationResult> SaveEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default);
 

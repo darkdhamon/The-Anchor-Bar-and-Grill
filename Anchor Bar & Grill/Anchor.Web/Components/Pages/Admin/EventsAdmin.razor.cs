@@ -8,6 +8,7 @@ namespace Anchor.Web.Components.Pages.Admin;
 
 public partial class EventsAdmin
 {
+    private const int EventsPerPage = 10;
     private static readonly CultureInfo InvariantCulture = CultureInfo.InvariantCulture;
     private static readonly IReadOnlyList<EventPublicationState> publicationStates =
     [
@@ -48,6 +49,9 @@ public partial class EventsAdmin
     private bool isSaving;
     private bool isDeleting;
     private Guid? pendingDeleteId;
+    private int currentPage = 1;
+    private int totalEventCount;
+    private int maxSortOrder;
 
     [Inject]
     private IEventManagementService EventManagementService { get; set; } = null!;
@@ -105,16 +109,34 @@ public partial class EventsAdmin
 
     private string SaveButtonText => isSaving ? "Saving" : "Save event";
 
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(totalEventCount / (double)EventsPerPage));
+
     protected override async Task OnInitializedAsync()
     {
         await LoadEventsAsync(resetToNewEvent: true);
     }
 
-    private async Task LoadEventsAsync(Guid? selectEventId = null, bool resetToNewEvent = false)
+    private async Task LoadEventsAsync(Guid? selectEventId = null, bool resetToNewEvent = false, bool preserveEditor = false)
     {
         isLoading = true;
-        eventRecords = (await EventManagementService.GetEventsAsync()).ToList();
+        var page = await EventManagementService.GetEventsAsync(currentPage, EventsPerPage);
+        totalEventCount = page.TotalCount;
+        maxSortOrder = page.MaxSortOrder;
+        if (currentPage > TotalPages)
+        {
+            currentPage = TotalPages;
+            page = await EventManagementService.GetEventsAsync(currentPage, EventsPerPage);
+            totalEventCount = page.TotalCount;
+            maxSortOrder = page.MaxSortOrder;
+        }
+
+        eventRecords = page.Items.ToList();
         isLoading = false;
+
+        if (preserveEditor)
+        {
+            return;
+        }
 
         if (selectEventId is Guid requestedEventId)
         {
@@ -122,8 +144,9 @@ public partial class EventsAdmin
             if (selectedEvent is not null)
             {
                 LoadEditor(selectedEvent);
-                return;
             }
+
+            return;
         }
 
         if (!resetToNewEvent && form.EventId is Guid currentEventId)
@@ -146,7 +169,7 @@ public partial class EventsAdmin
         {
             StartsOnText = FormatDate(today),
             StartsAtText = FlexibleTimeText.FormatDisplay(new TimeOnly(19, 0)),
-            SortOrder = eventRecords.Select(item => item.SortOrder).DefaultIfEmpty(0).Max() + 1,
+            SortOrder = maxSortOrder + 1,
             PublicationState = EventPublicationState.Draft,
             RecurrencePattern = EventRecurrencePattern.None,
             RecurrenceInterval = 1,
@@ -277,6 +300,12 @@ public partial class EventsAdmin
             }
 
             statusMessage = GetSaveStatusMessage(publicationState, wasNewRecord);
+            form.EventId = result.EventId;
+            form.PublicationState = publicationState;
+            if (wasNewRecord)
+            {
+                currentPage = Math.Max(1, (int)Math.Ceiling((totalEventCount + 1) / (double)EventsPerPage));
+            }
             await LoadEventsAsync(result.EventId, resetToNewEvent: false);
         }
         finally
@@ -360,9 +389,11 @@ public partial class EventsAdmin
                 return;
             }
 
-            var preservedSelection = form.EventId == eventId ? null : form.EventId;
+            var deletedActiveEvent = form.EventId == eventId;
             statusMessage = "Event deleted.";
-            await LoadEventsAsync(preservedSelection, resetToNewEvent: preservedSelection is null);
+            await LoadEventsAsync(
+                resetToNewEvent: deletedActiveEvent,
+                preserveEditor: !deletedActiveEvent);
         }
         finally
         {
@@ -378,8 +409,7 @@ public partial class EventsAdmin
 
         form.StartsOnText = args.Value?.ToString() ?? string.Empty;
 
-        if (form.EventId is not null
-            || !TryParseDateText(form.StartsOnText, out var selectedDate))
+        if (!TryParseDateText(form.StartsOnText, out var selectedDate))
         {
             return;
         }
@@ -401,6 +431,19 @@ public partial class EventsAdmin
 
     private void HandleRecursUntilChanged(ChangeEventArgs args) =>
         form.RecursUntilText = args.Value?.ToString();
+
+    private async Task ChangePageAsync(int pageNumber)
+    {
+        if (IsMutating || pageNumber < 1 || pageNumber > TotalPages || pageNumber == currentPage)
+        {
+            return;
+        }
+
+        currentPage = pageNumber;
+        pendingDeleteId = null;
+        statusMessage = null;
+        await LoadEventsAsync(preserveEditor: true);
+    }
 
     private bool IsEditing(Guid eventId) => form.EventId == eventId;
 

@@ -69,6 +69,22 @@ public sealed class EventManagementServiceTests
     }
 
     [Fact]
+    public async Task SaveEventAsync_rejects_an_update_when_the_event_no_longer_exists()
+    {
+        var repository = new FakeEventManagementRepository { RejectUpsert = true };
+        var service = new EventManagementService(repository);
+
+        var result = await service.SaveEventAsync(new SaveEventRequest(
+            Guid.NewGuid(), "Deleted event", "Summary", "Description", null, null,
+            new DateOnly(2026, 5, 22), new TimeOnly(20, 0), null, false, 1,
+            EventPublicationState.Draft, EventRecurrencePattern.None, 1, null, null, null));
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Errors, error => error.Contains("deleted", StringComparison.OrdinalIgnoreCase));
+        Assert.False(repository.WasSaved);
+    }
+
+    [Fact]
     public async Task DeleteEventAsync_reports_missing_event()
     {
         var repository = new FakeEventManagementRepository { DeleteResult = false };
@@ -81,16 +97,17 @@ public sealed class EventManagementServiceTests
     }
 
     [Fact]
-    public async Task DeleteEventAsync_deletes_existing_event_and_saves_changes()
+    public async Task DeleteEventAsync_successfully_deletes_event_and_saves()
     {
+        var eventId = Guid.NewGuid();
         var repository = new FakeEventManagementRepository();
         var service = new EventManagementService(repository);
-        var eventId = Guid.NewGuid();
 
         var result = await service.DeleteEventAsync(eventId);
 
         Assert.True(result.Succeeded);
         Assert.Equal(eventId, result.EventId);
+        Assert.Empty(result.Errors);
         Assert.True(repository.WasSaved);
         Assert.Equal(eventId, repository.LastDeletedEventId);
     }
@@ -98,20 +115,20 @@ public sealed class EventManagementServiceTests
     private sealed class FakeEventManagementRepository : IEventManagementRepository
     {
         public bool DeleteResult { get; init; } = true;
-
+        public bool RejectUpsert { get; init; }
         public bool WasSaved { get; private set; }
 
         public SaveEventRequest? LastSavedRequest { get; private set; }
 
         public Guid? LastDeletedEventId { get; private set; }
 
-        public Task<IReadOnlyList<EventRecord>> GetEventsAsync(CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<EventRecord>>([]);
+        public Task<EventManagementPage> GetEventsAsync(int skip, int take, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new EventManagementPage([], 0, 0));
 
-        public Task<Guid> UpsertEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default)
+        public Task<Guid?> UpsertEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default)
         {
             LastSavedRequest = request;
-            return Task.FromResult(request.EventId ?? Guid.NewGuid());
+            return Task.FromResult<Guid?>(RejectUpsert ? null : request.EventId ?? Guid.NewGuid());
         }
 
         public Task<bool> DeleteEventAsync(Guid eventId, CancellationToken cancellationToken = default)

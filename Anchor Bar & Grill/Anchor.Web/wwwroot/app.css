@@ -2438,6 +2438,20 @@ body.image-preview-open {
     line-height: 1.45;
 }
 
+.admin-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+    margin-top: 1.25rem;
+}
+
+.admin-pagination span {
+    color: var(--text-secondary);
+    font-weight: 700;
+}
+
 .admin-list__warning {
     max-width: 20rem;
 }

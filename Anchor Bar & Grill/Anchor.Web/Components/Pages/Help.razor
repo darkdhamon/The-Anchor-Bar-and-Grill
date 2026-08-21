@@ -77,7 +77,7 @@
                 <p class="feature-card__eyebrow">Subject</p>
                 <h3>Event publishing workflow</h3>
                 <ul class="feature-list">
-                    <li><strong>Event Editor</strong> now works against the live event catalog instead of a placeholder mockup, so staff can create, revise, publish, archive, and delete real event definitions from <strong>/admin/events</strong>.</li>
+                    <li><strong>Event Editor</strong> works against the live event catalog, showing 10 events per page so the screen stays responsive as history grows. Staff can create, revise, publish, archive, and delete real event definitions from <strong>/admin/events</strong>.</li>
                     <li><strong>Save draft</strong> keeps the event internal, while <strong>Publish now</strong> makes the event eligible for the public <strong>/events</strong> page immediately. <strong>Archive event</strong> hides the event from guests without deleting it.</li>
                     <li>Event dates and times are entered in <strong>Central Time (America/Chicago)</strong> so the public schedule follows the restaurant's local clock instead of the hosting machine timezone.</li>
                     <li>When you change the date on a new event before turning on recurrence, the editor keeps the default recurrence day and week aligned with that new date until you intentionally pick different recurrence values.</li>
@@ -156,7 +156,7 @@
                 <p class="feature-card__eyebrow">Role Type</p>
                 <h3>EventManager</h3>
                 <ul class="feature-list">
-                    <li>Use <strong>Event Editor</strong> to add, update, publish, archive, and remove event listings.</li>
+                    <li>Use <strong>Event Editor</strong> to add, update, publish, archive, and remove event listings. Previous and Next move through the paged catalog without clearing the current form. Deleting a different listing keeps your unsaved form changes, and a save is rejected if another session already deleted the event you were editing.</li>
                     <li>Draft events stay internal until you publish them, and archived events stay in the editor without appearing on the public schedule.</li>
                     <li>Enter event dates and times in <strong>Central Time (America/Chicago)</strong> so recurring schedules and guest-facing event timing stay aligned with the restaurant's local timezone.</li>
                     <li>On new events, changing the event date keeps the default recurring day and week aligned with that date until you intentionally choose different recurrence values.</li>
