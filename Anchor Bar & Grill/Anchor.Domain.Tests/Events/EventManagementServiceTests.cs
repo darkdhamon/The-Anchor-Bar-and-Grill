@@ -163,5 +163,12 @@ public sealed class EventManagementServiceTests
             Entries.Add(entry);
             return Task.CompletedTask;
         }
+
+        public Task<IReadOnlyList<EventOperationLogRecord>> GetRecentAsync(int count, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<EventOperationLogRecord>>(Entries
+                .TakeLast(count)
+                .Reverse()
+                .Select(entry => new EventOperationLogRecord(DateTimeOffset.UtcNow, entry.Operation, entry.EventId, entry.Summary))
+                .ToArray());
     }
 }

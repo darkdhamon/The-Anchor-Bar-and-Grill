@@ -35,6 +35,7 @@ public sealed class EventsAdminTests : BunitContext
 
         eventManagementService = new FakeEventManagementService();
         Services.AddSingleton<IEventManagementService>(eventManagementService);
+        Services.AddSingleton<IEventOperationLogSink>(eventManagementService);
 
         authStateProvider.SetUser(new ClaimsPrincipal(new ClaimsIdentity(
         [
@@ -63,6 +64,36 @@ public sealed class EventsAdminTests : BunitContext
             Assert.Contains("Dock Party", cut.Markup, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("Draft", cut.Markup, StringComparison.OrdinalIgnoreCase);
         });
+    }
+
+    [Fact]
+    public void EventsAdmin_New_event_clears_the_previous_status_message()
+    {
+        var cut = Render<EventsAdmin>();
+        WaitForEventsToLoad(cut);
+        cut.Find("#event-title").Input("Status event");
+        cut.Find("#event-summary").Input("Summary");
+        cut.Find("#event-description").Input("Description");
+        cut.Find("#save-draft-button").Click();
+        cut.WaitForAssertion(() => Assert.Contains("Draft event created.", cut.Markup));
+
+        cut.Find("#new-event-button").Click();
+
+        cut.WaitForAssertion(() => Assert.DoesNotContain("Draft event created.", cut.Markup));
+    }
+
+    [Fact]
+    public void EventsAdmin_Shows_recent_database_audit_activity()
+    {
+        var eventId = Guid.NewGuid();
+        eventManagementService.OperationLogs.Add(new EventOperationLogRecord(
+            new DateTimeOffset(2026, 8, 21, 4, 0, 0, TimeSpan.Zero), "publish", eventId, "Published patio party"));
+
+        var cut = Render<EventsAdmin>();
+        WaitForEventsToLoad(cut);
+
+        Assert.Contains("Recent event activity", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Published patio party", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -540,7 +571,7 @@ public sealed class EventsAdminTests : BunitContext
             null,
             null);
 
-    private sealed class FakeEventManagementService : IEventManagementService
+    private sealed class FakeEventManagementService : IEventManagementService, IEventOperationLogSink
     {
         private TaskCompletionSource<bool>? heldSaveCompletionSource;
         private TaskCompletionSource<bool>? heldDeleteCompletionSource;
@@ -554,6 +585,8 @@ public sealed class EventsAdminTests : BunitContext
         public int SaveCallCount { get; private set; }
 
         public int DeleteCallCount { get; private set; }
+
+        public List<EventOperationLogRecord> OperationLogs { get; } = [];
 
         public void HoldNextSave() =>
             heldSaveCompletionSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -652,6 +685,11 @@ public sealed class EventsAdminTests : BunitContext
 
             return EventOperationResult.Success(eventId);
         }
+
+        public Task WriteAsync(EventOperationLogEntry entry, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task<IReadOnlyList<EventOperationLogRecord>> GetRecentAsync(int count, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<EventOperationLogRecord>>(OperationLogs.Take(count).ToArray());
 
         public async Task<EventOperationResult> DeleteEventAsync(Guid eventId, CancellationToken cancellationToken = default)
         {

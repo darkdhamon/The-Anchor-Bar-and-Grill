@@ -55,6 +55,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         Services.AddSingleton<TimeProvider>(timeProvider);
         Services.AddSingleton<IEventQueryService>(eventQueryService);
         Services.AddSingleton<IEventManagementService>(eventManagementService);
+        Services.AddSingleton<IEventOperationLogSink>(eventManagementService);
         Services.AddSingleton<IMenuQueryService>(menuQueryService);
         Services.AddSingleton<IHomepagePublicityService>(homepagePublicityService);
         Services.AddSingleton<IMenuManagementService>(new FakeMenuManagementService());
@@ -1395,7 +1396,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         }
     }
 
-    private sealed class FakeEventManagementService : IEventManagementService
+    private sealed class FakeEventManagementService : IEventManagementService, IEventOperationLogSink
     {
         private readonly IReadOnlyList<EventRecord> events =
         [
@@ -1460,6 +1461,11 @@ public sealed class LayoutAndPageRenderTests : BunitContext
 
         public Task<EventOperationResult> DeleteEventAsync(Guid eventId, CancellationToken cancellationToken = default) =>
             Task.FromResult(EventOperationResult.Success(eventId));
+
+        public Task WriteAsync(EventOperationLogEntry entry, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task<IReadOnlyList<EventOperationLogRecord>> GetRecentAsync(int count, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<EventOperationLogRecord>>([]);
     }
 
     private sealed class FakeMenuManagementService : IMenuManagementService

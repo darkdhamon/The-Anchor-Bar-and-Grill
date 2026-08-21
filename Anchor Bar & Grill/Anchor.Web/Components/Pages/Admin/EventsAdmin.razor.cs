@@ -53,9 +53,13 @@ public partial class EventsAdmin
     private int totalEventCount;
     private int maxSortOrder;
     private IReadOnlyList<string> promoBadgeOptions = [];
+    private IReadOnlyList<EventOperationLogRecord> recentOperationLogs = [];
 
     [Inject]
     private IEventManagementService EventManagementService { get; set; } = null!;
+
+    [Inject]
+    private IEventOperationLogSink EventOperationLogSink { get; set; } = null!;
 
     [Inject]
     private TimeProvider TimeProvider { get; set; } = null!;
@@ -117,6 +121,7 @@ public partial class EventsAdmin
         totalEventCount = page.TotalCount;
         maxSortOrder = page.MaxSortOrder;
         promoBadgeOptions = page.PromoBadges;
+        recentOperationLogs = await EventOperationLogSink.GetRecentAsync(25);
         if (currentPage > TotalPages)
         {
             currentPage = TotalPages;
@@ -175,6 +180,7 @@ public partial class EventsAdmin
 
         validationErrors.Clear();
         pendingDeleteId = null;
+        statusMessage = null;
     }
 
     private async Task ResetEditorAsync()

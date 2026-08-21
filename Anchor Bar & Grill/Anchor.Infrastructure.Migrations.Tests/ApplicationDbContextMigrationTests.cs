@@ -51,6 +51,7 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Contains("20260524140817_AddEventCatalog", appliedMigrations);
             Assert.Contains("20260525163343_AddHomepagePublicity", appliedMigrations);
             Assert.Contains("20260530215505_ExpandHomepagePublicitySummaryLength", appliedMigrations);
+            Assert.Contains("20260821042241_AddEventOperationLogs", appliedMigrations);
             Assert.Empty(pendingMigrations);
             Assert.True(await context.Database.CanConnectAsync());
 
@@ -98,6 +99,7 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Contains("MenuSectionTabs", tableNames);
             Assert.Contains("MenuServiceWindows", tableNames);
             Assert.Contains("Events", tableNames);
+            Assert.Contains("EventOperationLogs", tableNames);
             Assert.Contains("HomepagePublicity", tableNames);
             Assert.DoesNotContain("RecurringSpecials", tableNames);
 
@@ -162,6 +164,16 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Equal(EventRecurrencePattern.Weekly, persistedEvent.RecurrencePattern);
             Assert.Equal(2, persistedEvent.RecurrenceInterval);
             Assert.Equal(DayOfWeek.Friday, persistedEvent.RecursOnDayOfWeek);
+
+            context.EventOperationLogs.Add(new Data.Events.EventOperationLogEntity
+            {
+                OccurredAtUtc = new DateTimeOffset(2026, 8, 21, 4, 0, 0, TimeSpan.Zero),
+                Operation = "publish",
+                EventId = eventId,
+                Summary = "Friday Live Music"
+            });
+            await context.SaveChangesAsync();
+            Assert.True(await context.EventOperationLogs.AnyAsync(item => item.EventId == eventId && item.Operation == "publish"));
 
             context.HomepagePublicity.Add(new HomepagePublicityEntity
             {

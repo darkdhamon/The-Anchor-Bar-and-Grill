@@ -1,11 +1,28 @@
 using Anchor.Domain.Events;
 using Anchor.Infrastructure.Data.Events;
+using Microsoft.Extensions.Logging.Abstractions;
 using Anchor.Infrastructure.Tests.Support;
 
 namespace Anchor.Infrastructure.Tests.Data;
 
 public sealed class EventRepositoriesTests
 {
+    [Fact]
+    public async Task EventOperationLogSink_persists_and_reads_recent_activity()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+        var sink = new EventOperationLogSink(context.DbContext, NullLogger<EventOperationLogSink>.Instance);
+        var eventId = Guid.NewGuid();
+
+        await sink.WriteAsync(new EventOperationLogEntry("publish", eventId, "Published patio party"));
+        var records = await sink.GetRecentAsync(25);
+
+        var record = Assert.Single(records);
+        Assert.Equal("publish", record.Operation);
+        Assert.Equal(eventId, record.EventId);
+        Assert.Equal("Published patio party", record.Summary);
+    }
+
     [Fact]
     public async Task GetUpcomingPublicEventCandidatesAsync_returns_only_publishable_future_candidates()
     {

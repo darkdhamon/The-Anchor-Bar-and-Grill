@@ -1,9 +1,12 @@
 using Anchor.Domain.Events;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Anchor.Infrastructure.Data.Events;
 
-public sealed class EventOperationLogSink(ILogger<EventOperationLogSink> logger) : IEventOperationLogSink
+public sealed class EventOperationLogSink(
+    ApplicationDbContext dbContext,
+    ILogger<EventOperationLogSink> logger) : IEventOperationLogSink
 {
     private static readonly SemaphoreSlim FileLock = new(1, 1);
 
@@ -15,6 +18,25 @@ public sealed class EventOperationLogSink(ILogger<EventOperationLogSink> logger)
             entry.EventId,
             entry.Summary);
 
+        var occurredAtUtc = DateTimeOffset.UtcNow;
+        try
+        {
+            dbContext.EventOperationLogs.Add(new EventOperationLogEntity
+            {
+                OccurredAtUtc = occurredAtUtc,
+                Operation = entry.Operation,
+                EventId = entry.EventId,
+                Summary = entry.Summary
+            });
+            await dbContext.SaveChangesAsync(cancellationToken);
+            return;
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or Microsoft.EntityFrameworkCore.DbUpdateException)
+        {
+            dbContext.ChangeTracker.Clear();
+            logger.LogError(exception, "Could not persist the event operation log to the database; using the fallback file.");
+        }
+
         var logDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
         var logPath = Path.Combine(logDirectory, "event-operations.log");
         var lockAcquired = false;
@@ -23,7 +45,7 @@ public sealed class EventOperationLogSink(ILogger<EventOperationLogSink> logger)
             await FileLock.WaitAsync(cancellationToken);
             lockAcquired = true;
             Directory.CreateDirectory(logDirectory);
-            var line = $"{DateTimeOffset.UtcNow:O}\t{entry.Operation}\t{entry.EventId}\t{entry.Summary}{Environment.NewLine}";
+            var line = $"{occurredAtUtc:O}\t{entry.Operation}\t{entry.EventId}\t{entry.Summary}{Environment.NewLine}";
             await File.AppendAllTextAsync(logPath, line, cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -38,4 +60,13 @@ public sealed class EventOperationLogSink(ILogger<EventOperationLogSink> logger)
             }
         }
     }
+
+
+    public async Task<IReadOnlyList<EventOperationLogRecord>> GetRecentAsync(int count, CancellationToken cancellationToken = default) =>
+        await dbContext.EventOperationLogs
+            .AsNoTracking()
+            .OrderByDescending(item => item.EventOperationLogId)
+            .Take(count)
+            .Select(item => new EventOperationLogRecord(item.OccurredAtUtc, item.Operation, item.EventId, item.Summary))
+            .ToListAsync(cancellationToken);
 }
