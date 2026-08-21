@@ -1,17 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-labelledby="title desc">
-  <title id="title">Burger mockup image</title>
-  <desc id="desc">A stylized burger illustration for the menu mockup.</desc>
-  <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#d25898" />
-      <stop offset="100%" stop-color="#1f243a" />
-    </linearGradient>
-  </defs>
-  <rect width="640" height="480" rx="36" fill="url(#bg)" />
-  <rect x="150" y="132" width="340" height="74" rx="36" fill="#d5ca55" />
-  <rect x="132" y="206" width="376" height="26" rx="12" fill="#79c25f" />
-  <rect x="138" y="232" width="364" height="52" rx="22" fill="#2f6d90" />
-  <rect x="146" y="284" width="348" height="28" rx="14" fill="#f7f7f4" opacity="0.84" />
-  <rect x="154" y="312" width="332" height="58" rx="28" fill="#d5ca55" />
-  <text x="320" y="410" text-anchor="middle" font-family="Arial, sans-serif" font-size="38" fill="#f7f7f4">BURGER PHOTO SLOT</text>
+  <title id="title">Burger menu placeholder</title>
+  <desc id="desc">A restrained navy and cream menu placard placeholder for burger items.</desc>
+  <rect width="640" height="480" rx="8" fill="#d8d8d1"/>
+  <path d="M0 76h640M0 156h640M0 236h640M0 316h640M0 396h640" stroke="#b8b9b4" stroke-width="3" opacity=".42"/>
+  <rect x="54" y="54" width="532" height="372" rx="8" fill="#1b2740"/>
+  <rect x="78" y="78" width="484" height="324" rx="4" fill="none" stroke="#f3ead7" stroke-width="5"/>
+  <path d="M236 184c14-38 154-38 168 0H236Z" fill="none" stroke="#f3ead7" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M220 218h200M238 254h164M250 290h140" stroke="#f3ead7" stroke-width="8" stroke-linecap="round"/>
+  <text x="320" y="342" text-anchor="middle" font-family="Georgia, serif" font-size="38" font-weight="700" fill="#f3ead7">BURGERS</text>
+  <text x="320" y="376" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" letter-spacing="3" fill="#c5ced0">THE ANCHOR MENU</text>
 </svg>

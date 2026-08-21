@@ -35,8 +35,7 @@ public static class MockupContent
     [
         new(
             "Appetizers",
-            "accent-blue",
-            "Served with the menu's bright, approachable bar-and-grill energy.",
+            "Navy menu placards, cream rules, and weathered wood texture keep this section tied to the July menu art.",
             [
                 new("Cheese Curds", "Crisp white cheddar curds with your choice of dipping sauce.", "$9", new("images/menu/appetizers.svg", "Mockup food photo for cheese curds")),
                 new("Mini Tacos", "Served with salsa and sour cream.", "$9", Offer: OfferStartingIn(14)),
@@ -45,8 +44,7 @@ public static class MockupContent
             ]),
         new(
             "Wings",
-            "accent-blue",
-            "Mockup sauces mirror the flavor-forward tone of the printed menu.",
+            "Flavor-forward copy should stay easy to scan inside the same printed-menu frame.",
             [
                 new("Traditional or Boneless (6)", "Choice of one sauce.", "$9", new("images/menu/wings.svg", "Mockup food photo for a basket of wings")),
                 new("Traditional or Boneless (12)", "Choice of two sauces.", "$16", new("images/menu/wings.svg", "Mockup food photo for a platter of wings")),
@@ -54,7 +52,6 @@ public static class MockupContent
             ]),
         new(
             "Soups & Salads",
-            "accent-green",
             "A lighter section that still feels part of the same menu family.",
             [
                 new("The Anchor Salad", "Crisp greens, tomatoes, peppers, shaved red onions, and your choice of dressing.", "$10", new("images/menu/salads.svg", "Mockup food photo for the Anchor salad")),
@@ -64,7 +61,6 @@ public static class MockupContent
             ]),
         new(
             "Sandwiches",
-            "accent-gold",
             "Hearty handhelds inspired by the current printed menu.",
             [
                 new("Grilled Chicken Sandwich", "Lettuce, tomato, and mayo on a toasted bun.", "$13", new("images/menu/sandwiches.svg", "Mockup food photo for a grilled chicken sandwich")),
@@ -74,7 +70,6 @@ public static class MockupContent
             ]),
         new(
             "Burgers",
-            "accent-magenta",
             "Big labels and clean pricing should make the burger section easy to scan.",
             [
                 new("Classic Hamburger", "Fresh hand-pattied burger; add cheese if desired.", "$11", new("images/menu/burgers.svg", "Mockup food photo for a classic hamburger")),
@@ -84,8 +79,7 @@ public static class MockupContent
             ]),
         new(
             "Wraps",
-            "accent-blue",
-            "Bright blue framed panels from the menu carry over nicely here.",
+            "Consistent navy headers and cream dividers keep wraps aligned with the new menu instead of a separate color theme.",
             [
                 new("Chicken Wrap", "Grilled or crispy chicken, tomatoes, onions, lettuce, and dressing.", "$13", new("images/menu/wraps.svg", "Mockup food photo for a chicken wrap")),
                 new("Steak Wrap", "Steak, peppers, onions, cheese, lettuce, and dressing.", "$13", new("images/menu/wraps.svg", "Mockup food photo for a steak wrap")),
@@ -93,7 +87,6 @@ public static class MockupContent
             ]),
         new(
             "Kids Menu",
-            "accent-magenta",
             "A small playful section with clearer sizing and pricing for families.",
             [
                 new("Mac & Cheese", "Served with one side and a kid drink mockup option.", "$7"),
@@ -102,8 +95,7 @@ public static class MockupContent
             ]),
         new(
             "Desserts",
-            "accent-magenta",
-            "Accent color keeps the end of the menu feeling celebratory.",
+            "The final section can feel celebratory through type and spacing without changing the header color.",
             [
                 new("Chocolate Lava Cake", "Served warm with ice cream.", "$6", new("images/menu/desserts.svg", "Mockup food photo for chocolate lava cake"), OfferStartingIn(-2, 18)),
                 new("Mini Donuts", "Fair-style donuts for a casual sweet finish.", "$6", new("images/menu/desserts.svg", "Mockup food photo for mini donuts"))
@@ -309,7 +301,7 @@ public sealed record HeroAction(string Href, string Label, bool IsPrimary);
 
 public sealed record FeatureCallout(string Title, string Description);
 
-public sealed record MenuSection(string Title, string AccentClass, string Note, IReadOnlyList<MenuItem> Items);
+public sealed record MenuSection(string Title, string Note, IReadOnlyList<MenuItem> Items);
 
 public sealed record MenuItem(
     string Name,

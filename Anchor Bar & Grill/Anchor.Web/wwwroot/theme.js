@@ -212,6 +212,14 @@
       let autoAdvanceHandle = null;
       let captionsCollapsed = true;
       let touchStartX = null;
+      const slideStateClasses = [
+        "is-active",
+        "is-prev-1",
+        "is-prev-2",
+        "is-next-1",
+        "is-next-2",
+        "is-hidden"
+      ];
 
       function clearAutoAdvance() {
         if (autoAdvanceHandle !== null) {
@@ -223,7 +231,8 @@
       function syncCarousel() {
         slides.forEach((slide, index) => {
           const isActive = index === activeIndex;
-          slide.classList.toggle("is-active", isActive);
+          slide.classList.remove(...slideStateClasses);
+          slide.classList.add(getSlideState(index));
           slide.setAttribute("aria-hidden", isActive ? "false" : "true");
         });
 
@@ -258,7 +267,10 @@
       function restartAutoAdvance() {
         clearAutoAdvance();
 
-        if (slides.length < 2 || document.hidden) {
+        if (!window.anchorCarouselState.shouldAutoAdvance(
+          slides.length,
+          document.hidden,
+          carousel.contains(document.activeElement))) {
           return;
         }
 
@@ -268,9 +280,13 @@
       }
 
       function moveTo(nextIndex) {
-        activeIndex = (nextIndex + slides.length) % slides.length;
+        activeIndex = window.anchorCarouselState.moveTo(nextIndex, slides.length);
         syncCarousel();
         restartAutoAdvance();
+      }
+
+      function getSlideState(index) {
+        return window.anchorCarouselState.getSlideState(index, activeIndex, slides.length);
       }
 
       previousButton?.addEventListener("click", () => {

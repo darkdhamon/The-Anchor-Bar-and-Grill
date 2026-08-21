@@ -78,7 +78,7 @@
                         <div class="menu-accordion">
                             @foreach (var section in menuView.Sections.Select((value, index) => new { value, index }))
                             {
-                                <details class="menu-accordion__section menu-section @section.value.AccentClass" open="@(section.index == 0 ? "open" : null)">
+                                <details class="menu-accordion__section menu-section" open="@(section.index == 0 ? "open" : null)">
                                     <summary class="menu-section__summary">
                                         <div class="menu-section__summary-copy">
                                             <h2>@section.value.Name</h2>
