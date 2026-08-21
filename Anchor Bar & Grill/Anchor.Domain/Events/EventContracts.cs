@@ -29,6 +29,8 @@ public sealed record EventRecord(
     string? TimingNotes = null)
 {
     public bool IsRecurring => RecurrencePattern != EventRecurrencePattern.None;
+
+    public Guid Revision { get; init; }
 }
 
 public sealed record EventOccurrenceRecord(

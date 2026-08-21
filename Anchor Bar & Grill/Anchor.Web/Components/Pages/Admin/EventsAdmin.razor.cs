@@ -160,11 +160,18 @@ public partial class EventsAdmin
             }
         }
 
-        StartNewEvent();
+        StartNewEvent(internalReset: true);
     }
 
-    private void StartNewEvent()
+    private void StartNewEventFromUser() => StartNewEvent(internalReset: false);
+
+    private void StartNewEvent(bool internalReset)
     {
+        if (!internalReset && (isLoading || IsMutating))
+        {
+            return;
+        }
+
         var today = DateOnly.FromDateTime(TimeProvider.GetLocalNow().DateTime);
         form = new EventEditorFormModel
         {
@@ -180,7 +187,10 @@ public partial class EventsAdmin
 
         validationErrors.Clear();
         pendingDeleteId = null;
-        statusMessage = null;
+        if (!internalReset)
+        {
+            statusMessage = null;
+        }
     }
 
     private async Task ResetEditorAsync()
@@ -216,7 +226,7 @@ public partial class EventsAdmin
             }
         }
 
-        StartNewEvent();
+        StartNewEvent(internalReset: false);
     }
 
     private void EditEvent(Guid eventId)
@@ -258,7 +268,8 @@ public partial class EventsAdmin
             RecursOnDayOfWeek = record.RecursOnDayOfWeek ?? record.StartsOn.DayOfWeek,
             RecursOnWeekOfMonth = record.RecursOnWeekOfMonth ?? GetDefaultWeekOfMonth(record.StartsOn),
             RecursUntilText = FormatDate(record.RecursUntil),
-            TimingNotes = record.TimingNotes
+            TimingNotes = record.TimingNotes,
+            Revision = record.Revision
         };
 
         validationErrors.Clear();
@@ -365,7 +376,10 @@ public partial class EventsAdmin
             recurrencePattern == EventRecurrencePattern.None ? null : form.RecursOnDayOfWeek,
             recurrencePattern == EventRecurrencePattern.MonthlyNthWeekday ? form.RecursOnWeekOfMonth : null,
             recurrencePattern == EventRecurrencePattern.None ? null : recursUntil,
-            NormalizeOptionalValue(form.TimingNotes));
+            NormalizeOptionalValue(form.TimingNotes))
+        {
+            ExpectedRevision = form.EventId is null ? null : form.Revision
+        };
 
         return true;
     }
@@ -623,6 +637,8 @@ public partial class EventsAdmin
     private sealed class EventEditorFormModel
     {
         public Guid? EventId { get; set; }
+
+        public Guid Revision { get; set; }
 
         public string Title { get; set; } = string.Empty;
 

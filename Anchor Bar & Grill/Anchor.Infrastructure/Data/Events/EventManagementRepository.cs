@@ -77,10 +77,19 @@ public sealed class EventManagementRepository(ApplicationDbContext dbContext) : 
         {
             entity = new EventEntity
             {
-                EventId = request.EventId ?? Guid.NewGuid()
+                EventId = request.EventId ?? Guid.NewGuid(),
+                Revision = Guid.NewGuid()
             };
 
             dbContext.Events.Add(entity);
+        }
+        else if ((request.ExpectedRevision ?? Guid.Empty) != entity.Revision)
+        {
+            return null;
+        }
+        else
+        {
+            entity.Revision = Guid.NewGuid();
         }
 
         entity.Title = request.Title.Trim();
@@ -138,5 +147,8 @@ public sealed class EventManagementRepository(ApplicationDbContext dbContext) : 
             item.RecursOnDayOfWeek,
             item.RecursOnWeekOfMonth,
             item.RecursUntil,
-            item.TimingNotes);
+            item.TimingNotes)
+        {
+            Revision = item.Revision
+        };
 }

@@ -24,6 +24,30 @@ public sealed class EventRepositoriesTests
     }
 
     [Fact]
+    public async Task EventOperationLogSink_writes_fallback_file_when_database_is_unavailable()
+    {
+        var context = await SqliteIdentityTestContext.CreateAsync();
+        var fallbackPath = Path.Combine(Path.GetTempPath(), $"anchor-event-log-{Guid.NewGuid():N}.log");
+        var sink = new EventOperationLogSink(context.DbContext, NullLogger<EventOperationLogSink>.Instance, fallbackPath);
+        var eventId = Guid.NewGuid();
+        await context.DisposeAsync();
+
+        try
+        {
+            await sink.WriteAsync(new EventOperationLogEntry("delete", eventId, "Deleted event"));
+
+            var contents = await File.ReadAllTextAsync(fallbackPath);
+            Assert.Contains("delete", contents);
+            Assert.Contains(eventId.ToString(), contents);
+            Assert.Contains("Deleted event", contents);
+        }
+        finally
+        {
+            File.Delete(fallbackPath);
+        }
+    }
+
+    [Fact]
     public async Task GetUpcomingPublicEventCandidatesAsync_returns_only_publishable_future_candidates()
     {
         await using var context = await SqliteIdentityTestContext.CreateAsync();
@@ -246,6 +270,44 @@ public sealed class EventRepositoriesTests
 
         Assert.Null(result);
         Assert.Empty(context.DbContext.Events);
+    }
+
+    [Fact]
+    public async Task UpsertEventAsync_rejects_a_stale_revision_without_overwriting_the_event()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+        var eventId = Guid.NewGuid();
+        var currentRevision = Guid.NewGuid();
+        context.DbContext.Events.Add(new EventEntity
+        {
+            EventId = eventId,
+            Revision = currentRevision,
+            Title = "Current title",
+            Summary = "Summary",
+            Description = "Description",
+            StartsOn = new DateOnly(2026, 5, 22),
+            StartsAt = new TimeOnly(20, 0),
+            SortOrder = 1,
+            PublicationState = EventPublicationState.Draft,
+            RecurrencePattern = EventRecurrencePattern.None,
+            RecurrenceInterval = 1
+        });
+        await context.DbContext.SaveChangesAsync();
+        var repository = new EventManagementRepository(context.DbContext);
+        var request = new SaveEventRequest(
+            eventId, "Stale title", "Summary", "Description", null, null,
+            new DateOnly(2026, 5, 22), new TimeOnly(20, 0), null, false, 1,
+            EventPublicationState.Draft, EventRecurrencePattern.None, 1, null, null, null)
+        {
+            ExpectedRevision = Guid.NewGuid()
+        };
+
+        var result = await repository.UpsertEventAsync(request);
+
+        Assert.Null(result);
+        var unchangedEvent = context.DbContext.Events.Single();
+        Assert.Equal("Current title", unchangedEvent.Title);
+        Assert.Equal(currentRevision, unchangedEvent.Revision);
     }
 
     [Fact]

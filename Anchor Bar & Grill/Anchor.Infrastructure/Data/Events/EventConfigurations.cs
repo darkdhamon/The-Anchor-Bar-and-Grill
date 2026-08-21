@@ -9,6 +9,7 @@ public sealed class EventEntityConfiguration : IEntityTypeConfiguration<EventEnt
     {
         builder.ToTable("Events");
         builder.HasKey(item => item.EventId);
+        builder.Property(item => item.Revision).IsConcurrencyToken().IsRequired();
         builder.Property(item => item.Title).HasMaxLength(150).IsRequired();
         builder.Property(item => item.Summary).HasMaxLength(300).IsRequired();
         builder.Property(item => item.Description).HasMaxLength(2000).IsRequired();

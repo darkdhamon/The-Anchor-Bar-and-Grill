@@ -18,4 +18,7 @@ public sealed record SaveEventRequest(
     DayOfWeek? RecursOnDayOfWeek,
     EventRecurrenceWeek? RecursOnWeekOfMonth,
     DateOnly? RecursUntil,
-    string? TimingNotes = null);
+    string? TimingNotes = null)
+{
+    public Guid? ExpectedRevision { get; init; }
+}

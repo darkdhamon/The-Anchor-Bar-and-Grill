@@ -52,6 +52,7 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Contains("20260525163343_AddHomepagePublicity", appliedMigrations);
             Assert.Contains("20260530215505_ExpandHomepagePublicitySummaryLength", appliedMigrations);
             Assert.Contains("20260821042241_AddEventOperationLogs", appliedMigrations);
+            Assert.Contains("20260821043756_AddEventRevision", appliedMigrations);
             Assert.Empty(pendingMigrations);
             Assert.True(await context.Database.CanConnectAsync());
 
@@ -134,6 +135,7 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Contains("RecursOnWeekOfMonth", eventColumns);
             Assert.Contains("RecursUntil", eventColumns);
             Assert.Contains("TimingNotes", eventColumns);
+            Assert.Contains("Revision", eventColumns);
             Assert.Contains("DraftHeadline", homepagePublicityColumns);
             Assert.Contains("DraftSummary", homepagePublicityColumns);
             Assert.Contains("PublishedHeadline", homepagePublicityColumns);

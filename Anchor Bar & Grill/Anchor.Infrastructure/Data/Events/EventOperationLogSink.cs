@@ -4,11 +4,24 @@ using Microsoft.Extensions.Logging;
 
 namespace Anchor.Infrastructure.Data.Events;
 
-public sealed class EventOperationLogSink(
-    ApplicationDbContext dbContext,
-    ILogger<EventOperationLogSink> logger) : IEventOperationLogSink
+public sealed class EventOperationLogSink : IEventOperationLogSink
 {
     private static readonly SemaphoreSlim FileLock = new(1, 1);
+    private readonly ApplicationDbContext dbContext;
+    private readonly ILogger<EventOperationLogSink> logger;
+    private readonly string fallbackLogPath;
+
+    public EventOperationLogSink(ApplicationDbContext dbContext, ILogger<EventOperationLogSink> logger)
+        : this(dbContext, logger, Path.Combine(AppContext.BaseDirectory, "logs", "event-operations.log"))
+    {
+    }
+
+    public EventOperationLogSink(ApplicationDbContext dbContext, ILogger<EventOperationLogSink> logger, string fallbackLogPath)
+    {
+        this.dbContext = dbContext;
+        this.logger = logger;
+        this.fallbackLogPath = fallbackLogPath;
+    }
 
     public async Task WriteAsync(EventOperationLogEntry entry, CancellationToken cancellationToken = default)
     {
@@ -31,14 +44,21 @@ public sealed class EventOperationLogSink(
             await dbContext.SaveChangesAsync(cancellationToken);
             return;
         }
-        catch (Exception exception) when (exception is InvalidOperationException or Microsoft.EntityFrameworkCore.DbUpdateException)
+        catch (Exception exception) when (exception is InvalidOperationException or ObjectDisposedException or Microsoft.EntityFrameworkCore.DbUpdateException)
         {
-            dbContext.ChangeTracker.Clear();
+            try
+            {
+                dbContext.ChangeTracker.Clear();
+            }
+            catch (ObjectDisposedException)
+            {
+                // The fallback remains available even when the scoped context has already been disposed.
+            }
             logger.LogError(exception, "Could not persist the event operation log to the database; using the fallback file.");
         }
 
-        var logDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
-        var logPath = Path.Combine(logDirectory, "event-operations.log");
+        var logPath = fallbackLogPath;
+        var logDirectory = Path.GetDirectoryName(logPath) ?? AppContext.BaseDirectory;
         var lockAcquired = false;
         try
         {
