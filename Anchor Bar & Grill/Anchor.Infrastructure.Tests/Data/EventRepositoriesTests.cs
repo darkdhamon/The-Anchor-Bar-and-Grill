@@ -259,6 +259,35 @@ public sealed class EventRepositoriesTests
     }
 
     [Fact]
+    public async Task GetEventsAsync_uses_event_id_as_a_stable_tiebreaker()
+    {
+        await using var context = await SqliteIdentityTestContext.CreateAsync();
+        var ids = Enumerable.Range(1, 3).Select(_ => Guid.NewGuid()).Order().ToArray();
+        context.DbContext.Events.AddRange(ids.Select(id => new EventEntity
+        {
+            EventId = id,
+            Title = "Tied event",
+            Summary = "Summary",
+            Description = "Description",
+            StartsOn = new DateOnly(2026, 5, 18),
+            StartsAt = new TimeOnly(18, 0),
+            SortOrder = 1,
+            PublicationState = EventPublicationState.Draft,
+            RecurrencePattern = EventRecurrencePattern.None,
+            RecurrenceInterval = 1
+        }));
+        await context.DbContext.SaveChangesAsync();
+        var repository = new EventManagementRepository(context.DbContext);
+
+        var firstPage = await repository.GetEventsAsync(0, 2);
+        var secondPage = await repository.GetEventsAsync(2, 2);
+
+        Assert.Equal(ids.Take(2), firstPage.Items.Select(item => item.EventId));
+        Assert.Equal(ids.Skip(2), secondPage.Items.Select(item => item.EventId));
+        Assert.Equal(2, await repository.GetEventIndexAsync(ids[2]));
+    }
+
+    [Fact]
     public async Task HasUpcomingPublicEventCandidatesAsync_ignores_unpublished_and_expired_records()
     {
         await using var context = await SqliteIdentityTestContext.CreateAsync();

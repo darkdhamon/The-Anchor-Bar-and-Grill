@@ -303,6 +303,25 @@ public sealed class EventsAdminTests : BunitContext
     }
 
     [Fact]
+    public void EventsAdmin_Existing_recurring_event_date_preserves_its_saved_cadence()
+    {
+        var existingEvent = CreateEventRecord(Guid.NewGuid(), "Friday series", EventPublicationState.Published) with
+        {
+            RecurrencePattern = EventRecurrencePattern.Weekly,
+            RecursOnDayOfWeek = DayOfWeek.Friday
+        };
+        eventManagementService.Events.Add(existingEvent);
+        var cut = Render<EventsAdmin>();
+        WaitForEventsToLoad(cut);
+
+        cut.Find($"#edit-event-{existingEvent.EventId}").Click();
+        cut.Find("#event-start-date").Change("2026-07-25");
+        cut.Find("#save-event-button").Click();
+
+        cut.WaitForAssertion(() => Assert.Equal(DayOfWeek.Friday, eventManagementService.LastSavedRequest!.RecursOnDayOfWeek));
+    }
+
+    [Fact]
     public void EventsAdmin_Deleting_an_unrelated_event_preserves_unsaved_editor_changes()
     {
         var editedEvent = CreateEventRecord(Guid.NewGuid(), "Edited event", EventPublicationState.Draft, sortOrder: 1);
@@ -343,6 +362,64 @@ public sealed class EventsAdminTests : BunitContext
             Assert.Contains("Page 2 of 2", cut.Markup, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("Paged event 11", cut.Markup, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("Paged event 01", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        });
+    }
+
+    [Fact]
+    public void EventsAdmin_Keeps_catalog_wide_badges_available_on_later_pages()
+    {
+        eventManagementService.Events.Add(CreateEventRecord(Guid.NewGuid(), "Badge source", EventPublicationState.Draft, sortOrder: 1) with { PromoBadge = "Only First Page" });
+        for (var index = 2; index <= 11; index++)
+        {
+            eventManagementService.Events.Add(CreateEventRecord(Guid.NewGuid(), $"Paged event {index:D2}", EventPublicationState.Draft, sortOrder: index) with { PromoBadge = null });
+        }
+        var cut = Render<EventsAdmin>();
+        WaitForEventsToLoad(cut);
+
+        cut.Find("#next-events-page").Click();
+
+        cut.WaitForAssertion(() => Assert.Contains(
+            cut.FindAll("#event-badge-options option"),
+            option => option.GetAttribute("value") == "Only First Page"));
+    }
+
+    [Fact]
+    public void EventsAdmin_Reverts_an_off_page_selected_event()
+    {
+        for (var index = 1; index <= 11; index++)
+        {
+            eventManagementService.Events.Add(CreateEventRecord(Guid.NewGuid(), $"Paged event {index:D2}", EventPublicationState.Draft, sortOrder: index));
+        }
+        var selected = eventManagementService.Events[0];
+        var cut = Render<EventsAdmin>();
+        WaitForEventsToLoad(cut);
+        cut.Find($"#edit-event-{selected.EventId}").Click();
+        cut.Find("#event-title").Input("Unsaved title");
+        cut.Find("#next-events-page").Click();
+
+        cut.Find("#reset-event-button").Click();
+
+        cut.WaitForAssertion(() => Assert.Equal(selected.Title, cut.Find("#event-title").GetAttribute("value")));
+    }
+
+    [Fact]
+    public void EventsAdmin_Reloads_the_page_that_contains_a_reordered_saved_event()
+    {
+        for (var index = 1; index <= 11; index++)
+        {
+            eventManagementService.Events.Add(CreateEventRecord(Guid.NewGuid(), $"Paged event {index:D2}", EventPublicationState.Draft, sortOrder: index));
+        }
+        var moved = eventManagementService.Events[0];
+        var cut = Render<EventsAdmin>();
+        WaitForEventsToLoad(cut);
+        cut.Find($"#edit-event-{moved.EventId}").Click();
+        cut.Find("#event-sort-order").Change("99");
+        cut.Find("#save-event-button").Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains("Page 2 of 2", cut.Markup, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(moved.Title, cut.Markup, StringComparison.OrdinalIgnoreCase);
         });
     }
 
@@ -506,7 +583,24 @@ public sealed class EventsAdminTests : BunitContext
             return Task.FromResult(new EventManagementPage(
                 orderedEvents.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToArray(),
                 orderedEvents.Length,
-                orderedEvents.Select(item => item.SortOrder).DefaultIfEmpty(0).Max()));
+                orderedEvents.Select(item => item.SortOrder).DefaultIfEmpty(0).Max(),
+                orderedEvents.Select(item => item.PromoBadge).OfType<string>().Distinct(StringComparer.OrdinalIgnoreCase).ToArray()));
+        }
+
+        public Task<EventRecord?> GetEventAsync(Guid eventId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Events.SingleOrDefault(item => item.EventId == eventId));
+
+        public Task<int?> GetEventPageNumberAsync(Guid eventId, int pageSize, CancellationToken cancellationToken = default)
+        {
+            var orderedIds = Events
+                .OrderBy(item => item.SortOrder)
+                .ThenBy(item => item.StartsOn)
+                .ThenBy(item => item.Title, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(item => item.EventId)
+                .Select(item => item.EventId)
+                .ToList();
+            var index = orderedIds.IndexOf(eventId);
+            return Task.FromResult<int?>(index < 0 ? null : (index / pageSize) + 1);
         }
 
         public async Task<EventOperationResult> SaveEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default)

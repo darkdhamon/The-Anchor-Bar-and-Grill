@@ -52,6 +52,7 @@ public partial class EventsAdmin
     private int currentPage = 1;
     private int totalEventCount;
     private int maxSortOrder;
+    private IReadOnlyList<string> promoBadgeOptions = [];
 
     [Inject]
     private IEventManagementService EventManagementService { get; set; } = null!;
@@ -59,14 +60,7 @@ public partial class EventsAdmin
     [Inject]
     private TimeProvider TimeProvider { get; set; } = null!;
 
-    private IReadOnlyList<string> eventBadgeOptions =>
-        eventRecords
-            .Select(item => item.PromoBadge)
-            .Where(badge => !string.IsNullOrWhiteSpace(badge))
-            .Select(badge => badge!)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(badge => badge, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+    private IReadOnlyList<string> eventBadgeOptions => promoBadgeOptions;
 
     private bool IsRecurring => form.RecurrencePattern != EventRecurrencePattern.None;
 
@@ -122,12 +116,14 @@ public partial class EventsAdmin
         var page = await EventManagementService.GetEventsAsync(currentPage, EventsPerPage);
         totalEventCount = page.TotalCount;
         maxSortOrder = page.MaxSortOrder;
+        promoBadgeOptions = page.PromoBadges;
         if (currentPage > TotalPages)
         {
             currentPage = TotalPages;
             page = await EventManagementService.GetEventsAsync(currentPage, EventsPerPage);
             totalEventCount = page.TotalCount;
             maxSortOrder = page.MaxSortOrder;
+            promoBadgeOptions = page.PromoBadges;
         }
 
         eventRecords = page.Items.ToList();
@@ -181,7 +177,7 @@ public partial class EventsAdmin
         pendingDeleteId = null;
     }
 
-    private void ResetEditor()
+    private async Task ResetEditorAsync()
     {
         if (IsMutating)
         {
@@ -193,7 +189,8 @@ public partial class EventsAdmin
 
         if (form.EventId is Guid eventId)
         {
-            var selectedEvent = eventRecords.SingleOrDefault(item => item.EventId == eventId);
+            var selectedEvent = eventRecords.SingleOrDefault(item => item.EventId == eventId)
+                ?? await EventManagementService.GetEventAsync(eventId);
             if (selectedEvent is not null)
             {
                 LoadEditor(selectedEvent);
@@ -302,9 +299,10 @@ public partial class EventsAdmin
             statusMessage = GetSaveStatusMessage(publicationState, wasNewRecord);
             form.EventId = result.EventId;
             form.PublicationState = publicationState;
-            if (wasNewRecord)
+            var savedPage = await EventManagementService.GetEventPageNumberAsync(result.EventId!.Value, EventsPerPage);
+            if (savedPage is not null)
             {
-                currentPage = Math.Max(1, (int)Math.Ceiling((totalEventCount + 1) / (double)EventsPerPage));
+                currentPage = savedPage.Value;
             }
             await LoadEventsAsync(result.EventId, resetToNewEvent: false);
         }
@@ -409,7 +407,8 @@ public partial class EventsAdmin
 
         form.StartsOnText = args.Value?.ToString() ?? string.Empty;
 
-        if (!TryParseDateText(form.StartsOnText, out var selectedDate))
+        if ((form.EventId is not null && form.RecurrencePattern != EventRecurrencePattern.None)
+            || !TryParseDateText(form.StartsOnText, out var selectedDate))
         {
             return;
         }
@@ -434,11 +433,12 @@ public partial class EventsAdmin
 
     private async Task ChangePageAsync(int pageNumber)
     {
-        if (IsMutating || pageNumber < 1 || pageNumber > TotalPages || pageNumber == currentPage)
+        if (isLoading || IsMutating || pageNumber < 1 || pageNumber > TotalPages || pageNumber == currentPage)
         {
             return;
         }
 
+        isLoading = true;
         currentPage = pageNumber;
         pendingDeleteId = null;
         statusMessage = null;

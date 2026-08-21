@@ -4,6 +4,10 @@ public interface IEventManagementRepository
 {
     Task<EventManagementPage> GetEventsAsync(int skip, int take, CancellationToken cancellationToken = default);
 
+    Task<EventRecord?> GetEventAsync(Guid eventId, CancellationToken cancellationToken = default);
+
+    Task<int?> GetEventIndexAsync(Guid eventId, CancellationToken cancellationToken = default);
+
     Task<Guid?> UpsertEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default);
 
     Task<bool> DeleteEventAsync(Guid eventId, CancellationToken cancellationToken = default);
