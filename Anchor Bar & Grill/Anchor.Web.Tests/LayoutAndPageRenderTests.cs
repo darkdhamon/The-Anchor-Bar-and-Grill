@@ -1459,7 +1459,7 @@ public sealed class LayoutAndPageRenderTests : BunitContext
         public Task<EventOperationResult> SaveEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(EventOperationResult.Success(request.EventId ?? Guid.NewGuid()));
 
-        public Task<EventOperationResult> DeleteEventAsync(Guid eventId, CancellationToken cancellationToken = default) =>
+        public Task<EventOperationResult> DeleteEventAsync(Guid eventId, Guid expectedRevision, CancellationToken cancellationToken = default) =>
             Task.FromResult(EventOperationResult.Success(eventId));
 
         public Task WriteAsync(EventOperationLogEntry entry, CancellationToken cancellationToken = default) => Task.CompletedTask;

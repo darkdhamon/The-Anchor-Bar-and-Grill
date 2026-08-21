@@ -359,7 +359,7 @@
                                                     type="button"
                                                     class="admin-list__danger"
                                                     disabled="@EventActionsDisabled"
-                                                    @onclick="() => RequestDelete(item.EventId)">
+                                                    @onclick="() => RequestDelete(item.EventId, item.Revision)">
                                                 Delete
                                             </button>
                                         }

@@ -113,10 +113,10 @@ public sealed class EventManagementRepository(ApplicationDbContext dbContext) : 
         return entity.EventId;
     }
 
-    public async Task<bool> DeleteEventAsync(Guid eventId, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteEventAsync(Guid eventId, Guid expectedRevision, CancellationToken cancellationToken = default)
     {
         var entity = await dbContext.Events.SingleOrDefaultAsync(item => item.EventId == eventId, cancellationToken);
-        if (entity is null)
+        if (entity is null || entity.Revision != expectedRevision)
         {
             return false;
         }

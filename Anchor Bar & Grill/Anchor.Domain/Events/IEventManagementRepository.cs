@@ -10,7 +10,7 @@ public interface IEventManagementRepository
 
     Task<Guid?> UpsertEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default);
 
-    Task<bool> DeleteEventAsync(Guid eventId, CancellationToken cancellationToken = default);
+    Task<bool> DeleteEventAsync(Guid eventId, Guid expectedRevision, CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -50,11 +50,11 @@ public sealed class EventManagementService(
         return EventOperationResult.Success(eventId.Value);
     }
 
-    public async Task<EventOperationResult> DeleteEventAsync(Guid eventId, CancellationToken cancellationToken = default)
+    public async Task<EventOperationResult> DeleteEventAsync(Guid eventId, Guid expectedRevision, CancellationToken cancellationToken = default)
     {
-        if (!await repository.DeleteEventAsync(eventId, cancellationToken))
+        if (!await repository.DeleteEventAsync(eventId, expectedRevision, cancellationToken))
         {
-            return EventOperationResult.Failure("The requested event was not found.");
+            return EventOperationResult.Failure("The requested event changed in another session or was not found. Reload the editor before trying again.");
         }
 
         try
