@@ -9,6 +9,7 @@ public sealed class EventEntityConfiguration : IEntityTypeConfiguration<EventEnt
     {
         builder.ToTable("Events");
         builder.HasKey(item => item.EventId);
+        builder.Property(item => item.Revision).IsConcurrencyToken().IsRequired();
         builder.Property(item => item.Title).HasMaxLength(150).IsRequired();
         builder.Property(item => item.Summary).HasMaxLength(300).IsRequired();
         builder.Property(item => item.Description).HasMaxLength(2000).IsRequired();
@@ -25,5 +26,17 @@ public sealed class EventEntityConfiguration : IEntityTypeConfiguration<EventEnt
         builder.Property(item => item.RecurrenceInterval).IsRequired();
         builder.Property(item => item.RecursUntil).HasColumnType("date");
         builder.HasIndex(item => new { item.PublicationState, item.StartsOn });
+    }
+}
+
+public sealed class EventOperationLogEntityConfiguration : IEntityTypeConfiguration<EventOperationLogEntity>
+{
+    public void Configure(EntityTypeBuilder<EventOperationLogEntity> builder)
+    {
+        builder.ToTable("EventOperationLogs");
+        builder.HasKey(item => item.EventOperationLogId);
+        builder.Property(item => item.Operation).HasMaxLength(40).IsRequired();
+        builder.Property(item => item.Summary).HasMaxLength(300).IsRequired();
+        builder.HasIndex(item => item.OccurredAtUtc);
     }
 }

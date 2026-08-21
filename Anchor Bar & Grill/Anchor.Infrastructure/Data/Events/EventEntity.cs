@@ -6,6 +6,8 @@ public sealed class EventEntity
 {
     public Guid EventId { get; set; }
 
+    public Guid Revision { get; set; }
+
     public string Title { get; set; } = string.Empty;
 
     public string Summary { get; set; } = string.Empty;

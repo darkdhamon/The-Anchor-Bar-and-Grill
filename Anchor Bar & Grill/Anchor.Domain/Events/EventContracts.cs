@@ -2,6 +2,12 @@ using System.Globalization;
 
 namespace Anchor.Domain.Events;
 
+public sealed record EventManagementPage(
+    IReadOnlyList<EventRecord> Items,
+    int TotalCount,
+    int MaxSortOrder,
+    IReadOnlyList<string> PromoBadges);
+
 public sealed record EventRecord(
     Guid EventId,
     string Title,
@@ -23,6 +29,8 @@ public sealed record EventRecord(
     string? TimingNotes = null)
 {
     public bool IsRecurring => RecurrencePattern != EventRecurrencePattern.None;
+
+    public Guid Revision { get; init; }
 }
 
 public sealed record EventOccurrenceRecord(

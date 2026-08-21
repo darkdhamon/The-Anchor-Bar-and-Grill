@@ -18,4 +18,17 @@ public sealed record SaveEventRequest(
     DayOfWeek? RecursOnDayOfWeek,
     EventRecurrenceWeek? RecursOnWeekOfMonth,
     DateOnly? RecursUntil,
-    string? TimingNotes = null);
+    string? TimingNotes = null)
+{
+    public Guid? ExpectedRevision { get; init; }
+
+    public EventSaveAction SaveAction { get; init; } = EventSaveAction.Save;
+}
+
+public enum EventSaveAction
+{
+    Save,
+    SaveDraft,
+    Publish,
+    Archive
+}

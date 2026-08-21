@@ -6,29 +6,90 @@ namespace Anchor.Infrastructure.Data.Events;
 
 public sealed class EventManagementRepository(ApplicationDbContext dbContext) : IEventManagementRepository
 {
-    public async Task<IReadOnlyList<EventRecord>> GetEventsAsync(CancellationToken cancellationToken = default) =>
-        await dbContext.Events
-            .AsNoTracking()
+    public async Task<EventManagementPage> GetEventsAsync(int skip, int take, CancellationToken cancellationToken = default)
+    {
+        var query = dbContext.Events.AsNoTracking();
+        var totalCount = await query.CountAsync(cancellationToken);
+        var maxSortOrder = await query.Select(item => (int?)item.SortOrder).MaxAsync(cancellationToken) ?? 0;
+        var promoBadges = await query
+            .Where(item => item.PromoBadge != null && item.PromoBadge != "")
+            .Select(item => item.PromoBadge!)
+            .Distinct()
+            .OrderBy(item => item)
+            .ToListAsync(cancellationToken);
+        var items = await query
             .OrderBy(item => item.SortOrder)
             .ThenBy(item => item.StartsOn)
             .ThenBy(item => item.Title)
+            .ThenBy(item => item.EventId)
+            .Skip(skip)
+            .Take(take)
             .Select(Projection)
             .ToListAsync(cancellationToken);
 
-    public async Task<Guid> UpsertEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default)
+        return new EventManagementPage(items, totalCount, maxSortOrder, promoBadges);
+    }
+
+    public Task<EventRecord?> GetEventAsync(Guid eventId, CancellationToken cancellationToken = default) =>
+        dbContext.Events
+            .AsNoTracking()
+            .Where(item => item.EventId == eventId)
+            .Select(Projection)
+            .SingleOrDefaultAsync(cancellationToken);
+
+    public async Task<int?> GetEventIndexAsync(Guid eventId, CancellationToken cancellationToken = default)
+    {
+        var target = await dbContext.Events
+            .AsNoTracking()
+            .Where(item => item.EventId == eventId)
+            .Select(item => new { item.SortOrder, item.StartsOn, item.Title })
+            .SingleOrDefaultAsync(cancellationToken);
+        if (target is null)
+        {
+            return null;
+        }
+
+        var precedingCount = await dbContext.Events.CountAsync(item =>
+            item.SortOrder < target.SortOrder
+            || (item.SortOrder == target.SortOrder && item.StartsOn < target.StartsOn)
+            || (item.SortOrder == target.SortOrder && item.StartsOn == target.StartsOn && string.Compare(item.Title, target.Title) < 0), cancellationToken);
+        var tiedIds = await dbContext.Events
+            .Where(item => item.SortOrder == target.SortOrder && item.StartsOn == target.StartsOn && item.Title == target.Title)
+            .OrderBy(item => item.EventId)
+            .Select(item => item.EventId)
+            .ToListAsync(cancellationToken);
+        var tiedIndex = tiedIds.IndexOf(eventId);
+        return tiedIndex < 0 ? null : precedingCount + tiedIndex;
+    }
+
+    public async Task<Guid?> UpsertEventAsync(SaveEventRequest request, CancellationToken cancellationToken = default)
     {
         var entity = request.EventId.HasValue
             ? await dbContext.Events.SingleOrDefaultAsync(item => item.EventId == request.EventId.Value, cancellationToken)
             : null;
 
+        if (entity is null && request.EventId.HasValue)
+        {
+            return null;
+        }
+
         if (entity is null)
         {
             entity = new EventEntity
             {
-                EventId = request.EventId ?? Guid.NewGuid()
+                EventId = request.EventId ?? Guid.NewGuid(),
+                Revision = Guid.NewGuid()
             };
 
             dbContext.Events.Add(entity);
+        }
+        else if ((request.ExpectedRevision ?? Guid.Empty) != entity.Revision)
+        {
+            return null;
+        }
+        else
+        {
+            entity.Revision = Guid.NewGuid();
         }
 
         entity.Title = request.Title.Trim();
@@ -52,10 +113,10 @@ public sealed class EventManagementRepository(ApplicationDbContext dbContext) : 
         return entity.EventId;
     }
 
-    public async Task<bool> DeleteEventAsync(Guid eventId, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteEventAsync(Guid eventId, Guid expectedRevision, CancellationToken cancellationToken = default)
     {
         var entity = await dbContext.Events.SingleOrDefaultAsync(item => item.EventId == eventId, cancellationToken);
-        if (entity is null)
+        if (entity is null || entity.Revision != expectedRevision)
         {
             return false;
         }
@@ -64,8 +125,18 @@ public sealed class EventManagementRepository(ApplicationDbContext dbContext) : 
         return true;
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
-        dbContext.SaveChangesAsync(cancellationToken);
+    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            dbContext.ChangeTracker.Clear();
+            throw new EventConcurrencyException(exception);
+        }
+    }
 
     private static readonly Expression<Func<EventEntity, EventRecord>> Projection = item =>
         new EventRecord(
@@ -86,5 +157,8 @@ public sealed class EventManagementRepository(ApplicationDbContext dbContext) : 
             item.RecursOnDayOfWeek,
             item.RecursOnWeekOfMonth,
             item.RecursUntil,
-            item.TimingNotes);
+            item.TimingNotes)
+        {
+            Revision = item.Revision
+        };
 }

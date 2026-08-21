@@ -20,6 +20,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IEventQueryRepository, EventQueryRepository>();
         services.AddScoped<IEventManagementRepository, EventManagementRepository>();
+        services.AddScoped<IEventOperationLogSink, EventOperationLogSink>();
         services.AddScoped<IIdentityAdministrationRepository, Data.IdentityAdministrationRepository>();
         services.AddScoped<IIdentityBootstrapRepository, Data.IdentityBootstrapRepository>();
         services.AddScoped<IMenuQueryRepository, MenuQueryRepository>();
