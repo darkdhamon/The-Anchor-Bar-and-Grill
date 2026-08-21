@@ -12,6 +12,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 {
     public DbSet<EventEntity> Events => Set<EventEntity>();
 
+    public DbSet<EventOperationLogEntity> EventOperationLogs => Set<EventOperationLogEntity>();
+
     public DbSet<MenuSectionEntity> MenuSections => Set<MenuSectionEntity>();
 
     public DbSet<MenuItemEntity> MenuItems => Set<MenuItemEntity>();

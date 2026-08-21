@@ -27,3 +27,15 @@ public sealed class EventEntityConfiguration : IEntityTypeConfiguration<EventEnt
         builder.HasIndex(item => new { item.PublicationState, item.StartsOn });
     }
 }
+
+public sealed class EventOperationLogEntityConfiguration : IEntityTypeConfiguration<EventOperationLogEntity>
+{
+    public void Configure(EntityTypeBuilder<EventOperationLogEntity> builder)
+    {
+        builder.ToTable("EventOperationLogs");
+        builder.HasKey(item => item.EventOperationLogId);
+        builder.Property(item => item.Operation).HasMaxLength(40).IsRequired();
+        builder.Property(item => item.Summary).HasMaxLength(300).IsRequired();
+        builder.HasIndex(item => item.OccurredAtUtc);
+    }
+}

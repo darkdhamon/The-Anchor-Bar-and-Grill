@@ -377,6 +377,34 @@
                         }
                     }
                 </section>
+                <section class="admin-card" aria-labelledby="event-audit-heading">
+                    <div class="admin-card__header">
+                        <div>
+                            <h2 id="event-audit-heading">Recent event activity</h2>
+                            <p class="admin-field-note">The 25 most recent successful event changes are stored in the application database for staff review.</p>
+                        </div>
+                        <span class="admin-card__badge">Audit log</span>
+                    </div>
+                    @if (recentOperationLogs.Count == 0)
+                    {
+                        <p class="admin-field-note">No event changes have been recorded yet.</p>
+                    }
+                    else
+                    {
+                        <div class="admin-list">
+                            @foreach (var entry in recentOperationLogs)
+                            {
+                                <article class="admin-list__item">
+                                    <div>
+                                        <h3>@entry.Operation</h3>
+                                        <p>@entry.Summary</p>
+                                        <p class="admin-field-note">@entry.OccurredAtUtc.ToString("u") UTC · Event @entry.EventId</p>
+                                    </div>
+                                </article>
+                            }
+                        </div>
+                    }
+                </section>
             </div>
         </div>
     }
