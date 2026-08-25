@@ -51,6 +51,8 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Contains("20260524140817_AddEventCatalog", appliedMigrations);
             Assert.Contains("20260525163343_AddHomepagePublicity", appliedMigrations);
             Assert.Contains("20260530215505_ExpandHomepagePublicitySummaryLength", appliedMigrations);
+            Assert.Contains("20260821042241_AddEventOperationLogs", appliedMigrations);
+            Assert.Contains("20260821043756_AddEventRevision", appliedMigrations);
             Assert.Empty(pendingMigrations);
             Assert.True(await context.Database.CanConnectAsync());
 
@@ -98,6 +100,7 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Contains("MenuSectionTabs", tableNames);
             Assert.Contains("MenuServiceWindows", tableNames);
             Assert.Contains("Events", tableNames);
+            Assert.Contains("EventOperationLogs", tableNames);
             Assert.Contains("HomepagePublicity", tableNames);
             Assert.DoesNotContain("RecurringSpecials", tableNames);
 
@@ -132,6 +135,7 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Contains("RecursOnWeekOfMonth", eventColumns);
             Assert.Contains("RecursUntil", eventColumns);
             Assert.Contains("TimingNotes", eventColumns);
+            Assert.Contains("Revision", eventColumns);
             Assert.Contains("DraftHeadline", homepagePublicityColumns);
             Assert.Contains("DraftSummary", homepagePublicityColumns);
             Assert.Contains("PublishedHeadline", homepagePublicityColumns);
@@ -163,6 +167,16 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Equal(2, persistedEvent.RecurrenceInterval);
             Assert.Equal(DayOfWeek.Friday, persistedEvent.RecursOnDayOfWeek);
 
+            context.EventOperationLogs.Add(new Data.Events.EventOperationLogEntity
+            {
+                OccurredAtUtc = new DateTimeOffset(2026, 8, 21, 4, 0, 0, TimeSpan.Zero),
+                Operation = "publish",
+                EventId = eventId,
+                Summary = "Friday Live Music"
+            });
+            await context.SaveChangesAsync();
+            Assert.True(await context.EventOperationLogs.AnyAsync(item => item.EventId == eventId && item.Operation == "publish"));
+
             context.HomepagePublicity.Add(new HomepagePublicityEntity
             {
                 HomepagePublicityId = 1,
@@ -182,6 +196,49 @@ public sealed class ApplicationDbContextMigrationTests
             Assert.Equal("Published headline", persistedHomepagePublicity.PublishedHeadline);
             Assert.True(persistedHomepagePublicity.DraftSummary?.Length > 1000);
             Assert.True(persistedHomepagePublicity.PublishedSummary?.Length > 1000);
+        }
+        finally
+        {
+            await context.Database.EnsureDeletedAsync();
+        }
+    }
+
+    [Fact]
+    public async Task AddEventRevision_upgrades_existing_events_with_nonempty_revisions()
+    {
+        const string precedingMigration = "20260821042241_AddEventOperationLogs";
+        var databaseName = $"AnchorEventRevision_{Guid.NewGuid():N}";
+        var connectionString = new SqlConnectionStringBuilder
+        {
+            DataSource = @"(localdb)\MSSQLLocalDB",
+            InitialCatalog = databaseName,
+            IntegratedSecurity = true,
+            TrustServerCertificate = true,
+            ConnectTimeout = 30
+        }.ConnectionString;
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseSqlServer(connectionString)
+            .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning))
+            .Options;
+        var eventId = Guid.NewGuid();
+
+        await using var context = new ApplicationDbContext(options);
+        await context.Database.EnsureDeletedAsync();
+        try
+        {
+            await context.Database.MigrateAsync(precedingMigration);
+            await context.Database.ExecuteSqlInterpolatedAsync($@"
+                INSERT INTO [Events]
+                    ([EventId], [Title], [Summary], [Description], [StartsOn], [StartsAt], [EndsNextDay], [SortOrder], [PublicationState], [RecurrencePattern], [RecurrenceInterval])
+                VALUES
+                    ({eventId}, {"Legacy event"}, {"Legacy summary"}, {"Legacy description"}, {new DateTime(2026, 5, 22)}, {new TimeSpan(20, 0, 0)}, {false}, {1}, {(int)EventPublicationState.Published}, {(int)EventRecurrencePattern.None}, {1});");
+
+            await context.Database.MigrateAsync();
+            context.ChangeTracker.Clear();
+
+            var upgradedEvent = await context.Events.SingleAsync(item => item.EventId == eventId);
+            Assert.Equal("Legacy event", upgradedEvent.Title);
+            Assert.NotEqual(Guid.Empty, upgradedEvent.Revision);
         }
         finally
         {

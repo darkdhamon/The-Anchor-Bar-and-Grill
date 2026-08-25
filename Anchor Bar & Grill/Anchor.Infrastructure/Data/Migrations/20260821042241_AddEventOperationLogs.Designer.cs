@@ -4,16 +4,19 @@ using Anchor.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Anchor.Web.Migrations
+namespace Anchor.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260821042241_AddEventOperationLogs")]
+    partial class AddEventOperationLogs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -147,10 +150,6 @@ namespace Anchor.Web.Migrations
 
                     b.Property<DateOnly?>("RecursUntil")
                         .HasColumnType("date");
-
-                    b.Property<Guid>("Revision")
-                        .IsConcurrencyToken()
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("SortOrder")
                         .HasColumnType("int");

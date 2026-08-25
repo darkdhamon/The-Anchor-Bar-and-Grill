@@ -1,0 +1,59 @@
+@page "/admin/event-activity"
+@using Anchor.Domain.Events
+@using Anchor.Domain.Identity
+@using Microsoft.AspNetCore.Authorization
+@inject IEventOperationLogSink EventOperationLogSink
+
+@attribute [Authorize(Policy = ApplicationPolicies.AdminAccess)]
+
+<PageTitle>Event Activity</PageTitle>
+
+<section class="admin-page">
+    <div class="page-hero page-hero--section">
+        <p class="page-hero__eyebrow">Administration</p>
+        <h1>Event activity</h1>
+        <p class="page-hero__lead">Review successful event-editor changes from the database audit history together with local fallback-file entries created during a database logging outage.</p>
+    </div>
+
+    <aside class="admin-help">
+        <h2>How to use this page</h2>
+        <p>This read-only audit view shows the 100 most recent event saves, publications, archives, and permanent deletions. Use the event ID and UTC timestamp when investigating a content change.</p>
+    </aside>
+
+    <section class="admin-card">
+        <div class="admin-card__header">
+            <h2>Recent successful operations</h2>
+            <span class="admin-card__badge">Audit log</span>
+        </div>
+        @if (records is null)
+        {
+            <p>Loading event activity…</p>
+        }
+        else if (records.Count == 0)
+        {
+            <p class="admin-field-note">No event operations have been recorded yet.</p>
+        }
+        else
+        {
+            <div class="admin-list">
+                @foreach (var entry in records)
+                {
+                    <article class="admin-list__item">
+                        <div>
+                            <h3>@entry.Operation</h3>
+                            <p>@entry.Summary</p>
+                            <p class="admin-field-note">@entry.OccurredAtUtc.ToString("u") UTC · Event @entry.EventId</p>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+</section>
+
+@code {
+    private IReadOnlyList<EventOperationLogRecord>? records;
+
+    protected override async Task OnInitializedAsync() =>
+        records = await EventOperationLogSink.GetRecentAsync(100);
+}
